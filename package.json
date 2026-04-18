@@ -1,0 +1,16 @@
+{
+  "name": "d360-assessment",
+  "version": "2.1.0",
+  "description": "AlignData D360° Privacy Assessment — Ley 21.719",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

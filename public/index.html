@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>D360° Privacy Assessment — AlignData</title>
+
+<!-- External CDNs -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<!-- App styles -->
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- ── TOPBAR ── -->
+<div class="topbar">
+  <div class="topbar-logo">
+    <div class="li"><i data-lucide="shield-check" style="width:18px;height:18px"></i></div>
+    Align<span>Data</span>
+  </div>
+  <div class="topbar-badge">D360°</div>
+  <div class="topbar-right">
+    <div class="cd">
+      <i data-lucide="calendar-clock" style="width:14px;height:14px"></i>
+      Plazo: <strong id="cd-d"></strong> días
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- ══════ SCREEN 1: ONBOARDING ══════ -->
+  <div id="s1" class="screen active">
+    <div class="hero">
+      <div class="hero-icon"><i data-lucide="scan-search"></i></div>
+      <h1>Diagnóstico <span>D360°</span></h1>
+      <p class="sub">Evalúe el nivel de cumplimiento de su organización con la Ley 21.719 de Protección de Datos Personales en 8 dimensiones clave.</p>
+      <div class="hero-stats">
+        <div class="hero-stat"><i data-lucide="clock-3"></i> <strong>~15</strong> minutos</div>
+        <div class="hero-stat"><i data-lucide="layers"></i> <strong>8</strong> dimensiones</div>
+        <div class="hero-stat"><i data-lucide="file-check-2"></i> Resultado <strong>inmediato</strong></div>
+      </div>
+    </div>
+
+    <div class="ob-card">
+      <h2><i data-lucide="building-2" style="width:20px;height:20px"></i> Datos de su organización</h2>
+      <p class="desc">Esta información personaliza el diagnóstico según su sector y tamaño.</p>
+
+      <div class="fg">
+        <label>Nombre de la empresa</label>
+        <input type="text" id="f1" placeholder="Ej: Mi Empresa S.A.">
+      </div>
+      <div class="fg">
+        <label>Sector o rubro</label>
+        <select id="f2">
+          <option value="">Seleccione el sector...</option>
+          <option value="salud">Salud / Clínicas</option>
+          <option value="educacion">Educación</option>
+          <option value="fintech">Fintech / Servicios Financieros</option>
+          <option value="retail">Retail / E-commerce</option>
+          <option value="tecnologia">Tecnología / SaaS</option>
+          <option value="legal">Legal / Consultoría</option>
+          <option value="construccion">Construcción / Inmobiliaria</option>
+          <option value="alimentos">Alimentos / Restaurantes</option>
+          <option value="logistica">Logística / Transporte</option>
+          <option value="otro">Otro</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label>Número de empleados</label>
+        <select id="f3">
+          <option value="">Seleccione rango...</option>
+          <option value="1-10">1 – 10 empleados</option>
+          <option value="11-50">11 – 50 empleados</option>
+          <option value="51-200">51 – 200 empleados</option>
+          <option value="201+">Más de 200 empleados</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label>Email de contacto</label>
+        <input type="email" id="f4" placeholder="nombre@empresa.cl">
+      </div>
+
+      <button class="btn-go" onclick="go()">
+        Iniciar diagnóstico <i data-lucide="arrow-right"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- ══════ SCREEN 2: ASSESSMENT ══════ -->
+  <div id="s2" class="screen">
+    <div class="pp">
+      <div class="pr">
+        <span class="lb" id="pdl"><i data-lucide="layers"></i> Gobernanza</span>
+        <span class="pc" id="pdp">0%</span>
+      </div>
+      <div class="pbt"><div class="pbf dm" id="pdb" style="width:0%"></div></div>
+      <div class="pr gl">
+        <span class="lb"><i data-lucide="activity" style="width:14px;height:14px;color:var(--accent)"></i> Progreso total</span>
+        <span class="pc" id="pgp">0%</span>
+      </div>
+      <div class="pbt"><div class="pbf gl" id="pgb" style="width:0%"></div></div>
+    </div>
+    <div id="qa"></div>
+  </div>
+
+  <!-- ══════ SCREEN 3: RESULTS ══════ -->
+  <div id="s3" class="screen">
+    <div id="rc"></div>
+  </div>
+
+</div>
+
+<!-- App logic -->
+<script src="app.js"></script>
+</body>
+</html>
