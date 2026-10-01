@@ -20,7 +20,17 @@
 <div class="topbar">
   
   <div class="topbar-logo">
-    <div class="li"><i data-lucide="shield-check" style="width:18px;height:18px"></i></div>
+    <svg class="li" width="40" height="40" viewBox="0 0 300 300">
+      <defs>
+        <linearGradient id="nb-ring" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#3B82F6"/><stop offset="100%" stop-color="#00B894"/></linearGradient>
+        <linearGradient id="nb-fill" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#16315C"/><stop offset="100%" stop-color="#0A1A33"/></linearGradient>
+        <linearGradient id="nb-ad" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#3B82F6"/><stop offset="100%" stop-color="#22D3EE"/></linearGradient>
+      </defs>
+      <circle cx="150" cy="150" r="140" fill="url(#nb-fill)"/>
+      <circle cx="150" cy="150" r="140" fill="none" stroke="url(#nb-ring)" stroke-width="7"/>
+      <circle cx="150" cy="150" r="112" fill="none" stroke="#ffffff" stroke-width="1" opacity="0.14"/>
+      <text x="150" y="182" text-anchor="middle" font-family="'Plus Jakarta Sans',system-ui,sans-serif" font-weight="800" font-size="118" letter-spacing="-4" fill="url(#nb-ad)">AD</text>
+    </svg>
     Align<span>Data</span>
   </div>
   <div class="topbar-badge">D360°</div>

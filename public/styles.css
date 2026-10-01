@@ -35,8 +35,7 @@ h1,h2,h3,h4{text-wrap:balance}
 .topbar{background:rgba(10,15,30,.92);backdrop-filter:blur(10px) saturate(1.3);padding:0 24px;height:58px;display:flex;align-items:center;gap:12px;position:sticky;top:env(safe-area-inset-top,0px);z-index:100;border-bottom:1px solid rgba(255,255,255,.08)}
 .topbar-logo{font-family:var(--font-d);color:#fff;font-weight:700;font-size:1.12rem;letter-spacing:-.03em;display:flex;align-items:center;gap:9px}
 .topbar-logo span{color:var(--teal)}
-.topbar-logo .li{width:30px;height:30px;background:linear-gradient(135deg,var(--teal),var(--accent));border-radius:9px;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 1px rgba(255,255,255,.12) inset}
-.topbar-logo .li svg{color:#fff}
+.topbar-logo .li{flex-shrink:0}
 .topbar-badge{background:rgba(0,184,148,.12);color:var(--teal-light);font-size:.64rem;padding:4px 10px;border-radius:99px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;border:1px solid rgba(0,184,148,.28)}
 .topbar-right{margin-left:auto;display:flex;align-items:center;gap:12px}
 .topbar-right .cd{color:rgba(255,255,255,.55);font-size:.78rem;display:flex;align-items:center;gap:5px;font-variant-numeric:tabular-nums}
