@@ -1,0 +1,12 @@
+{
+  "projects": {
+    "default": "aligndata-arcop"
+  },
+  "targets": {
+    "aligndata-arcop": {
+      "hosting": {
+        "d360": ["d360-assessment"]
+      }
+    }
+  }
+}
