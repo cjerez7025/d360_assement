@@ -40,6 +40,16 @@ for (const q of Q) {
   ok((q.fl || []).every((v) => [0, 1, 2, 3].includes(v)), q.id + ': bandera roja con valor inválido');
   ok(q.w > 0, q.id + ': peso inválido');
   if (q.cd) ok(Q.some((p) => p.id === q.cd.sh && p.iS), q.id + ': dispara una pregunta que no existe o no es de profundización');
+  // ejemplos de ayuda ("Ver ejemplos")
+  ok(Array.isArray(q.ex) && q.ex.length >= 3, q.id + ': debe tener al menos 3 ejemplos');
+  const vs = (q.ex || []).map((e) => e.v);
+  ok(new Set(vs).size === vs.length, q.id + ': hay dos ejemplos para la misma respuesta');
+  ok(vs.some((v) => v <= 1) && vs.includes(3), q.id + ': los ejemplos deben mostrar una respuesta baja y la correcta (3)');
+  for (const e of q.ex || []) {
+    ok(q.op.some((o) => o.v === e.v), q.id + ': ejemplo asociado a una respuesta que no existe');
+    ok(typeof e.t === 'string' && e.t.length > 30 && !/[<>]/.test(e.t), q.id + ': texto de ejemplo inválido');
+  }
+  ok(typeof q.ev === 'string' && q.ev.length > 20 && !/[<>]/.test(q.ev), q.id + ': falta "cómo comprobarlo"');
 }
 for (const q of Q.filter((p) => p.iS)) ok(Q.filter((p) => p.cd && p.cd.sh === q.id).length === 1, q.id + ': debe ser disparada por exactamente una pregunta');
 for (const d of D) ok(Q.some((q) => q.dm === d.id && !q.iS), d.id + ': la dimensión no tiene preguntas base');
@@ -94,7 +104,17 @@ ok(sem['Bloqueo temporal'] === 'green' && sem['Rectificación y supresión'] ===
 const parcial = new E2(); parcial.ans('ARC-01', 3); parcial.ans('ARC-01b', 2); parcial.ans('ARC-06', 3);
 ok(parcial.cl2().find((c) => c.ob.startsWith('Procedimiento de solicitudes')).st === 'yellow', 'promedio 2,67 → parcial');
 
-seccion('6. Persistencia: la clave de almacenamiento cambió (evita mezclar respuestas de la versión anterior)');
+seccion('6. Botón "Ver ejemplos"');
+const html = sandbox.exh(Q.find((q) => q.id === 'ARC-04'));
+ok(html.includes('Ejemplos orientativos') && html.includes('Cómo comprobarlo'), 'el panel debe incluir el título y "Cómo comprobarlo"');
+ok(html.split('class="exi"').length - 1 === 3, 'el panel de ARC-04 debe mostrar sus 3 ejemplos');
+ok(html.includes('Respuesta: ') && html.includes('exv-3'), 'cada ejemplo debe indicar qué respuesta ilustra');
+ok(typeof sandbox.tgl === 'function', 'falta la función que abre y cierra los paneles');
+ok(/onclick="tgl\('exp','lpp'\)"/.test(code) && /Ver ejemplos/.test(code), 'falta el botón "Ver ejemplos" en la plantilla de la pregunta');
+const sinEx = sandbox.exh({ op: [], ex: undefined });
+ok(typeof sinEx === 'string', 'una pregunta sin ejemplos no debe romper el panel');
+
+seccion('7. Persistencia: la clave de almacenamiento cambió (evita mezclar respuestas de la versión anterior)');
 const p = new E2(); p.ans('GOB-01', 3);
 ok('d360v3' in store && !('d360v2' in store), 'debe guardarse en d360v3');
 

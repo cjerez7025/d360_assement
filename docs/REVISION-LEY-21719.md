@@ -46,6 +46,7 @@ La app pasa de 32 a **45 preguntas** (37 base + 8 de profundización). Las dimen
 - **Plan de acción** actualizado con las acciones de los temas nuevos.
 - **Clave de almacenamiento** `d360v2` → `d360v3`: los avances guardados en el navegador con la versión anterior no se mezclan con las preguntas reescritas.
 - **Portada:** tiempo estimado "~20 minutos".
+- **Botón "Ver ejemplos" en cada pregunta.** Junto a "¿Por qué se pregunta esto?" se abre un panel con 3 ejemplos orientativos que muestran qué respuesta corresponde a cada situación (una baja, una intermedia y la correcta) y una línea "Cómo comprobarlo". Los textos están en los campos `ex` y `ev` de cada pregunta en `public/app.js`. Abrir un panel cierra el otro, y los botones se pueden usar con el teclado.
 - Los temas "no aplica" se resuelven como en el original (la opción "no trato esos datos" vale 3), para no penalizar a quien no los trata.
 
 ## 4. Pendiente de validar con asesoría legal
@@ -60,6 +61,6 @@ La app pasa de 32 a **45 preguntas** (37 base + 8 de profundización). Las dimen
 npm run verificar
 ```
 
-Revisa la integridad de los datos (IDs, opciones, referencias del semáforo), que no reaparezcan los errores listados arriba, el cálculo de puntajes (todo 3 → 100, todo 0 → 0), las preguntas condicionales y el semáforo.
+Revisa la integridad de los datos (IDs, opciones, referencias del semáforo, ejemplos y "cómo comprobarlo" de cada pregunta), que no reaparezcan los errores listados arriba, el cálculo de puntajes (todo 3 → 100, todo 0 → 0), las preguntas condicionales y el semáforo.
 
 Estos cambios **no están publicados**: para verlos en línea hay que desplegar `public/` en Firebase Hosting (sitio `d360-assessment`).
