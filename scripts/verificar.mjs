@@ -11,15 +11,16 @@ const store = {};
 const sandbox = {
   console,
   Math, Date, JSON, Object, Array, Set, Promise,
-  document: { getElementById: el, querySelectorAll: () => [], addEventListener() {} },
-  window: { scrollTo() {}, print() {}, open() {} },
+  document: { title: 'D360° Privacy Assessment — AlignData', getElementById: el, querySelectorAll: () => [], addEventListener() {} },
+  window: { scrollTo() {}, print() { sandbox.__impreso = sandbox.document.title; }, open() {}, addEventListener(t, f) { sandbox.__eventos[t] = f; }, removeEventListener(t) { delete sandbox.__eventos[t]; } },
+  __eventos: {},
   localStorage: { getItem: (k) => store[k] ?? null, setItem: (k, v) => { store[k] = String(v); }, removeItem: (k) => { delete store[k]; } },
   lucide: { createIcons() {} }, Chart: function () {}, alert() {}, confirm: () => false, setTimeout() {},
 };
 sandbox.globalThis = sandbox;
 vm.createContext(sandbox);
-vm.runInContext(code + '\n;globalThis.__t={D,Q,A,CL,E2};', sandbox);
-const { D, Q, A, CL, E2 } = sandbox.__t;
+vm.runInContext(code + '\n;globalThis.__t={D,Q,A,CL,E2,en};', sandbox);
+const { D, Q, A, CL, E2, en } = sandbox.__t;
 
 let fallos = 0;
 const ok = (c, m) => { if (!c) { fallos++; console.log('  ✗ ' + m); } };
@@ -114,7 +115,25 @@ ok(/onclick="tgl\('exp','lpp'\)"/.test(code) && /Ver ejemplos/.test(code), 'falt
 const sinEx = sandbox.exh({ op: [], ex: undefined });
 ok(typeof sinEx === 'string', 'una pregunta sin ejemplos no debe romper el panel');
 
-seccion('7. Persistencia: la clave de almacenamiento cambió (evita mezclar respuestas de la versión anterior)');
+seccion('7. Informe en PDF (impresión)');
+const css = fs.readFileSync(file.replace(/app\.js$/, 'styles.css'), 'utf8').replace(/\r\n/g, '\n');
+const impresion = (css.match(/@media print\{[\s\S]*?\n\}\n/) || [''])[0];
+ok(impresion.includes('animation:none!important'), 'al imprimir se deben anular las animaciones (las pestañas animadas salían en blanco)');
+ok(/\.tp\{display:block!important;opacity:1!important\}/.test(impresion), 'al imprimir todas las pestañas del resultado deben verse completas');
+ok(/print-color-adjust:exact/.test(impresion), 'al imprimir deben conservarse los colores');
+ok(/#t4\{break-before:page\}/.test(impresion), 'el semáforo debe empezar en una hoja nueva');
+ok(!/\.ph\{/.test(impresion.replace(/\.pc2 \.ph\{[^}]*\}/g, '')), 'la clase .ph es del plan de acción: el encabezado del informe usa .rpt');
+ok(/class="po rpt"/.test(code) && /class="po rpt-f"/.test(code), 'faltan el encabezado o el pie del informe');
+ok(/onclick="pdf\(\)"/.test(code) && !/onclick="window\.print\(\)"/.test(code), 'el botón debe usar pdf()');
+en.sp({ nombre: 'Acme SpA' });
+sandbox.pdf();
+ok(/^Informe D360 - Acme SpA - \d{2}-\d{2}-\d{4}$/.test(sandbox.__impreso || ''), 'el nombre sugerido del archivo debe ser "Informe D360 - <empresa> - <fecha>" y es: ' + sandbox.__impreso);
+ok(typeof sandbox.__eventos.afterprint === 'function', 'debe restaurar el título después de imprimir');
+sandbox.__eventos.afterprint();
+ok(sandbox.document.title === 'D360° Privacy Assessment — AlignData', 'el título original debe restaurarse tras imprimir');
+ok(/^\d{2}-\d{2}-\d{4}$/.test(sandbox.fch()), 'la fecha del informe debe ser dd-mm-aaaa');
+
+seccion('8. Persistencia: la clave de almacenamiento cambió (evita mezclar respuestas de la versión anterior)');
 const p = new E2(); p.ans('GOB-01', 3);
 ok('d360v3' in store && !('d360v2' in store), 'debe guardarse en d360v3');
 
