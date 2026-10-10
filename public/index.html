@@ -216,6 +216,18 @@
 
 </main>
 
+<dialog class="dlg dlg-ej" id="dlg-ej" aria-labelledby="ej-t">
+  <div class="dlg-in">
+    <div class="dlg-h">
+      <h2 id="ej-t"><i data-lucide="lightbulb"></i> Ejemplos para responder</h2>
+      <button type="button" class="dlg-x" onclick="document.getElementById('dlg-ej').close()" aria-label="Cerrar">×</button>
+    </div>
+    <p class="ej-q" id="ej-q"></p>
+    <div class="ej-body" id="ej-body"></div>
+    <div class="dlg-act"><button type="button" class="be be-p" onclick="document.getElementById('dlg-ej').close()">Entendido</button></div>
+  </div>
+</dialog>
+
 <dialog class="dlg" id="dlg" aria-labelledby="dlg-t">
   <div class="dlg-in">
     <div class="dlg-h">

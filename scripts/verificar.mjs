@@ -109,10 +109,14 @@ ok(parcial.cl2().find((c) => c.ob.startsWith('Procedimiento de solicitudes')).st
 seccion('6. Botón "Ver ejemplos"');
 const html = sandbox.exh(Q.find((q) => q.id === 'ARC-04'));
 ok(html.includes('Ejemplos orientativos') && html.includes('Cómo comprobarlo'), 'el panel debe incluir el título y "Cómo comprobarlo"');
-ok(html.split('class="exi"').length - 1 === 3, 'el panel de ARC-04 debe mostrar sus 3 ejemplos');
+ok(html.split('class="exi ').length - 1 === 3, 'el popup de ARC-04 debe mostrar sus 3 ejemplos');
 ok(html.includes('Respuesta: ') && html.includes('exv-3'), 'cada ejemplo debe indicar qué respuesta ilustra');
 ok(typeof sandbox.tgl === 'function', 'falta la función que abre y cierra los paneles');
-ok(/onclick="tgl\('exp','lpp'\)"/.test(code) && /Ver ejemplos/.test(code), 'falta el botón "Ver ejemplos" en la plantilla de la pregunta');
+ok(/onclick="ej\('\$\{q\.id\}'\)"/.test(code) && /Ver ejemplos/.test(code), 'falta el botón "Ver ejemplos" en la plantilla de la pregunta');
+ok(typeof sandbox.ej === 'function' && /showModal\(\)/.test(code), 'los ejemplos deben abrirse en una ventana emergente (popup)');
+ok(!/id="exp"/.test(code), 'los ejemplos ya no van como panel dentro de la tarjeta');
+ok(/id="dlg-ej"/.test(fs.readFileSync(file.replace(/app\.js$/, 'index.html'), 'utf8')), 'falta la ventana emergente de ejemplos en index.html');
+ok(/dialog\[open\]/.test(code), 'los atajos del teclado no deben actuar mientras hay un popup abierto');
 const sinEx = sandbox.exh({ op: [], ex: undefined });
 ok(typeof sinEx === 'string', 'una pregunta sin ejemplos no debe romper el panel');
 

@@ -212,10 +212,21 @@ svg{flex-shrink:0}
 .exl{display:flex;flex-direction:column;gap:14px;margin-top:2px}
 .exi p{margin:6px 0 0}
 .exv{display:inline-flex;align-items:center;font-size:var(--fs-xs);font-weight:700;padding:3px 11px;border-radius:99px;background:var(--lv-soft);color:var(--lv-ink);border:1px solid color-mix(in srgb,var(--lv-ink) 35%,transparent)}
-.exv-0{--lv-ink:var(--lv0-ink);--lv-soft:var(--surface)}
-.exv-1{--lv-ink:var(--lv1-ink);--lv-soft:var(--surface)}
-.exv-2{--lv-ink:var(--lv2-ink);--lv-soft:var(--surface)}
-.exv-3{--lv-ink:var(--lv4-ink);--lv-soft:var(--surface)}
+.exv-0{--lv-ink:var(--lv0-ink);--lv-soft:var(--lv0-soft)}
+.exv-1{--lv-ink:var(--lv1-ink);--lv-soft:var(--lv1-soft)}
+.exv-2{--lv-ink:var(--lv2-ink);--lv-soft:var(--lv2-soft)}
+.exv-3{--lv-ink:var(--lv4-ink);--lv-soft:var(--lv4-soft)}
+/* ventana emergente de ejemplos */
+dialog.dlg-ej{max-width:660px}
+.ej-q{font-size:var(--fs-sm);color:var(--muted);line-height:1.5;margin:0 0 14px;padding:10px 12px;background:var(--sunk);border-radius:var(--rs)}
+.ej-q strong{color:var(--text-2);font-size:var(--fs-xs);letter-spacing:.02em}
+.ej-body{max-height:min(52vh,480px);overflow:auto;padding:2px 4px 2px 0;margin-bottom:16px}
+.ej-body .ab{display:inline-block;background:var(--brand-soft);color:var(--brand-ink);font-size:var(--fs-xs);font-weight:700;padding:3px 10px;border-radius:6px;margin-bottom:4px;letter-spacing:.02em}
+.ej-body .exl{display:flex;flex-direction:column;gap:12px;margin-top:10px}
+.ej-body .exi{border:1px solid var(--border);border-left:5px solid var(--lv-mark);border-radius:var(--rs);padding:12px 14px;background:var(--surface)}
+.exi-0{--lv-mark:var(--lv0-mark)}.exi-1{--lv-mark:var(--lv1-mark)}.exi-2{--lv-mark:var(--lv2-mark)}.exi-3{--lv-mark:var(--lv4-mark)}
+.ej-body .exi p{margin:8px 0 0;font-size:var(--fs-base);line-height:1.55}
+.ej-body .exe{margin-top:16px;padding:12px 14px;border:0;border-radius:var(--rs);background:var(--brand-soft);color:var(--text);font-size:var(--fs-sm);line-height:1.55}
 .exe{margin-top:16px;padding-top:12px;border-top:1px solid color-mix(in srgb,var(--text) 16%,transparent);font-size:var(--fs-sm);color:var(--text-2)}
 
 /* opciones de respuesta (radios nativos: teclado y lector de pantalla) */
