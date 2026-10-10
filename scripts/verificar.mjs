@@ -137,5 +137,43 @@ seccion('8. Persistencia: la clave de almacenamiento cambió (evita mezclar resp
 const p = new E2(); p.ans('GOB-01', 3);
 ok('d360v3' in store && !('d360v2' in store), 'debe guardarse en d360v3');
 
+seccion('9. Diseño y accesibilidad');
+// contraste WCAG calculado sobre los tokens de color de styles.css
+const lum = (h) => { const c = [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16) / 255).map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4)); return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]; };
+const cr = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((m, n) => n - m); return (x + 0.05) / (y + 0.05); };
+const tokens = (txt) => Object.fromEntries([...txt.matchAll(/--([\w-]+):\s*(#[0-9A-Fa-f]{6})\s*[;}]/g)].map((m) => [m[1], m[2].toUpperCase()]));
+const bloqueRaiz = (css.match(/:root\{([\s\S]*?)\n\}/) || [, ''])[1];
+const bloqueOscuro = (css.match(/:root\[data-theme="dark"\]\{([\s\S]*?)\n\}/) || [, ''])[1];
+ok(bloqueRaiz && bloqueOscuro, 'faltan los tokens del tema claro u oscuro');
+const claro = tokens(bloqueRaiz);
+const temas = { claro, oscuro: { ...claro, ...tokens(bloqueOscuro) } };
+for (const [nombre, T] of Object.entries(temas)) {
+  const par = (fg, bg, min, que) => { if (!T[fg] || !T[bg]) { ok(false, nombre + ': falta el token ' + (T[fg] ? bg : fg)); return; } const r = cr(T[fg], T[bg]); ok(r >= min, `${nombre}: ${que} ${fg} sobre ${bg} tiene contraste ${r.toFixed(2)} y debe ser ≥ ${min}`); };
+  for (const f of ['bg', 'surface', 'sunk']) for (const t of ['text', 'text-2', 'muted', 'brand-ink']) par(t, f, 4.5, 'texto');
+  par('brand-ink', 'brand-soft', 4.5, 'texto'); par('text', 'brand-soft', 4.5, 'texto');
+  par('on-brand', 'brand', 4.5, 'botón'); par('on-ink', 'brand-ink', 4.5, 'selección');
+  par('field', 'surface', 3, 'borde de campo'); par('field', 'bg', 3, 'borde de campo');
+  for (const n of ['lv0', 'lv1', 'lv2', 'lv3', 'lv4', 'lvn']) {
+    par(n + '-ink', n + '-soft', 4.5, 'etiqueta de estado'); par(n + '-ink', 'surface', 4.5, 'texto de estado');
+    par(n + '-mark', 'surface', 3, 'marca de estado'); par(n + '-mark', 'sunk', 3, 'barra de medidor');
+  }
+}
+for (const f of ['navy-soft', 'navy']) for (const t of ['on-navy', 'on-navy-2', 'on-navy-3', 'navy-brand']) { const r = cr(claro[t], claro[f]); ok(r >= 4.5, `navy: ${t} sobre ${f} tiene contraste ${r.toFixed(2)}`); }
+for (const h of ['h0', 'h1', 'h2', 'h3', 'h4']) { const r = cr(claro[h], claro['navy-soft']); ok(r >= 3, `navy: marca ${h} tiene contraste ${r.toFixed(2)} sobre el hero`); }
+const paginaHtml = fs.readFileSync(file.replace(/app\.js$/, 'index.html'), 'utf8');
+ok(/prefers-color-scheme:dark/.test(css) && /\[data-theme="dark"\]/.test(css), 'debe existir el tema oscuro (sistema y selector manual)');
+ok(/prefers-reduced-motion:reduce/.test(css), 'debe respetar prefers-reduced-motion');
+ok(/:focus-visible\{[^}]*outline/.test(css), 'debe haber un foco visible para teclado');
+ok(/html:root:root\{[\s\S]*?--surface:#FFFFFF/.test(impresion), 'al imprimir se deben forzar los colores del tema claro');
+ok(!/font-variant-numeric/.test((css.match(/\.sr \.sv\{[^}]*\}/) || [''])[0]), 'la cifra principal usa números proporcionales, no tabulares');
+ok(/type="radio"/.test(code) && /role="radiogroup"/.test(code), 'las opciones de respuesta deben ser radios nativos (teclado y lector de pantalla)');
+ok(/role="tablist"/.test(code) && /role="tab"/.test(code) && /aria-selected/.test(code) && /role="tabpanel"/.test(code), 'las pestañas del resultado deben tener roles ARIA');
+ok(/<button type="button" class="lb-btn"/.test(code) && /aria-expanded/.test(code), 'los botones de ayuda deben ser <button> con aria-expanded');
+ok(!/\balert\(/.test(code), 'no usar alert(): el error del formulario se muestra en la página');
+ok(['f1', 'f2', 'f3', 'f4'].every((id) => new RegExp('<label for="' + id + '"').test(paginaHtml)), 'cada campo del formulario necesita su <label for>');
+ok(/<main[^>]*id="main"/.test(paginaHtml) && /class="skip"/.test(paginaHtml), 'falta el contenedor <main> o el enlace "Saltar al contenido"');
+ok(!/bootstrap/i.test(paginaHtml), 'Bootstrap no se usa: no cargarlo');
+ok(/lucide@\d+\.\d+\.\d+/.test(paginaHtml), 'lucide debe cargarse con versión fija');
+
 console.log('\n' + (fallos ? '✗ ' + fallos + ' problema(s)' : '✓ Todas las verificaciones pasaron'));
 process.exit(fallos ? 1 : 0);

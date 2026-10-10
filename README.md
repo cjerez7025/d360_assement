@@ -11,7 +11,8 @@ d360-app/
 ├── .dockerignore
 └── public/
     ├── index.html     # HTML limpio (sin CSS ni JS inline)
-    ├── styles.css     # Todos los estilos
+    ├── styles.css     # Todos los estilos (sistema de diseño con tokens, tema claro/oscuro)
+    ├── theme.js       # Selector de tema claro/oscuro
     └── app.js         # Lógica completa del assessment
 ```
 
