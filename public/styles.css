@@ -176,7 +176,20 @@ svg{flex-shrink:0}
 .btn-go svg{width:20px;height:20px}
 
 /* ── progreso ── */
-.pp{background:var(--surface);border-radius:var(--r);padding:18px 24px 20px;box-shadow:var(--shadow-sm);border:1px solid var(--border);margin-bottom:20px}
+/* el panel de progreso toma el color del nivel actual y lo cambia con una transición cuando sube o baja */
+.pp{background:color-mix(in srgb,var(--nv-soft) 45%,var(--surface));border-radius:var(--r);padding:18px 24px 20px 28px;box-shadow:inset 5px 0 0 var(--nv-mark),var(--shadow-sm);border:1px solid color-mix(in srgb,var(--nv-mark) 32%,var(--border));margin-bottom:20px;transition:background-color .9s var(--ease),border-color .9s var(--ease),box-shadow .9s var(--ease)}
+.pp.pulso{animation:nivelPulso 1.1s ease-out}
+@keyframes nivelPulso{0%{box-shadow:inset 5px 0 0 var(--nv-mark),0 0 0 0 color-mix(in srgb,var(--nv-mark) 55%,transparent)}100%{box-shadow:inset 5px 0 0 var(--nv-mark),0 0 0 18px transparent}}
+.pn{display:flex;align-items:center;flex-wrap:wrap;gap:6px 12px;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid color-mix(in srgb,var(--nv-mark) 24%,var(--border))}
+.pn-chip{display:inline-flex;align-items:center;gap:8px;padding:5px 13px;border-radius:99px;background:color-mix(in srgb,var(--nv-soft) 80%,var(--surface));border:1px solid color-mix(in srgb,var(--nv-ink) 30%,transparent);color:var(--nv-ink);font-weight:700;font-size:var(--fs-sm);transition:color .9s var(--ease),background-color .9s var(--ease)}
+.pn-dot{width:10px;height:10px;border-radius:50%;background:var(--nv-mark);transition:background-color .9s var(--ease)}
+.pn-sc{font-family:var(--font-d);font-weight:800;font-size:1.2rem;letter-spacing:-.03em;color:var(--nv-ink)}
+.pn-d{font-size:var(--fs-xs);font-weight:700;color:var(--nv-ink)}
+.pn-scale{display:flex;gap:3px;width:130px;margin-left:auto}
+.pn-scale span{flex:1;height:6px;border-radius:99px;background:var(--sunk)}
+.pn-scale .s0{--c:var(--lv0-mark)}.pn-scale .s1{--c:var(--lv1-mark)}.pn-scale .s2{--c:var(--lv2-mark)}.pn-scale .s3{--c:var(--lv3-mark)}.pn-scale .s4{--c:var(--lv4-mark)}
+.pn-scale span.on{background:var(--c)}
+.pn-scale span.cur{height:10px;margin-top:-2px;box-shadow:0 0 0 2px var(--surface)}
 .pr{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:8px}
 .pr .lb{font-size:var(--fs-sm);font-weight:700;color:var(--text);display:flex;align-items:center;gap:7px}
 .pr .lb svg{width:16px;height:16px;color:var(--brand-ink)}
@@ -628,7 +641,8 @@ a.be{text-decoration:none}
   .wrap{padding:18px 12px 60px}
   .topbar{padding:0 12px}
   .topbar-right .cd{font-size:var(--fs-xs)}
-  .pp{padding:16px 18px 18px}
+  .pp{padding:16px 18px 18px 22px}
+  .pn-scale{width:100%;margin-left:0}
   .rh{padding:34px 18px 30px}
   .sr{width:184px;height:184px}
   .sr .sv{font-size:3.1rem}
