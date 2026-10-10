@@ -24,13 +24,14 @@ service cloud.firestore {
 
     // Resultados publicados para el cliente.
     // Se leen de a uno conociendo el token (192 bits al azar, imposible de adivinar); NO se pueden listar.
-    // Contienen solo: nombre, sector, tamaño y respuestas. Nunca notas ni datos de contacto.
+    // Contienen solo: nombre, sector, tamaño, respuestas y las notas de la reunión (el cliente las ve por decisión).
+    // Nunca el email ni el contacto del cliente.
     match /compartidos/{token} {
       allow get: if true;
       allow list: if false;
       allow create, update: if esConsultor()
         && token.size() == 32
-        && request.resource.data.keys().hasOnly(['perfil', 'respuestas', 'publicadoEn', 'version']);
+        && request.resource.data.keys().hasOnly(['perfil', 'respuestas', 'notas', 'publicadoEn', 'version']);
       allow delete: if esConsultor();
     }
 

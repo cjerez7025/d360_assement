@@ -528,6 +528,13 @@ body.nv0 .topbar,body.nv1 .topbar,body.nv2 .topbar,body.nv3 .topbar,body.nv4 .to
 .notas textarea{display:block;width:calc(100% - 28px);margin:0 14px 14px;min-height:88px;padding:12px;border:1.5px solid var(--field);border-radius:var(--rs);background:var(--surface);color:var(--text);font:inherit;font-size:var(--fs-base);resize:vertical}
 .notas textarea:focus{outline:none;border-color:var(--brand-ink);box-shadow:0 0 0 4px color-mix(in srgb,var(--brand) 28%,transparent)}
 
+/* notas de la reunión en los resultados */
+.nt{padding:14px 0;border-bottom:1px solid var(--border)}
+.nt:last-child{border-bottom:none;padding-bottom:4px}
+.nt-h{font-size:var(--fs-xs);font-weight:700;color:var(--muted);letter-spacing:.02em}
+.nt-q{font-weight:700;margin:2px 0 8px;font-size:var(--fs-base);line-height:1.4}
+.nt-t{white-space:pre-wrap;background:var(--brand-soft);border-left:4px solid var(--brand-ink);border-radius:var(--rs);padding:10px 14px;font-size:var(--fs-base);line-height:1.55}
+
 /* vista del cliente */
 .cbanner{display:flex;align-items:center;gap:10px;background:var(--brand-soft);color:var(--text);border:1px solid color-mix(in srgb,var(--brand-ink) 28%,transparent);border-radius:var(--rs);padding:12px 16px;margin:0 0 20px;font-size:var(--fs-sm)}
 .cbanner svg{width:18px;height:18px;color:var(--brand-ink)}
@@ -601,7 +608,7 @@ a.be{text-decoration:none}
   #t4{break-before:page}
   #t4 .rs{columns:2;column-gap:26px}
   #t4 .rs h3,#t4 .rs .lead,#t4 .sem-sum{column-span:all}
-  .pc2,.br,.clr,.stpr,.dimc{break-inside:avoid}
+  .pc2,.br,.clr,.stpr,.dimc,.nt{break-inside:avoid}
   .po{display:block}
   .rs .lead{font-size:.72rem;margin-bottom:8px}
   #t1 .lead,.key{display:none}

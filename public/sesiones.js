@@ -189,7 +189,7 @@
     const parcial = r.completa ? '' : `<p class="dlg-warn"><i data-lucide="triangle-alert"></i>La sesión tiene ${r.hechas} de ${r.total} preguntas respondidas: los resultados serán parciales.</p>`;
     let h;
     if (!tk) {
-      h = `<p>Quien reciba el enlace verá los resultados de <strong>${esc(p.nombre)}</strong> en modo lectura. No verá sus notas de la reunión ni podrá modificar las respuestas.</p>${parcial}<div class="dlg-act"><button class="be be-p" id="dlg-pub" onclick="pub()"><i data-lucide="link"></i>Publicar y crear enlace</button></div>`;
+      h = `<p>Quien reciba el enlace verá los resultados de <strong>${esc(p.nombre)}</strong> en modo lectura: las respuestas y las notas de la reunión. No podrá modificar nada.</p>${parcial}<div class="dlg-act"><button class="be be-p" id="dlg-pub" onclick="pub()"><i data-lucide="link"></i>Publicar y crear enlace</button></div>`;
     } else {
       const url = enlace(tk), cam = s && cambios(s);
       h = `<p>Los resultados de <strong>${esc(p.nombre)}</strong> están publicados${c.en ? ' desde el ' + fchd(new Date(ms(c.en) || Date.now())) : ''}.</p>
