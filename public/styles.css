@@ -251,8 +251,12 @@ svg{flex-shrink:0}
 .bn:disabled{background:var(--sunk);color:var(--muted);cursor:not-allowed}
 
 /* ── resultado: portada del informe ── */
-.rh{background:linear-gradient(165deg,var(--navy) 0%,var(--navy-mid) 45%,var(--navy-soft) 100%);border-radius:var(--r);padding:44px 32px 38px;color:var(--on-navy);text-align:center;margin-bottom:20px;position:relative;overflow:hidden;isolation:isolate;--focus:#5EEAD4}
-.rh::before{content:'';position:absolute;width:520px;height:520px;background:radial-gradient(circle,rgba(0,184,148,.13) 0%,transparent 60%);bottom:-52%;left:-16%;border-radius:50%}
+@property --hc{syntax:'<color>';inherits:true;initial-value:#2DD4BF}
+/* el panel toma el color del nivel (n0 rojo … n4 verde) y lo cambia con una transición suave */
+.rh{--hc:var(--h3);background:linear-gradient(165deg,color-mix(in srgb,var(--hc) 26%,var(--navy)) 0%,color-mix(in srgb,var(--hc) 10%,var(--navy-mid)) 48%,var(--navy-soft) 100%);border:1px solid color-mix(in srgb,var(--hc) 40%,transparent);transition:--hc .9s var(--ease);border-radius:var(--r);padding:44px 32px 38px;color:var(--on-navy);text-align:center;margin-bottom:20px;position:relative;overflow:hidden;isolation:isolate;--focus:#5EEAD4}
+.rh.n0{--hc:var(--h0)}.rh.n1{--hc:var(--h1)}.rh.n2{--hc:var(--h2)}.rh.n3{--hc:var(--h3)}.rh.n4{--hc:var(--h4)}
+.rh::before{content:'';position:absolute;width:520px;height:520px;background:radial-gradient(circle,color-mix(in srgb,var(--hc) 26%,transparent) 0%,transparent 60%);bottom:-52%;left:-16%;border-radius:50%}
+.rh::after{content:'';position:absolute;left:0;right:0;top:0;height:4px;background:var(--hc)}
 .rh>*{position:relative;z-index:1}
 .rh .on{font-size:var(--fs-base);color:var(--on-navy-2);font-weight:500;margin-bottom:10px}
 .sr{width:208px;height:208px;margin:0 auto 14px;position:relative}
@@ -429,12 +433,21 @@ svg{flex-shrink:0}
 .dtools{display:grid;grid-template-columns:1fr 240px;gap:0 12px;margin-bottom:6px}
 .dtools .fg{margin-bottom:12px}
 .sl{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
-.sc{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:20px;box-shadow:var(--shadow-sm);display:flex;flex-direction:column;gap:10px;min-width:0;animation:rise .4s var(--ease) both}
+.nv0{--nv-ink:var(--lv0-ink);--nv-soft:var(--lv0-soft);--nv-mark:var(--lv0-mark)}
+.nv1{--nv-ink:var(--lv1-ink);--nv-soft:var(--lv1-soft);--nv-mark:var(--lv1-mark)}
+.nv2{--nv-ink:var(--lv2-ink);--nv-soft:var(--lv2-soft);--nv-mark:var(--lv2-mark)}
+.nv3{--nv-ink:var(--lv3-ink);--nv-soft:var(--lv3-soft);--nv-mark:var(--lv3-mark)}
+.nv4{--nv-ink:var(--lv4-ink);--nv-soft:var(--lv4-soft);--nv-mark:var(--lv4-mark)}
+.nvx{--nv-ink:var(--lvn-ink);--nv-soft:var(--lvn-soft);--nv-mark:var(--lvn-mark)}
+/* la tarjeta toma el color del nivel de la sesión: fondo, borde y franja lateral */
+.sc{background:color-mix(in srgb,var(--nv-soft) 45%,var(--surface));border:1px solid color-mix(in srgb,var(--nv-mark) 32%,var(--border));border-radius:var(--r);padding:20px 20px 20px 24px;box-shadow:inset 5px 0 0 var(--nv-mark),var(--shadow-sm);display:flex;flex-direction:column;gap:10px;min-width:0;animation:rise .4s var(--ease) both;transition:background-color .8s var(--ease),border-color .8s var(--ease),box-shadow .8s var(--ease)}
 .sc .mtr i{background:var(--lv3-mark)}
 .sc-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
 .sc-top h3{font-family:var(--font-d);font-size:var(--fs-lg);font-weight:700;line-height:1.25;overflow-wrap:anywhere}
 .sc-meta{font-size:var(--fs-sm);color:var(--muted)}
-.sc-stats{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:var(--fs-sm);color:var(--text-2)}
+.sc-stats{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;font-size:var(--fs-sm);color:var(--text-2)}
+.sc-lv{display:inline-flex;align-items:baseline;gap:8px;font-weight:700;color:var(--nv-ink);transition:color .8s var(--ease)}
+.sc-lv b{font-family:var(--font-d);font-size:1.5rem;font-weight:800;letter-spacing:-.03em}
 .sc-foot{font-size:var(--fs-xs);color:var(--muted)}
 .sc-act{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
 .sc-act .be{padding:9px 14px}

@@ -85,22 +85,33 @@
   const estado = (s) => (s.compartido ? (cambios(s) ? 'cambios' : 'compartida') : s.estado === 'completa' ? 'completa' : 'en_curso');
   function cambios(s) { const c = s.compartido && ms(s.compartido.en), a = ms(s.actualizadoEn); return !!(c && a && a > c + 1500); }
   const CHIP = { en_curso: ['lvn', 'En curso'], completa: ['lv3', 'Completa'], compartida: ['lv4', 'Compartida con el cliente'], cambios: ['lv2', 'Cambios sin publicar'] };
+  const nivelDe = (s) => (s.puntaje != null ? en.ml(s.puntaje).n : 'x');
   function tarjeta(s) {
     const e = estado(s), [k, t] = CHIP[e], p = s.perfil || {}, av = s.avance || 0;
     const niv = s.puntaje != null ? en.ml(s.puntaje).nm : null;
-    return `<article class="sc ${k}"><div class="sc-top"><h3>${esc(p.nombre || 'Sin nombre')}</h3><span class="pill">${t}</span></div>
+    return `<article class="sc ${k} nv${nivelDe(s)}" data-id="${s.id}"><div class="sc-top"><h3>${esc(p.nombre || 'Sin nombre')}</h3><span class="pill">${t}</span></div>
 <p class="sc-meta">${esc(lbl('f2', p.sector))} · ${esc(lbl('f3', p['tamaño']))}${p.contacto ? ' · Contacto: ' + esc(p.contacto) : ''}</p>
 <div class="mtr" role="img" aria-label="Avance ${av}%"><i style="width:${av}%"></i></div>
-<div class="sc-stats"><span>${s.hechas || 0} de ${s.total || '—'} respondidas</span><span>${s.puntaje != null ? 'Puntaje <strong>' + s.puntaje + '%</strong> · ' + esc(niv) : 'Sin puntaje aún'}</span></div>
+<div class="sc-stats"><span>${s.hechas || 0} de ${s.total || '—'} respondidas</span><span>${s.puntaje != null ? '<span class="sc-lv"><b>' + s.puntaje + '%</b> ' + esc(niv) + '</span>' : 'Sin puntaje aún'}</span></div>
 <p class="sc-foot">Actualizada ${rel(ms(s.actualizadoEn))}${s.actualizadoPor ? ' por ' + esc(s.actualizadoPor) : ''}</p>
 <div class="sc-act"><button class="be be-p" onclick="abrirSes('${s.id}')"><i data-lucide="play"></i>${s.estado === 'completa' ? 'Abrir' : 'Continuar'}</button><button class="be" onclick="resSes('${s.id}')"><i data-lucide="bar-chart-3"></i>Resultados</button><button class="be" onclick="cmpSes('${s.id}')"><i data-lucide="share-2"></i>Compartir</button></div></article>`;
   }
+  let nvPrev = {};
   function renderDash() {
     const q = ($('dq').value || '').toLowerCase().trim(), f = $('df').value;
     const filas = lista.filter((s) => (!q || ((s.perfil && s.perfil.nombre) || '').toLowerCase().includes(q)) && (!f || estado(s) === f));
     $('dl').innerHTML = filas.length ? filas.map(tarjeta).join('')
       : `<div class="sc-vacio"><i data-lucide="folder-open"></i><p>${lista.length ? 'Ninguna sesión coincide con el filtro.' : 'Aún no hay sesiones. Cree la primera para comenzar una reunión con un cliente.'}</p></div>`;
     $('dcount').textContent = lista.length + (lista.length === 1 ? ' sesión' : ' sesiones');
+    // si una sesión cambió de nivel desde la última vez, su tarjeta parte con el color anterior y pasa al nuevo con una transición
+    const antes = nvPrev; nvPrev = {};
+    lista.forEach((s) => { nvPrev[s.id] = nivelDe(s); });
+    filas.forEach((s) => {
+      const o = antes[s.id], n = nivelDe(s); if (o === undefined || o === n) return;
+      const el = $('dl').querySelector('[data-id="' + s.id + '"]'); if (!el) return;
+      el.classList.replace('nv' + n, 'nv' + o);
+      requestAnimationFrame(() => requestAnimationFrame(() => el.classList.replace('nv' + o, 'nv' + n)));
+    });
     lucide.createIcons();
   }
   window.filtrar = renderDash;

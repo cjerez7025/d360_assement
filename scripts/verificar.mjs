@@ -142,6 +142,7 @@ seccion('9. Diseño y accesibilidad');
 // contraste WCAG calculado sobre los tokens de color de styles.css
 const lum = (h) => { const c = [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16) / 255).map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4)); return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]; };
 const cr = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((m, n) => n - m); return (x + 0.05) / (y + 0.05); };
+const mezcla = (a, b, k) => '#' + [1, 3, 5].map((i) => Math.round(parseInt(a.slice(i, i + 2), 16) * k + parseInt(b.slice(i, i + 2), 16) * (1 - k)).toString(16).padStart(2, '0')).join('');
 const tokens = (txt) => Object.fromEntries([...txt.matchAll(/--([\w-]+):\s*(#[0-9A-Fa-f]{6})\s*[;}]/g)].map((m) => [m[1], m[2].toUpperCase()]));
 const bloqueRaiz = (css.match(/:root\{([\s\S]*?)\n\}/) || [, ''])[1];
 const bloqueOscuro = (css.match(/:root\[data-theme="dark"\]\{([\s\S]*?)\n\}/) || [, ''])[1];
@@ -157,10 +158,16 @@ for (const [nombre, T] of Object.entries(temas)) {
   for (const n of ['lv0', 'lv1', 'lv2', 'lv3', 'lv4', 'lvn']) {
     par(n + '-ink', n + '-soft', 4.5, 'etiqueta de estado'); par(n + '-ink', 'surface', 4.5, 'texto de estado');
     par(n + '-mark', 'surface', 3, 'marca de estado'); par(n + '-mark', 'sunk', 3, 'barra de medidor');
+    const tinte = mezcla(T[n + '-soft'], T.surface, 0.45); // fondo de la tarjeta de sesión según su nivel
+    for (const [fg, que] of [['muted', 'texto atenuado'], ['text-2', 'texto'], [n + '-ink', 'puntaje']]) { const r = cr(T[fg], tinte); ok(r >= 4.5, `${nombre}: ${que} sobre la tarjeta tintada ${n} tiene contraste ${r.toFixed(2)} y debe ser ≥ 4.5`); }
   }
 }
 for (const f of ['navy-soft', 'navy']) for (const t of ['on-navy', 'on-navy-2', 'on-navy-3', 'navy-brand']) { const r = cr(claro[t], claro[f]); ok(r >= 4.5, `navy: ${t} sobre ${f} tiene contraste ${r.toFixed(2)}`); }
 for (const h of ['h0', 'h1', 'h2', 'h3', 'h4']) { const r = cr(claro[h], claro['navy-soft']); ok(r >= 3, `navy: marca ${h} tiene contraste ${r.toFixed(2)} sobre el hero`); }
+for (const h of ['h0', 'h1', 'h2', 'h3', 'h4']) for (const f of ['on-navy', 'on-navy-2', 'on-navy-3']) { const fondo = mezcla(claro[h], claro.navy, 0.26); const r = cr(claro[f], fondo); ok(r >= 4.5, `panel de resultados ${h}: ${f} sobre el fondo tintado tiene contraste ${r.toFixed(2)}`); }
+ok(/@property --hc/.test(css) && [0, 1, 2, 3, 4].every((n) => new RegExp('\\.rh\\.n' + n + '\\{--hc:var\\(--h' + n + '\\)\\}').test(css)), 'el panel de resultados debe tener un color por cada nivel (n0 a n4) y una transición');
+ok([0, 1, 2, 3, 4].every((n) => new RegExp('\\.nv' + n + '\\{').test(css)) && /\.nvx\{/.test(css), 'las tarjetas de sesión deben tener un color por nivel y uno neutro');
+ok(/class="rh n\$\{lvIni\}"/.test(code) && /classList\.add\('n'\+mt\.n\)/.test(code), 'el panel debe cambiar de color cuando cambia el nivel');
 const paginaHtml = fs.readFileSync(file.replace(/app\.js$/, 'index.html'), 'utf8');
 ok(/prefers-color-scheme:dark/.test(css) && /\[data-theme="dark"\]/.test(css), 'debe existir el tema oscuro (sistema y selector manual)');
 ok(/prefers-reduced-motion:reduce/.test(css), 'debe respetar prefers-reduced-motion');
