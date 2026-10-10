@@ -2,7 +2,7 @@
   "hosting": {
     "target": "d360",
     "public": "public",
-    "ignore": ["firebase.json", "**/.*", "**/node_modules/**", "dev/**"],
+    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
     "headers": [
       {
         "source": "**",

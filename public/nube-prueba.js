@@ -1,15 +1,16 @@
-/* Simulador de nube SOLO para desarrollo (localhost?mock=1): misma interfaz que nube.js pero en localStorage.
-   No se publica: está en la lista «ignore» de firebase.json. */
+/* Modo de prueba: misma interfaz que nube.js pero guardando todo en el navegador (localStorage), sin Firebase.
+   Se usa en localhost con ?mock=1 y, mientras firebase-config.js tenga «prueba: true», en el sitio publicado
+   con el botón «Probar sin cuenta». Los datos NO salen de este navegador. */
 const K = 'd360mock';
 const leerTodo = () => { try { return JSON.parse(localStorage.getItem(K)) || { sesiones: {}, compartidos: {}, sesion: null }; } catch (e) { return { sesiones: {}, compartidos: {}, sesion: null }; } };
 const guardarTodo = (d) => { localStorage.setItem(K, JSON.stringify(d)); oyentes.forEach((f) => f()); };
 const aviso = (estado) => window.dispatchEvent(new CustomEvent('nube:estado', { detail: { estado } }));
 const oyentes = new Set();
 let cbUsuario = null;
-const USUARIO = { uid: 'mock-1', email: 'carlos.jerez@aligndata.cl', nombre: 'Carlos Jerez (simulado)' };
+const USUARIO = { uid: 'prueba-1', email: 'modo prueba (este navegador)', nombre: 'Modo de prueba' };
 
 export function iniciar() {}
-export function alCambiarUsuario(cb) { cbUsuario = cb; setTimeout(() => cb(leerTodo().sesion ? USUARIO : null), 0); return () => {}; }
+export function alCambiarUsuario(cb) { cbUsuario = cb; setTimeout(() => cb(USUARIO), 0); return () => {}; }
 export async function ingresar() { const d = leerTodo(); d.sesion = USUARIO.uid; guardarTodo(d); cbUsuario(USUARIO); }
 export async function resultadoRedireccion() { return null; }
 export async function salir() { const d = leerTodo(); d.sesion = null; guardarTodo(d); }

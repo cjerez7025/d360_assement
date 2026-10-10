@@ -65,7 +65,7 @@ Las reglas están en [`firestore.d360.rules`](../firestore.d360.rules):
 | `public/sesiones.js` | Pantallas del consultor (ingreso, panel, compartir) y vista del cliente |
 | `public/firebase-config.js` | Configuración pública. **Si se elimina, la app vuelve al modo local** (sin sesiones en la nube) |
 | `public/app.js` | Motor y cuestionario: navegación libre, notas, `pub()` (qué se publica), `res()` (resumen) |
-| `public/dev/nube-mock.js` | Simulador para probar sin nube (`http://localhost:5199/?mock=1`); no se publica |
+| `public/nube-prueba.js` | Modo de prueba: misma interfaz que `nube.js` pero guardando en el navegador, sin Firebase. Se activa con el botón «Probar sin cuenta» mientras `firebase-config.js` tenga `prueba: true`, y en localhost con `?mock=1` |
 | `firestore.d360.rules`, `firestore.indexes.json` | Reglas e índices de la base `d360` |
 | `firebase.json` | Hosting (con `Cache-Control: no-cache` para que un `sesiones.js` nuevo nunca se mezcle con un `nube.js` viejo en caché) y la base `d360` |
 
@@ -87,6 +87,12 @@ npx firebase-tools deploy --only hosting:d360 --project aligndata-arcop
 ```
 
 5. Probar: ingresar con una cuenta autorizada, crear una sesión, publicar el enlace y abrirlo en una ventana de incógnito.
+
+## Modo de prueba (temporal)
+
+Mientras no esté activado Google en Firebase Authentication nadie puede ingresar. Con `prueba: true` en `public/firebase-config.js`, la pantalla de ingreso muestra **Probar sin cuenta**: se puede recorrer toda la experiencia (sesiones, navegación, notas, resultados, enlace del cliente) pero **los datos quedan solo en ese navegador**, nunca en Firebase, y el enlace del cliente solo funciona en el mismo navegador. Un aviso amarillo lo recuerda en todas las pantallas.
+
+**Antes del lanzamiento:** activar Google, quitar `prueba: true` de `firebase-config.js` y volver a desplegar. `npm run verificar` avisa mientras siga activo.
 
 ## Autorizar a otro consultor
 

@@ -7,5 +7,8 @@ window.D360_NUBE = {
   projectId: 'aligndata-arcop',
   appId: '1:207868335090:web:c09136dbc10127c5e9516b',
   databaseId: 'd360',
-  sdk: '10.14.1'
+  sdk: '10.14.1',
+  // TEMPORAL: permite probar el sitio sin ingresar con Google (datos solo en el navegador).
+  // Quitar (o poner false) cuando se active Google en Firebase Authentication y volver a desplegar.
+  prueba: true
 };

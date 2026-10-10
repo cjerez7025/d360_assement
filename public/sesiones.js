@@ -7,7 +7,11 @@
   if (!window.D360_NUBE) return;
   const $ = (id) => document.getElementById(id);
   const P = new URLSearchParams(location.search);
-  const MOCK = P.get('mock') === '1' && location.hostname === 'localhost';
+  const CFG = window.D360_NUBE;
+  const guardado = (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } };
+  // modo de prueba: solo si firebase-config.js lo permite (prueba: true); los datos quedan en este navegador
+  const PRUEBA = !!CFG.prueba && (guardado('d360prueba') === '1' || P.get('prueba') === '1');
+  const MOCK = PRUEBA || (P.get('mock') === '1' && location.hostname === 'localhost');
   let N = null, user = null, desub = null, lista = [], act = null, confirmaRev = false;
   const ms = (t) => (t && t.toMillis ? t.toMillis() : typeof t === 'number' ? t : null);
 
@@ -31,12 +35,14 @@
 
   // ── arranque ──
   const gt = $('go-t'); if (gt) gt.textContent = 'Crear sesión e iniciar';
+  if (PRUEBA) { $('pbanner').hidden = false; document.body.classList.add('prueba'); }
+  if (CFG.prueba && !PRUEBA) { $('btn-prueba').hidden = false; $('hint-prueba').hidden = false; $('btn-prueba').onclick = () => { try { localStorage.setItem('d360prueba', '1'); } catch (e) { /* sin almacenamiento */ } location.reload(); }; }
   solo('se'); $('se-t').textContent = 'Cargando…'; // evita mostrar la portada antigua mientras se decide la vista
   async function arrancar() {
     document.body.classList.add('nube');
     // en localhost se evita el caché de módulos; en producción lo resuelve la cabecera Cache-Control de firebase.json
     const sufijo = location.hostname === 'localhost' ? '?t=' + Date.now() : '';
-    try { N = await import((MOCK ? './dev/nube-mock.js' : './nube.js') + sufijo); }
+    try { N = await import((MOCK ? './nube-prueba.js' : './nube.js') + sufijo); }
     catch (e) { msg('No se pudo conectar', 'El servicio de sesiones no está disponible. Revise su conexión e intente de nuevo.', [['Reintentar', () => location.reload()]]); return; }
     const tk = P.get('r');
     if (tk) return cliente(tk);
@@ -91,7 +97,10 @@
     try { await N.ingresar(); }
     catch (e) { errorIngreso(e.code || e.message); }
   };
-  window.salir = async () => { try { await N.salir(); } finally { location.reload(); } };
+  window.salir = async () => {
+    if (PRUEBA) { try { localStorage.removeItem('d360prueba'); } catch (e) { /* nada */ } location.href = location.pathname; return; }
+    try { await N.salir(); } finally { location.reload(); }
+  };
 
   // ── consultor: panel de sesiones ──
   const estado = (s) => (s.compartido ? (cambios(s) ? 'cambios' : 'compartida') : s.estado === 'completa' ? 'completa' : 'en_curso');
@@ -172,7 +181,7 @@
   window.addEventListener('pagehide', () => { if (N && N.vaciarYa && en.sid) N.vaciarYa(); });
 
   // ── compartir con el cliente ──
-  const enlace = (tk) => location.origin + location.pathname + '?r=' + tk + (MOCK ? '&mock=1' : '');
+  const enlace = (tk) => location.origin + location.pathname + '?r=' + tk + (PRUEBA ? '&prueba=1' : MOCK ? '&mock=1' : '');
   window.cmp = function () { confirmaRev = false; dlgRender(); const d = $('dlg'); if (!d.open) d.showModal(); };
   function dlgRender() {
     const s = lista.find((x) => x.id === act.id), c = (s && s.compartido) || act.compartido, tk = c && c.token;

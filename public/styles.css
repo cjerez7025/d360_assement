@@ -509,6 +509,12 @@ dialog.dlg::backdrop{background:rgba(10,15,30,.62);backdrop-filter:blur(3px)}
 .be.dng:hover{background:var(--lv0-soft);border-color:var(--lv0-ink);color:var(--lv0-ink)}
 a.be{text-decoration:none}
 
+.pbanner{background:var(--lv2-soft);color:var(--lv2-ink);border-bottom:1px solid color-mix(in srgb,var(--lv2-ink) 30%,transparent);padding:10px 16px;text-align:center;font-size:var(--fs-sm);line-height:1.5}
+.pbanner[hidden]{display:none}
+.pb-x{margin-left:8px;min-height:36px;padding:4px 12px;border:1.5px solid currentColor;border-radius:8px;background:transparent;color:inherit;font-weight:700;font-size:var(--fs-sm)}
+.pb-x:hover{background:color-mix(in srgb,var(--lv2-ink) 12%,transparent)}
+.btn-sec[hidden]{display:none}
+
 /* ── impresión (informe PDF) ── */
 .po{display:none}
 @page{margin:11mm}
@@ -524,7 +530,7 @@ a.be{text-decoration:none}
     --lv4-ink:#166534;--lv4-soft:#DCFCE7;--lv4-mark:#15803D;
     --lvn-ink:#475467;--lvn-soft:#E8EDEB;--lvn-mark:#667085}
   *{-webkit-print-color-adjust:exact;print-color-adjust:exact;animation:none!important;transition:none!important}
-  .topbar,.eb,.ebn,.cta,.tb,.qn,.bq,.key,.skip,.cbanner,.pp-act,.idxp,dialog{display:none!important}
+  .topbar,.eb,.ebn,.cta,.tb,.qn,.bq,.key,.skip,.cbanner,.pbanner,.pp-act,.idxp,dialog{display:none!important}
   body{background:#fff;min-height:0}
   .wrap{max-width:100%;padding:0}
   .screen{animation:none}
