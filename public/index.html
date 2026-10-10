@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="color-scheme" content="light dark">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
 <meta name="theme-color" content="#0A0F1E">
 <meta name="description" content="Diagnóstico D360° de AlignData: evalúe el cumplimiento de su organización con la Ley 21.719 de Protección de Datos Personales en 8 dimensiones.">
 <title>D360° Privacy Assessment — AlignData</title>
@@ -47,6 +49,8 @@
       <i data-lucide="calendar-clock" style="width:14px;height:14px"></i>
       <span>Plazo: <strong id="cd-d"></strong> días</span>
     </div>
+    <div class="saveind" id="saveind" data-s="guardado" hidden role="status" aria-live="polite"><span class="sd-dot" aria-hidden="true"></span><span id="saveind-t">Guardado</span></div>
+    <div class="uchip" id="uchip" hidden><span class="uemail" id="uemail"></span><button type="button" class="uout" onclick="salir()">Salir</button></div>
     <button type="button" class="theme-btn" id="theme-btn" aria-label="Cambiar tema de color">
       <svg class="i-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
       <svg class="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2m-7.07-2.93 1.41-1.41m11.32-11.32 1.41-1.41M2 12h2m16 0h2M6.34 6.34 4.93 4.93m14.14 14.14-1.41-1.41"/></svg>
@@ -55,6 +59,58 @@
 </header>
 
 <main class="wrap" id="main">
+
+  <!-- ══════ SCREEN 0: INGRESO DEL CONSULTOR ══════ -->
+  <div id="s0" class="screen">
+    <div class="hero">
+      <div class="grain"></div>
+      <div class="hero-icon-wrap">
+        <div class="hero-icon"><i data-lucide="scan-search"></i></div>
+      </div>
+      <h1>Diagnóstico <span>D360°</span></h1>
+      <p class="sub">Panel del consultor: conduzca la reunión con su cliente, guarde la sesión y comparta los resultados.</p>
+    </div>
+    <div class="ob-card">
+      <h2><i data-lucide="log-in" style="width:20px;height:20px"></i> Ingreso de consultores</h2>
+      <p class="desc">Use la cuenta de Google autorizada por AlignData.</p>
+      <div class="ferr" id="lerr" role="alert"><i data-lucide="circle-alert"></i><span></span></div>
+      <button type="button" class="btn-go btn-g" id="btn-login">
+        <svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59A14.5 14.5 0 0 1 9.5 24c0-1.59.28-3.14.76-4.59l-7.98-6.19A23.99 23.99 0 0 0 0 24c0 3.77.9 7.35 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+        Ingresar con Google
+      </button>
+      <p class="hint">¿Es cliente de AlignData? Abra el enlace de resultados que le envió su consultor.</p>
+    </div>
+  </div>
+
+  <!-- ══════ SCREEN D: PANEL DE SESIONES ══════ -->
+  <div id="sd" class="screen">
+    <div class="dh">
+      <div><h2>Sesiones de diagnóstico</h2><p class="dcount" id="dcount"></p></div>
+      <button type="button" class="btn-go dh-new" onclick="nueva()"><i data-lucide="plus"></i> Nueva sesión</button>
+    </div>
+    <div class="dtools">
+      <div class="fg"><label for="dq" class="sr-only">Buscar por empresa</label><input type="search" id="dq" placeholder="Buscar por empresa…" oninput="filtrar()"></div>
+      <div class="fg"><label for="df" class="sr-only">Filtrar por estado</label>
+        <select id="df" onchange="filtrar()">
+          <option value="">Todos los estados</option>
+          <option value="en_curso">En curso</option>
+          <option value="completa">Completas</option>
+          <option value="compartida">Compartidas con el cliente</option>
+          <option value="cambios">Con cambios sin publicar</option>
+        </select>
+      </div>
+    </div>
+    <div class="sl" id="dl" aria-live="polite"></div>
+  </div>
+
+  <!-- ══════ SCREEN E: MENSAJES ══════ -->
+  <div id="se" class="screen">
+    <div class="ob-card se">
+      <h2 id="se-t"></h2>
+      <p class="desc" id="se-p"></p>
+      <div class="se-a" id="se-a"></div>
+    </div>
+  </div>
 
   <!-- ══════ SCREEN 1: ONBOARDING ══════ -->
   <div id="s1" class="screen active">
@@ -73,7 +129,7 @@
     </div>
 
     <div class="ob-card">
-      <h2><i data-lucide="building-2" style="width:20px;height:20px"></i> Datos de su organización</h2>
+      <h2><i data-lucide="building-2" style="width:20px;height:20px"></i> Datos de la organización</h2>
       <p class="desc">Esta información personaliza el diagnóstico según su sector y tamaño.</p>
 
       <div class="fg">
@@ -108,15 +164,22 @@
           </select>
         </div>
       </div>
-      <div class="fg">
-        <label for="f4">Email de contacto <span style="font-weight:500;color:var(--muted)">(opcional)</span></label>
-        <input type="email" id="f4" placeholder="nombre@empresa.cl" autocomplete="email">
+      <div class="frow">
+        <div class="fg">
+          <label for="f5">Nombre del contacto <span class="opc">(opcional)</span></label>
+          <input type="text" id="f5" placeholder="Ej: María Pérez" autocomplete="off">
+        </div>
+        <div class="fg">
+          <label for="f4">Email de contacto <span class="opc">(opcional)</span></label>
+          <input type="email" id="f4" placeholder="nombre@empresa.cl" autocomplete="email">
+        </div>
       </div>
 
       <div class="ferr" id="ferr" role="alert"><i data-lucide="circle-alert"></i><span>Complete nombre, sector y tamaño para iniciar.</span></div>
       <button type="button" class="btn-go" onclick="go()">
-        Iniciar diagnóstico <i data-lucide="arrow-right"></i>
+        <span id="go-t">Iniciar diagnóstico</span> <i data-lucide="arrow-right"></i>
       </button>
+      <button type="button" class="btn-sec only-nube" onclick="dash()"><i data-lucide="arrow-left"></i> Volver a las sesiones</button>
     </div>
   </div>
 
@@ -134,6 +197,11 @@
       </div>
       <div class="pbt" id="pgt" role="progressbar" aria-label="Avance total del diagnóstico" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="pbf gl" id="pgb" style="width:0%"></div></div>
     </div>
+    <div class="pp-act">
+      <button type="button" class="lb-btn" id="bix" aria-expanded="false" aria-controls="idxp" onclick="tix()"><i data-lucide="list-tree"></i> Índice de preguntas</button>
+      <button type="button" class="lb-btn only-nube" onclick="dash()"><i data-lucide="layout-list"></i> Sesiones</button>
+    </div>
+    <div class="idxp" id="idxp" hidden></div>
     <div id="qa"></div>
   </div>
 
@@ -144,8 +212,20 @@
 
 </main>
 
+<dialog class="dlg" id="dlg" aria-labelledby="dlg-t">
+  <div class="dlg-in">
+    <div class="dlg-h">
+      <h2 id="dlg-t"><i data-lucide="share-2"></i> Compartir con el cliente</h2>
+      <button type="button" class="dlg-x" onclick="document.getElementById('dlg').close()" aria-label="Cerrar">×</button>
+    </div>
+    <div id="dlg-body"></div>
+  </div>
+</dialog>
+
 <!-- App logic -->
 <script src="theme.js"></script>
+<script src="firebase-config.js"></script>
 <script src="app.js"></script>
+<script src="sesiones.js"></script>
 </body>
 </html>

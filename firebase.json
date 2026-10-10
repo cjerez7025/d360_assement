@@ -2,9 +2,27 @@
   "hosting": {
     "target": "d360",
     "public": "public",
-    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+    "ignore": ["firebase.json", "**/.*", "**/node_modules/**", "dev/**"],
+    "headers": [
+      {
+        "source": "**",
+        "headers": [
+          { "key": "Referrer-Policy", "value": "no-referrer" },
+          { "key": "X-Robots-Tag", "value": "noindex, nofollow" },
+          { "key": "X-Content-Type-Options", "value": "nosniff" }
+        ]
+      }
+    ],
     "rewrites": [
       { "source": "**", "destination": "/index.html" }
     ]
-  }
+  },
+  "firestore": [
+    {
+      "database": "d360",
+      "location": "southamerica-west1",
+      "rules": "firestore.d360.rules",
+      "indexes": "firestore.indexes.json"
+    }
+  ]
 }

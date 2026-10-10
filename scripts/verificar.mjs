@@ -1,5 +1,6 @@
 // Verifica la integridad de los datos y el motor del D360° (npm run verificar). Uso: node scripts/verificar.mjs [ruta a app.js]
 import fs from 'node:fs';
+import path from 'node:path';
 import vm from 'node:vm';
 
 const file = process.argv[2] || 'public/app.js';
@@ -174,6 +175,82 @@ ok(['f1', 'f2', 'f3', 'f4'].every((id) => new RegExp('<label for="' + id + '"').
 ok(/<main[^>]*id="main"/.test(paginaHtml) && /class="skip"/.test(paginaHtml), 'falta el contenedor <main> o el enlace "Saltar al contenido"');
 ok(!/bootstrap/i.test(paginaHtml), 'Bootstrap no se usa: no cargarlo');
 ok(/lucide@\d+\.\d+\.\d+/.test(paginaHtml), 'lucide debe cargarse con versión fija');
+
+seccion('10. Sesiones guardadas (consultor y cliente)');
+{
+  const lst = new E2().ga(), ult = lst[lst.length - 1];
+  const e1 = new E2();
+  ok(e1.sig(lst[0].id).id === lst[1].id && e1.ant(lst[0].id) === null && e1.sig(ult.id) === null && e1.ant(lst[1].id).id === lst[0].id, 'la navegación libre debe recorrer las preguntas en orden y terminar en los extremos');
+  e1.ans('GOB-01', 0);
+  ok(e1.sig('GOB-01').id === 'GOB-01b', 'la pregunta de profundización debe aparecer justo después de la que la dispara');
+  e1.nota('GOB-01', '  El cliente dice que TI se encarga  ');
+  ok(e1.n['GOB-01'] && e1.n['GOB-01'].includes('TI'), 'las notas de la reunión se guardan por pregunta');
+  e1.nota('GOB-01', '   ');
+  ok(!('GOB-01' in e1.n), 'una nota vacía se elimina');
+  e1.nota('GOB-02', 'x'.repeat(5000));
+  ok(e1.n['GOB-02'].length === 2000, 'las notas se limitan a 2000 caracteres');
+
+  // lo que ve el cliente: solo perfil mínimo y respuestas visibles; nunca notas ni contacto
+  const e2 = new E2();
+  e2.sp({ nombre: 'Acme SpA', sector: 'salud', 'tamaño': '11-50', email: 'ana@acme.cl', contacto: 'Ana Pérez' });
+  e2.a = { 'GOB-01': 3, 'GOB-01b': 2, 'GOB-02': 2 };
+  e2.n = { 'GOB-01': 'nota privada' };
+  const pub = e2.pub();
+  ok(Object.keys(pub).sort().join() === 'perfil,respuestas', 'lo publicado solo tiene perfil y respuestas');
+  ok(Object.keys(pub.perfil).sort().join() === 'nombre,sector,tamaño', 'el perfil publicado no incluye email ni contacto');
+  ok(!('GOB-01b' in pub.respuestas) && pub.respuestas['GOB-01'] === 3, 'no se publican respuestas de preguntas que ya no aplican');
+  ok(!JSON.stringify(pub).includes('nota privada') && !JSON.stringify(pub).includes('ana@acme.cl'), 'lo publicado no debe contener notas ni datos de contacto');
+  const e3 = new E2().cargar(pub);
+  ok(JSON.stringify(e3.sc()) === JSON.stringify(e2.sc()), 'el cliente debe ver el mismo puntaje que el consultor');
+  const e4 = new E2().cargar({ perfil: e2.p, respuestas: e2.a, notas: e2.n });
+  ok(e4.n['GOB-01'] === 'nota privada' && e4.p.contacto === 'Ana Pérez', 'cargar una sesión restaura notas y perfil');
+  ok(e2.pub().respuestas !== e2.a, 'lo publicado es una copia y no la referencia interna');
+
+  // resumen para el panel de sesiones
+  const vacio = new E2().res();
+  ok(vacio.puntaje === null && vacio.nivel === null && vacio.avance === 0 && vacio.completa === false, 'una sesión sin respuestas no tiene puntaje');
+  const lleno = new E2(); for (const q of lst) lleno.a[q.id] = 3;
+  const rl = lleno.res();
+  ok(rl.completa && rl.puntaje === 100 && rl.avance === 100 && rl.hechas === rl.total, 'una sesión con todo respondido está completa');
+
+  // guardado: con sesión en la nube no se escribe en el equipo; en modo solo lectura no se guarda nada
+  delete store['d360v3'];
+  vm.runInContext('Nube={guardar(e){globalThis.__guardados=(globalThis.__guardados||0)+1;globalThis.__sid=e.sid}}', sandbox);
+  const nube = new E2(); nube.sid = 'abc123'; nube.ans('GOB-01', 3);
+  ok(sandbox.__guardados === 1 && sandbox.__sid === 'abc123', 'con una sesión abierta cada respuesta se envía a la nube');
+  ok(!('d360v3' in store), 'con una sesión en la nube no se deja una copia de los datos del cliente en el navegador');
+  const lec = new E2(); lec.sid = 'abc123'; lec.ro = true; lec.ans('GOB-01', 3);
+  ok(sandbox.__guardados === 1 && !('d360v3' in store), 'en modo solo lectura no se guarda nada');
+  vm.runInContext('Nube=null', sandbox);
+  const local = new E2(); local.ans('GOB-01', 2);
+  ok('d360v3' in store, 'sin sesión en la nube se sigue guardando en el navegador (modo local)');
+
+  // texto que viene de personas se escapa antes de mostrarlo
+  const mal = vm.runInContext('esc', sandbox)('<img src=x onerror=alert(1)> "a" & \'b\'');
+  ok(!/[<>"']/.test(mal) && mal.includes('&amp;'), 'esc() debe neutralizar HTML');
+  ok(/esc\(pr\.nombre/.test(code), 'el nombre de la empresa debe escaparse en el informe');
+
+  // archivos de configuración y reglas de seguridad
+  const raiz = path.resolve(path.dirname(file), '..');
+  const leer = (f) => fs.readFileSync(path.join(raiz, f), 'utf8').replace(/\r\n/g, '\n');
+  const reglas = leer('firestore.d360.rules'), fbj = JSON.parse(leer('firebase.json'));
+  ok(/allow list: if false/.test(reglas), 'los resultados compartidos no deben poder listarse');
+  ok((reglas.match(/if true/g) || []).length === 1 && /allow get: if true/.test(reglas), 'la única lectura pública permitida es get de un resultado compartido');
+  ok(/match \/sesiones\/\{id\}\s*\{\s*allow read, write: if esConsultor\(\);/.test(reglas), 'las sesiones solo las ven los consultores');
+  ok(/email_verified == true/.test(reglas) && /request\.auth\.token\.email in \[/.test(reglas), 'los consultores se validan por correo verificado en una lista');
+  ok(/hasOnly\(\['perfil', 'respuestas', 'publicadoEn', 'version'\]\)/.test(reglas) && /token\.size\(\) == 32/.test(reglas), 'lo compartido solo admite esos campos y un token de 32 caracteres');
+  ok(/match \/\{document=\*\*\}\s*\{\s*allow read, write: if false;/.test(reglas), 'todo lo demás debe estar denegado');
+  ok(Array.isArray(fbj.firestore) && fbj.firestore.length === 1 && fbj.firestore[0].database === 'd360', 'solo debe publicarse la base d360 (nunca la (default) del portal)');
+  ok((fbj.hosting.ignore || []).includes('dev/**'), 'el simulador de desarrollo no debe publicarse');
+  ok(/databaseId:\s*'d360'/.test(leer('public/firebase-config.js')), 'la app debe usar la base d360');
+  const ses = leer('public/sesiones.js'), nub = leer('public/nube.js');
+  ok(/N\.compartir\(act\.id, en\.pub\(\)/.test(ses), 'solo se publica lo que devuelve en.pub()');
+  ok(/\^\[A-Za-z0-9_-\]\{32\}\$/.test(ses) && /new Uint8Array\(24\)/.test(nub), 'el token debe ser de 24 bytes al azar (32 caracteres) y validarse al abrir el enlace');
+  ok(/clearIndexedDbPersistence/.test(nub), 'al cerrar sesión se borra la copia local de los datos');
+  ok(/memoryLocalCache/.test(nub), 'el cliente no debe guardar datos en su equipo');
+  const html10 = leer('public/index.html');
+  ok(/name="referrer" content="no-referrer"/.test(html10) && /noindex/.test(html10), 'los enlaces con token no deben filtrarse por Referer ni indexarse');
+}
 
 console.log('\n' + (fallos ? '✗ ' + fallos + ' problema(s)' : '✓ Todas las verificaciones pasaron'));
 process.exit(fallos ? 1 : 0);

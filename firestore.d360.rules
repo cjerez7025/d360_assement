@@ -1,0 +1,42 @@
+rules_version = '2';
+
+// Reglas de la base nombrada «d360» del proyecto aligndata-arcop.
+// No afectan a la base (default), que es la del portal.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Consultores autorizados: cuentas de Google con el correo verificado y presente en esta lista.
+    // Para autorizar a otra persona, agregue su correo aquí y vuelva a publicar las reglas:
+    //   npx firebase-tools deploy --only firestore:d360
+    function esConsultor() {
+      return request.auth != null
+        && request.auth.token.email_verified == true
+        && request.auth.token.email in [
+          'carlos.jerez@aligndata.cl',
+          'jerezcarlos70@gmail.com'
+        ];
+    }
+
+    // Sesiones de diagnóstico (respuestas, notas de la reunión, datos del cliente): solo consultores.
+    match /sesiones/{id} {
+      allow read, write: if esConsultor();
+    }
+
+    // Resultados publicados para el cliente.
+    // Se leen de a uno conociendo el token (192 bits al azar, imposible de adivinar); NO se pueden listar.
+    // Contienen solo: nombre, sector, tamaño y respuestas. Nunca notas ni datos de contacto.
+    match /compartidos/{token} {
+      allow get: if true;
+      allow list: if false;
+      allow create, update: if esConsultor()
+        && token.size() == 32
+        && request.resource.data.keys().hasOnly(['perfil', 'respuestas', 'publicadoEn', 'version']);
+      allow delete: if esConsultor();
+    }
+
+    // Todo lo demás, denegado.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

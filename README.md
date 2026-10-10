@@ -13,8 +13,15 @@ d360-app/
     ├── index.html     # HTML limpio (sin CSS ni JS inline)
     ├── styles.css     # Todos los estilos (sistema de diseño con tokens, tema claro/oscuro)
     ├── theme.js       # Selector de tema claro/oscuro
-    └── app.js         # Lógica completa del assessment
+    ├── app.js         # Motor y cuestionario del assessment
+    ├── sesiones.js    # Sesiones guardadas: panel del consultor y vista del cliente
+    ├── nube.js        # Firebase Auth + Firestore (base «d360»)
+    └── firebase-config.js  # Configuración pública de Firebase
 ```
+
+## Sesiones guardadas (Firebase)
+
+El consultor conduce la reunión con el cliente, las sesiones se guardan en Firestore y el cliente ve sus resultados con un enlace privado. Ver [docs/SESIONES.md](docs/SESIONES.md) (roles, seguridad, puesta en marcha).
 
 ## Deploy en Cloud Run (paso a paso)
 
