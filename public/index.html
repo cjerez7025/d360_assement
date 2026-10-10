@@ -58,6 +58,16 @@
   </div>
 </header>
 
+<!-- Barra flotante del nivel: aparece bajo el encabezado cuando el panel de nivel sale de la pantalla -->
+<div class="nvbar" id="nvbar" aria-hidden="true">
+  <div class="nvbar-in">
+    <span class="pn-chip"><span class="pn-dot"></span><span id="nvb-t"></span></span>
+    <span class="pn-sc" id="nvb-s"></span>
+    <span class="nvb-q" id="nvb-q"></span>
+    <span class="pn-scale" id="nvb-sc"><span class="s0"></span><span class="s1"></span><span class="s2"></span><span class="s3"></span><span class="s4"></span></span>
+  </div>
+</div>
+
 <div class="pbanner" id="pbanner" role="status" hidden><strong>Modo de prueba.</strong> Los datos se guardan solo en este navegador, no en la nube. <button type="button" class="pb-x" onclick="salir()">Salir del modo de prueba</button></div>
 
 <main class="wrap" id="main">

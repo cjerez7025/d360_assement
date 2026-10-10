@@ -168,6 +168,8 @@ for (const [nombre, T] of Object.entries(temas)) {
   for (const n of ['lv0', 'lv1', 'lv2', 'lv3', 'lv4', 'lvn']) {
     par(n + '-ink', n + '-soft', 4.5, 'etiqueta de estado'); par(n + '-ink', 'surface', 4.5, 'texto de estado');
     par(n + '-mark', 'surface', 3, 'marca de estado'); par(n + '-mark', 'sunk', 3, 'barra de medidor');
+    const fondoPantalla = mezcla(T[n + '-soft'], T.bg, 0.7); // fondo de TODA la pantalla según el nivel
+    for (const [fg, que] of [['muted', 'texto atenuado'], ['text-2', 'texto'], ['text', 'texto'], ['brand-ink', 'texto de marca']]) { const r = cr(T[fg], fondoPantalla); ok(r >= 4.5, `${nombre}: ${que} sobre el fondo de pantalla tintado ${n} tiene contraste ${r.toFixed(2)} y debe ser ≥ 4.5`); }
     const tinte = mezcla(T[n + '-soft'], T.surface, 0.45); // fondo de la tarjeta de sesión según su nivel
     for (const [fg, que] of [['muted', 'texto atenuado'], ['text-2', 'texto'], ['text', 'texto'], ['brand-ink', 'porcentaje de avance'], [n + '-ink', 'puntaje']]) { const r = cr(T[fg], tinte); ok(r >= 4.5, `${nombre}: ${que} sobre la tarjeta tintada ${n} tiene contraste ${r.toFixed(2)} y debe ser ≥ 4.5`); }
   }
@@ -177,6 +179,9 @@ for (const h of ['h0', 'h1', 'h2', 'h3', 'h4']) { const r = cr(claro[h], claro['
 for (const h of ['h0', 'h1', 'h2', 'h3', 'h4']) for (const f of ['on-navy', 'on-navy-2', 'on-navy-3']) { const fondo = mezcla(claro[h], claro.navy, 0.26); const r = cr(claro[f], fondo); ok(r >= 4.5, `panel de resultados ${h}: ${f} sobre el fondo tintado tiene contraste ${r.toFixed(2)}`); }
 ok(/@property --hc/.test(css) && [0, 1, 2, 3, 4].every((n) => new RegExp('\\.rh\\.n' + n + '\\{--hc:var\\(--h' + n + '\\)\\}').test(css)), 'el panel de resultados debe tener un color por cada nivel (n0 a n4) y una transición');
 ok([0, 1, 2, 3, 4].every((n) => new RegExp('\\.nv' + n + '\\{').test(css)) && /\.nvx\{/.test(css), 'las tarjetas de sesión deben tener un color por nivel y uno neutro');
+ok(/body\.nv0,body\.nv1,body\.nv2,body\.nv3,body\.nv4\{background-color:color-mix/.test(css) && /function pintarNivel\(/.test(code) && /classList\.add\('nv'\+n\)/.test(code), 'toda la pantalla debe tomar el color del nivel');
+ok(/id="nvbar"/.test(fs.readFileSync(file.replace(/app\.js$/, 'index.html'), 'utf8')) && /function barraNivel\(/.test(code) && /IntersectionObserver/.test(code) && /\.nvbar\{position:fixed/.test(css), 'debe haber una barra flotante con el nivel cuando el panel sale de la pantalla');
+ok(/body\{background:#fff!important/.test(impresion), 'al imprimir el fondo debe ser blanco aunque la pantalla esté tintada');
 ok(/function nivelVivo\(\)/.test(code) && /nivelVivo\(\);/.test(code) && /id="pnv-t"/.test(fs.readFileSync(file.replace(/app\.js$/, 'index.html'), 'utf8')), 'el panel de progreso debe mostrar y actualizar el nivel actual mientras se responde');
 ok(/\.pp\{background:color-mix\(in srgb,var\(--nv-soft\)/.test(css) && /@keyframes nivelPulso/.test(css), 'el panel de progreso debe cambiar de color con el nivel y destacar el cambio');
 ok(/class="rh n\$\{lvIni\}"/.test(code) && /classList\.add\('n'\+mt\.n\)/.test(code), 'el panel debe cambiar de color cuando cambia el nivel');
