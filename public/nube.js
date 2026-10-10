@@ -111,3 +111,37 @@ export async function leerCompartido(token) {
   const s = await F.getDoc(F.doc(db, 'compartidos', token));
   return s.exists() ? s.data() : null;
 }
+
+// ── reunión en vivo: el cliente sigue la pregunta del consultor y propone respuestas ──
+// en_vivo/{token}: lo escribe el consultor (pregunta actual, respuestas, notas); el cliente solo puede escribir
+// «propuestas» y «clienteVisto» (ver firestore.d360.rules). El token es el secreto y vence a las pocas horas.
+const vivoRef = (tk) => F.doc(db, 'en_vivo', tk);
+export async function vivoCrear(sid, datos, horas = 12) {
+  const tk = nuevoToken(), vence = Date.now() + horas * 3600e3;
+  await F.setDoc(vivoRef(tk), { ...datos, propuestas: {}, activo: true, creadoEn: F.serverTimestamp(), actualizadoEn: F.serverTimestamp(), venceEn: F.Timestamp.fromMillis(vence) });
+  await F.updateDoc(F.doc(db, 'sesiones', sid), { vivo: { token: tk, venceEn: vence } });
+  return { token: tk, venceEn: vence };
+}
+let vPend = null, vTmr = null;
+export function vivoEmpujar(tk, parcial) {
+  vPend = { tk, parcial: { ...(vPend && vPend.tk === tk ? vPend.parcial : {}), ...parcial } };
+  clearTimeout(vTmr); vTmr = setTimeout(vivoVaciar, 250);
+}
+async function vivoVaciar() {
+  if (!vPend) return;
+  const { tk, parcial } = vPend; vPend = null;
+  try { await F.updateDoc(vivoRef(tk), { ...parcial, actualizadoEn: F.serverTimestamp() }); } catch (e) { /* enlace cerrado o sin conexión */ }
+}
+export function vivoEscuchar(tk, cb, err) {
+  return F.onSnapshot(vivoRef(tk), (s) => cb(s.exists() ? s.data() : null), err);
+}
+export async function vivoProponer(tk, qid, v) {
+  await F.updateDoc(vivoRef(tk), new F.FieldPath('propuestas', qid), v, 'clienteVisto', F.serverTimestamp());
+}
+export async function vivoLatido(tk) {
+  try { await F.updateDoc(vivoRef(tk), 'clienteVisto', F.serverTimestamp()); } catch (e) { /* enlace cerrado */ }
+}
+export async function vivoCerrar(sid, tk) {
+  await F.deleteDoc(vivoRef(tk));
+  if (sid) await F.updateDoc(F.doc(db, 'sesiones', sid), { vivo: F.deleteField() });
+}

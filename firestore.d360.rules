@@ -35,6 +35,32 @@ service cloud.firestore {
       allow delete: if esConsultor();
     }
 
+    // Reunión en vivo: el cliente sigue la pregunta del consultor y puede PROPONER respuestas.
+    // El token (192 bits al azar) es el secreto; el enlace vence (venceEn) y el consultor puede cerrarlo (se borra).
+    // El cliente NO puede listar, crear ni borrar, y solo puede escribir sus propuestas y la marca de conexión.
+    match /en_vivo/{token} {
+      function vigente(d) {
+        return d.activo == true && d.venceEn > request.time;
+      }
+      function soloCliente() {
+        let cambios = request.resource.data.diff(resource.data).affectedKeys();
+        return cambios.hasOnly(['propuestas', 'clienteVisto'])
+          && (!('propuestas' in cambios)
+              || (request.resource.data.propuestas.size() <= 80
+                  && request.resource.data.propuestas.values().hasOnly([0, 1, 2, 3])))
+          && (!('clienteVisto' in cambios) || request.resource.data.clienteVisto == request.time);
+      }
+      function camposConsultor() {
+        return request.resource.data.keys().hasOnly(['perfil', 'qid', 'fase', 'respuestas', 'notas', 'total',
+          'propuestas', 'clienteVisto', 'activo', 'creadoEn', 'actualizadoEn', 'venceEn']);
+      }
+      allow get: if esConsultor() || vigente(resource.data);
+      allow list: if false;
+      allow create: if esConsultor() && token.size() == 32 && camposConsultor();
+      allow update: if (esConsultor() && camposConsultor()) || (vigente(resource.data) && soloCliente());
+      allow delete: if esConsultor();
+    }
+
     // Todo lo demás, denegado.
     match /{document=**} {
       allow read, write: if false;

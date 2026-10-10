@@ -221,9 +221,16 @@
     <div class="pp-act">
       <button type="button" class="lb-btn" id="bix" aria-expanded="false" aria-controls="idxp" onclick="tix()"><i data-lucide="list-tree"></i> Índice de preguntas</button>
       <button type="button" class="lb-btn only-nube" onclick="dash()"><i data-lucide="layout-list"></i> Sesiones</button>
+      <button type="button" class="lb-btn only-nube" id="bviv" onclick="vivoDlg()" aria-haspopup="dialog"><i data-lucide="video"></i> <span id="bviv-t">Invitar al cliente</span></button>
     </div>
     <div class="idxp" id="idxp" hidden></div>
     <div id="qa"></div>
+  </div>
+
+  <!-- ══════ SCREEN V: CLIENTE EN VIVO ══════ -->
+  <div id="sv" class="screen">
+    <div id="sv-h"></div>
+    <div id="sv-q"></div>
   </div>
 
   <!-- ══════ SCREEN 3: RESULTS ══════ -->
@@ -232,6 +239,16 @@
   </div>
 
 </main>
+
+<dialog class="dlg" id="dlg-vivo" aria-labelledby="dv-t">
+  <div class="dlg-in">
+    <div class="dlg-h">
+      <h2 id="dv-t"><i data-lucide="video"></i> Reunión en vivo con el cliente</h2>
+      <button type="button" class="dlg-x" onclick="document.getElementById('dlg-vivo').close()" aria-label="Cerrar">×</button>
+    </div>
+    <div id="dv-body"></div>
+  </div>
+</dialog>
 
 <dialog class="dlg" id="dlg" aria-labelledby="dlg-t">
   <div class="dlg-in">
@@ -248,5 +265,6 @@
 <script src="firebase-config.js"></script>
 <script src="app.js"></script>
 <script src="sesiones.js"></script>
+<script src="vivo.js"></script>
 </body>
 </html>

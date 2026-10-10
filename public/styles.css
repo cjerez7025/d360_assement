@@ -528,6 +528,33 @@ body.nv0 .topbar,body.nv1 .topbar,body.nv2 .topbar,body.nv3 .topbar,body.nv4 .to
 .notas textarea{display:block;width:calc(100% - 28px);margin:0 14px 14px;min-height:88px;padding:12px;border:1.5px solid var(--field);border-radius:var(--rs);background:var(--surface);color:var(--text);font:inherit;font-size:var(--fs-base);resize:vertical}
 .notas textarea:focus{outline:none;border-color:var(--brand-ink);box-shadow:0 0 0 4px color-mix(in srgb,var(--brand) 28%,transparent)}
 
+/* reunión en vivo: propuesta del cliente (vista del consultor) */
+.propb{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--lv2-soft);color:var(--lv2-ink);border:1px solid color-mix(in srgb,var(--lv2-ink) 35%,transparent);border-radius:var(--rs);padding:10px 14px;margin:0 0 12px;font-size:var(--fs-sm)}
+.propb[hidden]{display:none}
+.propb.ok{background:var(--lv4-soft);color:var(--lv4-ink);border-color:color-mix(in srgb,var(--lv4-ink) 35%,transparent)}
+.propb svg{width:18px;height:18px}
+.propb .be{margin-left:auto;padding:6px 14px;min-height:40px}
+.optw.prop .opt{outline:2px dashed var(--lv2-mark);outline-offset:2px}
+.optw.prop .ol::after{content:' · propuesta del cliente';font-size:var(--fs-xs);font-weight:700;color:var(--lv2-ink)}
+.lb-btn.en-vivo{background:var(--lv2-soft);color:var(--lv2-ink);border-color:color-mix(in srgb,var(--lv2-ink) 35%,transparent)}
+.lb-btn.conectado{background:var(--lv4-soft);color:var(--lv4-ink);border-color:color-mix(in srgb,var(--lv4-ink) 35%,transparent)}
+.dv-l{margin:0 0 14px 20px;display:flex;flex-direction:column;gap:6px;font-size:var(--fs-base);line-height:1.5}
+.dv-n{font-size:var(--fs-sm);color:var(--muted)}
+
+/* reunión en vivo: vista del cliente */
+.invitado .topbar-right .cd{display:none}
+.vh .vh-n,.vh-n{display:flex;align-items:center;gap:8px;font-size:var(--fs-xs);color:var(--muted);margin-top:10px}
+.vh .pn-dot{background:var(--lv4-mark)}
+.vh-hint{margin-top:14px;font-size:var(--fs-sm);color:var(--muted)}
+.vnota{margin-top:16px}
+.vespera{text-align:center;padding:40px 24px}
+.vespera svg{width:36px;height:36px;color:var(--brand-ink);margin-bottom:10px}
+.tag{display:inline-block;margin-left:8px;padding:2px 10px;border-radius:99px;font-size:var(--fs-xs);font-weight:700;vertical-align:middle}
+.tag-conf{background:var(--lv4-soft);color:var(--lv4-ink)}
+.tag-prop{background:var(--lv3-soft);color:var(--lv3-ink)}
+.opt.conf{border-color:var(--lv4-mark);background:var(--lv4-soft);box-shadow:inset 0 0 0 1px var(--lv4-mark)}
+.opt.conf .rd{border-color:var(--lv4-mark);background:var(--lv4-mark)}
+
 /* notas de la reunión en los resultados */
 .nt{padding:14px 0;border-bottom:1px solid var(--border)}
 .nt:last-child{border-bottom:none;padding-bottom:4px}

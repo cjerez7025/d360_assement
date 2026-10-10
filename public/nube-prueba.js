@@ -2,10 +2,13 @@
    Se usa en localhost con ?mock=1 y, mientras firebase-config.js tenga «prueba: true», en el sitio publicado
    con el botón «Probar sin cuenta». Los datos NO salen de este navegador. */
 const K = 'd360mock';
-const leerTodo = () => { try { return JSON.parse(localStorage.getItem(K)) || { sesiones: {}, compartidos: {}, sesion: null }; } catch (e) { return { sesiones: {}, compartidos: {}, sesion: null }; } };
+const vacio = () => ({ sesiones: {}, compartidos: {}, vivo: {}, sesion: null });
+const leerTodo = () => { try { return { ...vacio(), ...(JSON.parse(localStorage.getItem(K)) || {}) }; } catch (e) { return vacio(); } };
 const guardarTodo = (d) => { localStorage.setItem(K, JSON.stringify(d)); oyentes.forEach((f) => f()); };
 const aviso = (estado) => window.dispatchEvent(new CustomEvent('nube:estado', { detail: { estado } }));
 const oyentes = new Set();
+// otra pestaña del mismo navegador escribió: se avisa a quienes escuchan (así se prueba la reunión en vivo con dos pestañas)
+window.addEventListener('storage', (e) => { if (e.key === K) oyentes.forEach((f) => f()); });
 let cbUsuario = null;
 const USUARIO = { uid: 'prueba-1', email: 'modo prueba (este navegador)', nombre: 'Modo de prueba' };
 
@@ -51,3 +54,28 @@ export async function revocar(sid, token) {
   const d = leerTodo(); delete d.compartidos[token]; if (d.sesiones[sid]) d.sesiones[sid].compartido = null; guardarTodo(d);
 }
 export async function leerCompartido(token) { return leerTodo().compartidos[token] || null; }
+
+// ── reunión en vivo (simulada) ──
+const tokenNuevo = () => Array.from(crypto.getRandomValues(new Uint8Array(32))).map((b) => 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_'[b % 64]).join('');
+export async function vivoCrear(sid, datos, horas = 12) {
+  const tk = tokenNuevo(), vence = Date.now() + horas * 3600e3, d = leerTodo();
+  d.vivo[tk] = { ...datos, propuestas: {}, activo: true, creadoEn: Date.now(), actualizadoEn: Date.now(), venceEn: vence };
+  if (d.sesiones[sid]) d.sesiones[sid].vivo = { token: tk, venceEn: vence };
+  guardarTodo(d); return { token: tk, venceEn: vence };
+}
+export function vivoEmpujar(tk, parcial) {
+  const d = leerTodo(); if (!d.vivo[tk]) return;
+  Object.assign(d.vivo[tk], parcial, { actualizadoEn: Date.now() }); guardarTodo(d);
+}
+export function vivoEscuchar(tk, cb) {
+  let ultimo = null;
+  const emitir = () => { const doc = leerTodo().vivo[tk] || null, txt = JSON.stringify(doc); if (txt !== ultimo) { ultimo = txt; cb(doc); } };
+  oyentes.add(emitir); emitir();
+  return () => oyentes.delete(emitir);
+}
+export async function vivoProponer(tk, qid, v) {
+  const d = leerTodo(); if (!d.vivo[tk]) throw new Error('enlace cerrado');
+  d.vivo[tk].propuestas = { ...d.vivo[tk].propuestas, [qid]: v }; d.vivo[tk].clienteVisto = Date.now(); guardarTodo(d);
+}
+export async function vivoLatido(tk) { const d = leerTodo(); if (d.vivo[tk]) { d.vivo[tk].clienteVisto = Date.now(); guardarTodo(d); } }
+export async function vivoCerrar(sid, tk) { const d = leerTodo(); delete d.vivo[tk]; if (d.sesiones[sid]) d.sesiones[sid].vivo = null; guardarTodo(d); }

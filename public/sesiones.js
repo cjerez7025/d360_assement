@@ -12,7 +12,7 @@
   // modo de prueba: solo si firebase-config.js lo permite (prueba: true); los datos quedan en este navegador
   const PRUEBA = !!CFG.prueba && (guardado('d360prueba') === '1' || P.get('prueba') === '1');
   const MOCK = PRUEBA || (P.get('mock') === '1' && location.hostname === 'localhost');
-  let N = null, user = null, desub = null, lista = [], act = null, confirmaRev = false;
+  let N = null, user = null, desub = null, lista = [], act = null, confirmaRev = false, vivoOff = null, confirmaVivo = false;
   const ms = (t) => (t && t.toMillis ? t.toMillis() : typeof t === 'number' ? t : null);
 
   function solo(id) { document.querySelectorAll('.screen').forEach((s) => s.classList.remove('active')); $(id).classList.add('active'); }
@@ -44,6 +44,7 @@
     const sufijo = location.hostname === 'localhost' ? '?t=' + Date.now() : '';
     try { N = await import((MOCK ? './nube-prueba.js' : './nube.js') + sufijo); }
     catch (e) { msg('No se pudo conectar', 'El servicio de sesiones no está disponible. Revise su conexión e intente de nuevo.', [['Reintentar', () => location.reload()]]); return; }
+    if (P.get('v')) return window.vivoCliente(N, P.get('v'));
     const tk = P.get('r');
     if (tk) return cliente(tk);
     modo = 'auditor'; Nube = N; N.iniciar({ persistente: true });
@@ -138,7 +139,8 @@
   window.filtrar = renderDash;
   window.dash = async function () {
     if (N && N.vaciarYa) { try { await N.vaciarYa(); } catch (e) { /* se reintenta al reconectar */ } }
-    en.rs(); cs = null; act = null; $('saveind').hidden = true;
+    vivoPush('pausa'); if (vivoOff) { vivoOff(); vivoOff = null; }
+    en.rs(); cs = null; act = null; $('saveind').hidden = true; vivoBtn();
     ss('sd'); renderDash();
   };
   window.nueva = function () {
@@ -163,6 +165,7 @@
     d = d || lista.find((s) => s.id === id);
     if (!d) { msg('No se encontró la sesión', 'Puede que otra persona la haya eliminado.', [['Volver a las sesiones', () => window.dash()]]); throw new Error('sin sesión'); }
     en.rs(); en.cargar(d); en.sid = id; modo = 'auditor'; act = { id, compartido: d.compartido || null };
+    en.viv = d.vivo && d.vivo.venceEn > Date.now() ? d.vivo : null; vivoOn();
   }
   window.abrirSes = async (id) => { try { await cargar(id); } catch (e) { return; } ss('s2'); const n = en.nx(); if (n) rq(n.id); else sr(); };
   window.resSes = async (id) => { try { await cargar(id); } catch (e) { return; } sr(); };
@@ -221,6 +224,59 @@ ${parcial}<div class="dlg-act"><a class="be" href="${esc(url)}" target="_blank" 
     catch (e) { i.select(); ok.textContent = 'Seleccionado: use Ctrl+C para copiarlo.'; }
   };
   $('dlg').addEventListener('click', (e) => { if (e.target === $('dlg')) $('dlg').close(); }); // clic fuera = cerrar
+
+  // ── reunión en vivo (el cliente sigue la pregunta desde su propio dispositivo y propone respuestas) ──
+  const enlaceVivo = (tk) => location.origin + location.pathname + '?v=' + tk + (PRUEBA ? '&prueba=1' : MOCK ? '&mock=1' : '');
+  function vivoBtn() {
+    const t = $('bviv-t'), b = $('bviv'); if (!t) return;
+    const conectado = !!(en.viv && en.clienteVisto && Date.now() - en.clienteVisto < 60000);
+    t.textContent = !en.viv ? 'Invitar al cliente' : conectado ? 'Cliente conectado' : 'En vivo · esperando al cliente';
+    b.classList.toggle('en-vivo', !!en.viv); b.classList.toggle('conectado', conectado);
+  }
+  setInterval(vivoBtn, 15000);
+  function vivoOn() {
+    if (vivoOff) { vivoOff(); vivoOff = null; }
+    en.prop = {}; en.clienteVisto = null; vivoBtn();
+    if (!en.viv || !N.vivoEscuchar) return;
+    vivoOff = N.vivoEscuchar(en.viv.token, (d) => {
+      if (!d) { en.viv = null; en.prop = {}; en.clienteVisto = null; }
+      else { en.prop = d.propuestas || {}; en.clienteVisto = ms(d.clienteVisto); }
+      propUI(); vivoBtn(); if ($('dlg-vivo').open) vivoRender();
+    }, () => {});
+  }
+  function vivoRender() {
+    if (!en.viv) {
+      $('dv-body').innerHTML = `<p>Invite a su cliente a seguir la reunión desde su propio computador o celular mientras siguen conectados por la videollamada.</p>
+<ul class="dv-l"><li>Verá <strong>la misma pregunta</strong> que usted, con sus ejemplos, y las notas que usted escriba.</li><li>Podrá <strong>proponer una respuesta</strong>: usted la ve en su pantalla y decide cuál queda registrada.</li><li><strong>No</strong> ve el nivel ni los puntajes mientras responde.</li><li>El enlace vence en 12 horas y usted puede cerrarlo cuando quiera.</li></ul>
+<div class="dlg-act"><button class="be be-p" id="dv-go" onclick="vivoCrear()"><i data-lucide="link"></i>Crear enlace en vivo</button></div>`;
+    } else {
+      const url = enlaceVivo(en.viv.token), on = !!(en.clienteVisto && Date.now() - en.clienteVisto < 60000), n = Object.keys(en.prop).length;
+      $('dv-body').innerHTML = `<p class="${on ? 'dlg-ok' : 'dlg-warn'}" role="status"><i data-lucide="${on ? 'circle-check' : 'clock'}"></i>${on ? 'El cliente está conectado.' : 'Esperando que el cliente abra el enlace.'}${n ? ' Ha propuesto respuesta en ' + n + (n === 1 ? ' pregunta.' : ' preguntas.') : ''}</p>
+<label for="dv-url" class="dlg-l">Enlace para el cliente (envíelo por el chat de la videollamada)</label>
+<div class="dlg-url"><input id="dv-url" readonly value="${esc(url)}" onfocus="this.select()"><button class="be be-p" onclick="vivoCopiar()"><i data-lucide="copy"></i>Copiar</button></div><p class="dlg-ok" id="dv-cp" role="status"></p>
+<p class="dv-n">Vence el ${fchd(new Date(en.viv.venceEn))} a las ${new Date(en.viv.venceEn).toTimeString().slice(0, 5)}. Al terminarla, el enlace deja de funcionar.</p>
+<div class="dlg-act"><button class="be dng" onclick="vivoTerminar()">${confirmaVivo ? 'Confirmar: terminar la reunión en vivo' : 'Terminar la reunión en vivo'}</button></div>`;
+    }
+    lucide.createIcons();
+  }
+  window.vivoDlg = () => { if (!en.sid) return; confirmaVivo = false; vivoRender(); const d = $('dlg-vivo'); if (!d.open) d.showModal(); };
+  window.vivoCrear = async () => {
+    const b = $('dv-go'); if (b) b.disabled = true;
+    try {
+      const enPregunta = !!document.querySelector('#s2.active'), enRes = !!document.querySelector('#s3.active');
+      const datos = { perfil: { nombre: String((en.p && en.p.nombre) || '').slice(0, 200) }, ...vivoEstado(en, enPregunta ? curQ : null, enRes ? 'resultados' : enPregunta ? 'pregunta' : 'pausa') };
+      en.viv = await N.vivoCrear(en.sid, datos); vivoOn();
+    } catch (e) { $('dv-body').insertAdjacentHTML('afterbegin', '<p class="dlg-warn" role="alert">No se pudo crear el enlace (' + esc(e.code || e.message) + '). Intente de nuevo.</p>'); if (b) b.disabled = false; return; }
+    vivoRender();
+  };
+  window.vivoCopiar = async () => { const i = $('dv-url'), ok = $('dv-cp'); try { await navigator.clipboard.writeText(i.value); ok.textContent = 'Enlace copiado.'; } catch (e) { i.select(); ok.textContent = 'Seleccionado: use Ctrl+C para copiarlo.'; } };
+  window.vivoTerminar = async () => {
+    if (!confirmaVivo) { confirmaVivo = true; vivoRender(); return; }
+    try { await N.vivoCerrar(en.sid, en.viv.token); } catch (e) { $('dv-body').insertAdjacentHTML('afterbegin', '<p class="dlg-warn" role="alert">No se pudo cerrar (' + esc(e.code || e.message) + ').</p>'); return; }
+    if (vivoOff) { vivoOff(); vivoOff = null; }
+    en.viv = null; en.prop = {}; en.clienteVisto = null; confirmaVivo = false; propUI(); vivoBtn(); vivoRender();
+  };
+  $('dlg-vivo').addEventListener('click', (e) => { if (e.target === $('dlg-vivo')) $('dlg-vivo').close(); });
 
   arrancar();
 })();

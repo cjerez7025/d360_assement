@@ -285,5 +285,28 @@ seccion('10. Sesiones guardadas (consultor y cliente)');
   ok(/name="referrer" content="no-referrer"/.test(html10) && /noindex/.test(html10), 'los enlaces con token no deben filtrarse por Referer ni indexarse');
 }
 
+seccion('11. Reunión en vivo (el cliente propone, el consultor confirma)');
+{
+  const raiz2 = path.resolve(path.dirname(file), '..');
+  const leer2 = (f) => fs.readFileSync(path.join(raiz2, f), 'utf8').replace(/\r\n/g, '\n');
+  const e = new E2(); e.a = { 'GOB-01': 3, 'GOB-01b': 2 }; e.n = { 'GOB-01': 'nota visible', 'GOB-01b': 'no aplica', 'GOB-02': '  ' };
+  const st = sandbox.vivoEstado(e, 'GOB-02', 'pregunta');
+  ok(st.qid === 'GOB-02' && st.fase === 'pregunta' && st.respuestas['GOB-01'] === 3 && !('GOB-01b' in st.respuestas), 'el estado en vivo lleva la pregunta actual y solo las respuestas de preguntas que aplican');
+  ok(st.notas['GOB-01'] === 'nota visible' && !('GOB-01b' in st.notas) && !('GOB-02' in st.notas) && st.total === e.ga().length, 'el estado en vivo lleva las notas que aplican y no las vacías');
+  ok(Object.keys(st).sort().join() === 'fase,notas,qid,respuestas,total', 'el estado en vivo no incluye puntajes, niveles ni datos de contacto');
+  ok(sandbox.vivoEstado(e, null, 'resultados').qid === null && sandbox.vivoEstado(e, null).fase === 'pausa', 'sin pregunta actual el cliente ve «pausa» o «resultados»');
+  const rv = leer2('firestore.d360.rules'), vj = leer2('public/vivo.js'), nb = leer2('public/nube.js'), nbp = leer2('public/nube-prueba.js'), ss2 = leer2('public/sesiones.js');
+  ok(/match \/en_vivo\/\{token\}/.test(rv) && /allow list: if false;[\s\S]*allow create: if esConsultor\(\)/.test(rv.slice(rv.indexOf('en_vivo'))), 'en_vivo: no se puede listar y solo el consultor crea');
+  ok(/allow delete: if esConsultor\(\);/.test(rv.slice(rv.indexOf('en_vivo'))), 'en_vivo: solo el consultor cierra (borra) la reunión');
+  ok(/affectedKeys\(\);\s+return cambios\.hasOnly\(\['propuestas', 'clienteVisto'\]\)/.test(rv), 'el cliente solo puede escribir sus propuestas y la marca de conexión');
+  ok(/values\(\)\.hasOnly\(\[0, 1, 2, 3\]\)/.test(rv) && /propuestas\.size\(\) <= 80/.test(rv) && /clienteVisto == request\.time/.test(rv), 'las propuestas deben ser valores 0 a 3, acotadas, y la marca de conexión debe ser la hora del servidor');
+  ok(/venceEn > request\.time/.test(rv) && /d\.activo == true/.test(rv), 'el enlace en vivo debe estar activo y vigente');
+  ok((rv.match(/if true/g) || []).length === 1, 'la única regla abierta sigue siendo leer un resultado compartido');
+  ok(/new F\.FieldPath\('propuestas', qid\)/.test(nb) && /vivoCerrar/.test(nb) && /vivoCerrar/.test(nbp) && /storage/.test(nbp), 'el módulo de nube y el de prueba deben tener la reunión en vivo (el de prueba sincroniza entre pestañas)');
+  ok(!/\.sc\(|\.ml\(|pintarNivel|puntaje/.test(vj.replace(/\/\*[\s\S]*?\*\//, '')), 'la vista en vivo del cliente no muestra niveles ni puntajes');
+  ok(/vivoCliente\(N, P\.get\('v'\)\)/.test(ss2), 'el enlace ?v= debe abrir la vista del cliente en vivo');
+  ok(/id="sv"/.test(leer2('public/index.html')) && /src="vivo\.js"/.test(leer2('public/index.html')), 'falta la pantalla o el script de la vista en vivo');
+}
+
 console.log('\n' + (fallos ? '✗ ' + fallos + ' problema(s)' : '✓ Todas las verificaciones pasaron'));
 process.exit(fallos ? 1 : 0);

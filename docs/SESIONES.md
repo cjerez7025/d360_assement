@@ -8,7 +8,7 @@ El D360° pasa de ser un cuestionario público a una **herramienta para conducir
 |---|---|---|
 | Entra con | Cuenta de Google autorizada | Un enlace privado con código |
 | Ve las preguntas y registra respuestas | Sí, navegando libremente (índice, atrás, saltar) | No |
-| Escribe notas de la reunión por pregunta | Sí (solo las ve el consultor) | No las ve |
+| Escribe notas de la reunión por pregunta | Sí | Las ve (en la reunión en vivo y en sus resultados) |
 | Ve el panel con todas las sesiones y retoma cualquiera | Sí | No |
 | Ve los resultados (puntaje, radar, brechas, plan, semáforo, alertas) | Sí, siempre | Sí, **lo que el consultor publicó**, en modo lectura |
 | Descarga el PDF | Sí | Sí |
@@ -40,7 +40,13 @@ sesiones/{id}          Solo consultores autorizados
 compartidos/{token}    Lectura por enlace; solo consultores escriben
   perfil               nombre, sector, tamaño         ← sin email ni contacto
   respuestas           solo las de preguntas visibles
+  notas                las de preguntas visibles: el cliente las ve
   publicadoEn, version
+
+en_vivo/{token}        Reunión en vivo (ver abajo)
+  perfil.nombre, qid, fase, respuestas, notas, total   ← lo escribe el consultor
+  propuestas, clienteVisto                             ← lo escribe el cliente
+  activo, venceEn, creadoEn, actualizadoEn
 ```
 
 ## Seguridad
@@ -57,12 +63,25 @@ Las reglas están en [`firestore.d360.rules`](../firestore.d360.rules):
 
 **Protección de datos (Ley 21.719).** Se guarda lo mínimo: datos de la empresa, un contacto opcional, respuestas y notas. Conviene definir cuánto tiempo se conservan las sesiones y avisar al cliente de esto en la reunión. Hoy no hay botón para eliminar una sesión (se hace desde la consola de Firebase).
 
+## Reunión en vivo (cliente por su propio dispositivo)
+
+Para reuniones por Zoom u otra plataforma: el consultor pulsa **Invitar al cliente** y envía el enlace por el chat de la videollamada. El cliente lo abre en su computador o celular y:
+
+- ve **la misma pregunta** que el consultor, con los ejemplos de cada respuesta y las notas que este escribe;
+- puede **proponer una respuesta**; el consultor la ve en su pantalla («El cliente propone…»), y la **confirma** con un botón o elige otra: la respuesta registrada siempre es la que decide el consultor;
+- **no ve** el nivel ni los puntajes mientras se responde (eso se comparte después, con el enlace de resultados).
+
+El enlace vence a las 12 horas y el consultor lo cierra con «Terminar la reunión en vivo». El botón del consultor muestra si el cliente está conectado. Los datos viven en `en_vivo/{token}`: lo escribe el consultor (pregunta actual, respuestas, notas) y el cliente solo puede escribir sus propuestas (valores 0 a 3) y su marca de conexión; no puede listar, crear ni borrar.
+
+En el modo de prueba la reunión en vivo se puede probar abriendo el enlace en **otra pestaña del mismo navegador** (los datos se sincronizan entre pestañas).
+
 ## Archivos
 
 | Archivo | Rol |
 |---|---|
 | `public/nube.js` | Firebase Auth (Google) + Firestore: sesiones, guardado automático, enlace compartido |
-| `public/sesiones.js` | Pantallas del consultor (ingreso, panel, compartir) y vista del cliente |
+| `public/sesiones.js` | Pantallas del consultor (ingreso, panel, compartir, invitar al cliente en vivo) y vista de resultados del cliente |
+| `public/vivo.js` | Vista del cliente en la reunión en vivo (`?v=`): sigue la pregunta y propone respuestas |
 | `public/firebase-config.js` | Configuración pública. **Si se elimina, la app vuelve al modo local** (sin sesiones en la nube) |
 | `public/app.js` | Motor y cuestionario: navegación libre, notas, `pub()` (qué se publica), `res()` (resumen) |
 | `public/nube-prueba.js` | Modo de prueba: misma interfaz que `nube.js` pero guardando en el navegador, sin Firebase. Se activa con el botón «Probar sin cuenta» mientras `firebase-config.js` tenga `prueba: true`, y en localhost con `?mock=1` |
