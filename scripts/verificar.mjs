@@ -116,6 +116,11 @@ for (const o of q04.op) {
 ok(sandbox.exo(q04, 3).includes('Cómo comprobarlo') && !sandbox.exo(q04, 1).includes('Cómo comprobarlo'), '"Cómo comprobarlo" solo acompaña a la respuesta correcta');
 ok(sandbox.exo({ ex: [] }, 1) === '', 'una respuesta sin ejemplo no muestra globo');
 ok(typeof sandbox.ejo === 'function' && typeof sandbox.ejc === 'function' && typeof sandbox.tgl === 'function', 'faltan las funciones que abren y cierran los globos y paneles');
+ok(sandbox.glosaArt('Arts. 16 ter y 16 sexies').includes('16 ter') && sandbox.glosaArt('Arts. 16 ter y 16 sexies').includes('tercer') && sandbox.glosaArt('Arts. 16 ter y 16 sexies').includes('sexto'), 'la glosa de «16 ter y 16 sexies» debe explicar qué número de artículo es cada uno');
+ok(sandbox.glosaArt('Art. 12') === '' && sandbox.glosaArt('Arts. 4 a 11') === '', 'las referencias sin sufijo latino no llevan glosa');
+ok(/quáter/.test(sandbox.glosaArt('Arts. 14 quáter a 14 sexies')) && sandbox.sufArt('Arts. 14 quáter a 14 sexies').join() === 'quáter,sexies', 'debe reconocer quáter y sexies');
+ok(Q.every((q) => sandbox.temaQ(q)), 'cada pregunta debe tener un tema (la obligación del semáforo que la evalúa) para su etiqueta');
+ok(Q.filter((q) => sandbox.glosaArt(q.ar)).length >= 5, 'varias preguntas citan artículos con sufijo latino y deben llevar su explicación');
 ok(/class="optw/.test(code) && /onclick="ejo\(this\)"/.test(code), 'cada respuesta debe tener su botón de ejemplo');
 ok(/Escape/.test(code) && /closest\('\.ejb'\)/.test(code), 'el globo debe cerrarse con Esc y con un clic fuera');
 ok(!/id="exp"|dlg-ej|Ver ejemplos/.test(code) && !/id="dlg-ej"/.test(fs.readFileSync(file.replace(/app\.js$/, 'index.html'), 'utf8')), 'ya no hay botón general ni ventana modal de ejemplos');

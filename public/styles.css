@@ -206,6 +206,11 @@ svg{flex-shrink:0}
 
 /* ── pregunta ── */
 .qc{background:var(--surface);border-radius:var(--r);padding:36px;box-shadow:var(--shadow-md);border:1px solid var(--border);animation:su .45s var(--ease)}
+.qh{display:flex;align-items:center;flex-wrap:wrap;gap:8px 12px;margin-bottom:20px}
+.qh .qdt{margin-bottom:0}
+.art-i{min-height:36px;padding:4px 14px;border-radius:99px;border:1px dashed color-mix(in srgb,var(--brand-ink) 45%,transparent);background:transparent;color:var(--brand-ink);font-size:var(--fs-sm);font-weight:600;transition:background-color .2s}
+.art-i:hover{background:var(--brand-soft)}
+.art-i[aria-expanded="true"]{background:var(--brand-ink);color:var(--on-ink);border-style:solid}
 .qdt{display:inline-flex;align-items:center;gap:7px;background:var(--brand-soft);color:var(--brand-ink);font-size:var(--fs-xs);font-weight:700;padding:6px 14px;border-radius:8px;text-transform:uppercase;letter-spacing:.07em;margin-bottom:20px;line-height:1.35}
 .qdt svg{width:14px;height:14px}
 .qt{font-family:var(--font-d);font-size:clamp(1.25rem,1.08rem + .8vw,1.5rem);font-weight:700;line-height:1.35;color:var(--text);margin-bottom:8px;letter-spacing:-.02em;outline:none;text-wrap:balance}
