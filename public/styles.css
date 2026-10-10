@@ -481,6 +481,8 @@ body.nv0 .topbar,body.nv1 .topbar,body.nv2 .topbar,body.nv3 .topbar,body.nv4 .to
 .nvbar.on{transform:none;opacity:1}
 .nvbar-in{max-width:840px;margin:0 auto;padding:7px 16px;display:flex;align-items:center;gap:6px 12px}
 .nvbar .pn-chip{padding:3px 12px}
+.nvb-d{font-size:var(--fs-sm);font-weight:700;color:var(--text);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nvb-d:empty{display:none}
 .nvb-q{margin-left:auto;font-size:var(--fs-sm);color:var(--text-2);white-space:nowrap}
 .nvbar .pn-scale{margin-left:0;width:90px}
 /* la tarjeta toma el color del nivel de la sesión: fondo, borde y franja lateral */
@@ -675,8 +677,10 @@ a.be{text-decoration:none}
   .cta{padding:34px 20px}
   .bc{width:100%}
   .uemail{display:none}
-  .nvb-q{display:none}
-  .nvbar .pn-scale{margin-left:auto;width:70px}
+  .nvbar-in{flex-wrap:wrap}
+  .nvbar .pn-scale{order:3;margin-left:auto;width:70px}
+  .nvb-d{order:4;flex:1 1 auto}
+  .nvb-q{order:5;margin-left:0;font-size:var(--fs-xs)}
   .saveind{max-width:120px}
   .dtools{grid-template-columns:1fr}
   .sl{grid-template-columns:1fr}

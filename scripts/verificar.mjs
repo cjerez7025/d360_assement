@@ -181,6 +181,7 @@ ok(/@property --hc/.test(css) && [0, 1, 2, 3, 4].every((n) => new RegExp('\\.rh\
 ok([0, 1, 2, 3, 4].every((n) => new RegExp('\\.nv' + n + '\\{').test(css)) && /\.nvx\{/.test(css), 'las tarjetas de sesión deben tener un color por nivel y uno neutro');
 ok(/body\.nv0,body\.nv1,body\.nv2,body\.nv3,body\.nv4\{background-color:color-mix/.test(css) && /function pintarNivel\(/.test(code) && /classList\.add\('nv'\+n\)/.test(code), 'toda la pantalla debe tomar el color del nivel');
 ok(/id="nvbar"/.test(fs.readFileSync(file.replace(/app\.js$/, 'index.html'), 'utf8')) && /function barraNivel\(/.test(code) && /IntersectionObserver/.test(code) && /\.nvbar\{position:fixed/.test(css), 'debe haber una barra flotante con el nivel cuando el panel sale de la pantalla');
+ok(/id="nvb-d"/.test(fs.readFileSync(file.replace(/app\.js$/, 'index.html'), 'utf8')) && /getElementById\('nvb-d'\)\.textContent=dm/.test(code), 'la barra flotante debe mostrar el nombre de la dimensión actual');
 ok(/body\{background:#fff!important/.test(impresion), 'al imprimir el fondo debe ser blanco aunque la pantalla esté tintada');
 ok(/function nivelVivo\(\)/.test(code) && /nivelVivo\(\);/.test(code) && /id="pnv-t"/.test(fs.readFileSync(file.replace(/app\.js$/, 'index.html'), 'utf8')), 'el panel de progreso debe mostrar y actualizar el nivel actual mientras se responde');
 ok(/\.pp\{background:color-mix\(in srgb,var\(--nv-soft\)/.test(css) && /@keyframes nivelPulso/.test(css), 'el panel de progreso debe cambiar de color con el nivel y destacar el cambio');
