@@ -43,7 +43,7 @@ for (const q of Q) {
   ok(q.w > 0, q.id + ': peso inválido');
   if (q.cd) ok(Q.some((p) => p.id === q.cd.sh && p.iS), q.id + ': dispara una pregunta que no existe o no es de profundización');
   // ejemplos de ayuda ("Ver ejemplos")
-  ok(Array.isArray(q.ex) && q.ex.length >= 3, q.id + ': debe tener al menos 3 ejemplos');
+  ok(Array.isArray(q.ex) && q.op.every((o) => q.ex.some((e) => e.v === o.v)), q.id + ': cada respuesta debe tener su propio ejemplo');
   const vs = (q.ex || []).map((e) => e.v);
   ok(new Set(vs).size === vs.length, q.id + ': hay dos ejemplos para la misma respuesta');
   ok(vs.some((v) => v <= 1) && vs.includes(3), q.id + ': los ejemplos deben mostrar una respuesta baja y la correcta (3)');
@@ -106,19 +106,20 @@ ok(sem['Bloqueo temporal'] === 'green' && sem['Rectificación y supresión'] ===
 const parcial = new E2(); parcial.ans('ARC-01', 3); parcial.ans('ARC-01b', 2); parcial.ans('ARC-06', 3);
 ok(parcial.cl2().find((c) => c.ob.startsWith('Procedimiento de solicitudes')).st === 'yellow', 'promedio 2,67 → parcial');
 
-seccion('6. Botón "Ver ejemplos"');
-const html = sandbox.exh(Q.find((q) => q.id === 'ARC-04'));
-ok(html.includes('Ejemplos orientativos') && html.includes('Cómo comprobarlo'), 'el panel debe incluir el título y "Cómo comprobarlo"');
-ok(html.split('class="exi ').length - 1 === 3, 'el popup de ARC-04 debe mostrar sus 3 ejemplos');
-ok(html.includes('Respuesta: ') && html.includes('exv-3'), 'cada ejemplo debe indicar qué respuesta ilustra');
-ok(typeof sandbox.tgl === 'function', 'falta la función que abre y cierra los paneles');
-ok(/onclick="ej\('\$\{q\.id\}'\)"/.test(code) && /Ver ejemplos/.test(code), 'falta el botón "Ver ejemplos" en la plantilla de la pregunta');
-ok(typeof sandbox.ej === 'function' && /showModal\(\)/.test(code), 'los ejemplos deben abrirse en una ventana emergente (popup)');
-ok(!/id="exp"/.test(code), 'los ejemplos ya no van como panel dentro de la tarjeta');
-ok(/id="dlg-ej"/.test(fs.readFileSync(file.replace(/app\.js$/, 'index.html'), 'utf8')), 'falta la ventana emergente de ejemplos en index.html');
-ok(/dialog\[open\]/.test(code), 'los atajos del teclado no deben actuar mientras hay un popup abierto');
-const sinEx = sandbox.exh({ op: [], ex: undefined });
-ok(typeof sinEx === 'string', 'una pregunta sin ejemplos no debe romper el panel');
+seccion('6. Ejemplo asociado a cada respuesta');
+const q04 = Q.find((q) => q.id === 'ARC-04');
+for (const o of q04.op) {
+  const h = sandbox.exo(q04, o.v);
+  ok(h.includes(q04.ex.find((e) => e.v === o.v).t) && h.includes('exv-' + o.v), 'ARC-04: la respuesta ' + o.v + ' debe mostrar su propio ejemplo');
+  ok(!q04.ex.filter((e) => e.v !== o.v).some((e) => h.includes(e.t)), 'ARC-04: el globo de la respuesta ' + o.v + ' no debe incluir ejemplos de otras respuestas');
+}
+ok(sandbox.exo(q04, 3).includes('Cómo comprobarlo') && !sandbox.exo(q04, 1).includes('Cómo comprobarlo'), '"Cómo comprobarlo" solo acompaña a la respuesta correcta');
+ok(sandbox.exo({ ex: [] }, 1) === '', 'una respuesta sin ejemplo no muestra globo');
+ok(typeof sandbox.ejo === 'function' && typeof sandbox.ejc === 'function' && typeof sandbox.tgl === 'function', 'faltan las funciones que abren y cierran los globos y paneles');
+ok(/class="optw/.test(code) && /onclick="ejo\(this\)"/.test(code), 'cada respuesta debe tener su botón de ejemplo');
+ok(/Escape/.test(code) && /closest\('\.ejb'\)/.test(code), 'el globo debe cerrarse con Esc y con un clic fuera');
+ok(!/id="exp"|dlg-ej|Ver ejemplos/.test(code) && !/id="dlg-ej"/.test(fs.readFileSync(file.replace(/app\.js$/, 'index.html'), 'utf8')), 'ya no hay botón general ni ventana modal de ejemplos');
+ok(/dialog\[open\]/.test(code), 'los atajos del teclado no deben actuar mientras hay una ventana abierta');
 
 seccion('7. Informe en PDF (impresión)');
 const css = fs.readFileSync(file.replace(/app\.js$/, 'styles.css'), 'utf8').replace(/\r\n/g, '\n');
