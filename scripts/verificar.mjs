@@ -249,6 +249,7 @@ seccion('10. Sesiones guardadas (consultor y cliente)');
   ok(/match \/\{document=\*\*\}\s*\{\s*allow read, write: if false;/.test(reglas), 'todo lo demás debe estar denegado');
   ok(Array.isArray(fbj.firestore) && fbj.firestore.length === 1 && fbj.firestore[0].database === 'd360', 'solo debe publicarse la base d360 (nunca la (default) del portal)');
   ok((fbj.hosting.ignore || []).includes('dev/**'), 'el simulador de desarrollo no debe publicarse');
+  ok(fbj.hosting.headers.some((h) => h.source === '**' && h.headers.some((x) => x.key === 'Cache-Control' && x.value === 'no-cache')), 'los scripts deben revalidarse siempre: un sesiones.js nuevo con un nube.js viejo en caché rompe el ingreso');
   ok(/databaseId:\s*'d360'/.test(leer('public/firebase-config.js')), 'la app debe usar la base d360');
   const ses = leer('public/sesiones.js'), nub = leer('public/nube.js');
   ok(/N\.compartir\(act\.id, en\.pub\(\)/.test(ses), 'solo se publica lo que devuelve en.pub()');

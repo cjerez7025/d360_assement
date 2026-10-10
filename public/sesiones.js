@@ -34,11 +34,14 @@
   solo('se'); $('se-t').textContent = 'Cargando…'; // evita mostrar la portada antigua mientras se decide la vista
   async function arrancar() {
     document.body.classList.add('nube');
-    try { N = await import(MOCK ? './dev/nube-mock.js' : './nube.js'); }
+    // en localhost se evita el caché de módulos; en producción lo resuelve la cabecera Cache-Control de firebase.json
+    const sufijo = location.hostname === 'localhost' ? '?t=' + Date.now() : '';
+    try { N = await import((MOCK ? './dev/nube-mock.js' : './nube.js') + sufijo); }
     catch (e) { msg('No se pudo conectar', 'El servicio de sesiones no está disponible. Revise su conexión e intente de nuevo.', [['Reintentar', () => location.reload()]]); return; }
     const tk = P.get('r');
     if (tk) return cliente(tk);
     modo = 'auditor'; Nube = N; N.iniciar({ persistente: true });
+    if (N.resultadoRedireccion) N.resultadoRedireccion().then((cod) => { if (cod) errorIngreso(cod); });
     N.alCambiarUsuario((u) => { user = u; if (u) entrar(); else fuera(); });
   }
 
@@ -74,10 +77,19 @@
     }, (e) => { if (e && e.code === 'permission-denied') noAutorizado(); else msg('No se pudieron cargar las sesiones', 'Intente de nuevo en unos minutos.', [['Reintentar', () => location.reload()]]); });
     if (!en.sid) window.dash();
   }
+  const ERR_LOGIN = {
+    'auth/operation-not-allowed': 'El acceso con Google aún no está activado en Firebase (Authentication > Sign-in method).',
+    'auth/unauthorized-domain': 'Este sitio no está en los dominios autorizados de Firebase Authentication.',
+    'auth/network-request-failed': 'No hay conexión con el servicio de ingreso. Revise su internet.',
+    'auth/internal-error': 'Firebase respondió con un error interno. Intente de nuevo en unos minutos.'
+  };
+  function errorIngreso(codigo) {
+    const er = $('lerr'); er.querySelector('span').textContent = (ERR_LOGIN[codigo] || 'No se pudo iniciar sesión.') + ' (' + codigo + ')'; er.classList.add('show');
+  }
   $('btn-login').onclick = async () => {
-    const er = $('lerr'); er.classList.remove('show');
+    $('lerr').classList.remove('show');
     try { await N.ingresar(); }
-    catch (e) { er.querySelector('span').textContent = 'No se pudo iniciar sesión (' + (e.code || e.message) + '). Intente de nuevo.'; er.classList.add('show'); }
+    catch (e) { errorIngreso(e.code || e.message); }
   };
   window.salir = async () => { try { await N.salir(); } finally { location.reload(); } };
 

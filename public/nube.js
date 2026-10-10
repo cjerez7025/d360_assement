@@ -40,6 +40,10 @@ export async function ingresar() {
     throw e;
   }
 }
+/** Si el ingreso se hizo por redirección, devuelve el código de error (o null si fue bien o no hubo ingreso). */
+export async function resultadoRedireccion() {
+  try { await A.getRedirectResult(auth); return null; } catch (e) { return e.code || e.message; }
+}
 export async function salir() {
   await vaciarYa();
   await A.signOut(auth);

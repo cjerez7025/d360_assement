@@ -11,6 +11,7 @@ const USUARIO = { uid: 'mock-1', email: 'carlos.jerez@aligndata.cl', nombre: 'Ca
 export function iniciar() {}
 export function alCambiarUsuario(cb) { cbUsuario = cb; setTimeout(() => cb(leerTodo().sesion ? USUARIO : null), 0); return () => {}; }
 export async function ingresar() { const d = leerTodo(); d.sesion = USUARIO.uid; guardarTodo(d); cbUsuario(USUARIO); }
+export async function resultadoRedireccion() { return null; }
 export async function salir() { const d = leerTodo(); d.sesion = null; guardarTodo(d); }
 
 export function escucharSesiones(cb) {

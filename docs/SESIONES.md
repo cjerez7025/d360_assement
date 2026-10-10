@@ -66,7 +66,8 @@ Las reglas están en [`firestore.d360.rules`](../firestore.d360.rules):
 | `public/firebase-config.js` | Configuración pública. **Si se elimina, la app vuelve al modo local** (sin sesiones en la nube) |
 | `public/app.js` | Motor y cuestionario: navegación libre, notas, `pub()` (qué se publica), `res()` (resumen) |
 | `public/dev/nube-mock.js` | Simulador para probar sin nube (`http://localhost:5199/?mock=1`); no se publica |
-| `firestore.d360.rules`, `firestore.indexes.json`, `firebase.json` | Reglas e índices de la base `d360` |
+| `firestore.d360.rules`, `firestore.indexes.json` | Reglas e índices de la base `d360` |
+| `firebase.json` | Hosting (con `Cache-Control: no-cache` para que un `sesiones.js` nuevo nunca se mezcle con un `nube.js` viejo en caché) y la base `d360` |
 
 ## Puesta en marcha (una sola vez)
 
@@ -77,8 +78,8 @@ Cada paso cambia el proyecto de producción, por eso se hacen con visto bueno:
 npx firebase-tools deploy --only firestore:d360 --project aligndata-arcop
 ```
 
-2. Consola de Firebase → **Authentication → Sign-in method** → activar **Google**.
-3. **Authentication → Settings → Authorized domains** → agregar `d360-assessment.web.app` (sin esto el popup de Google falla).
+2. Consola de Firebase → [Authentication → Sign-in method](https://console.firebase.google.com/project/aligndata-arcop/authentication/providers) → activar **Google** (correo de soporte del proyecto: el de AlignData).
+3. [Authentication → Settings → Authorized domains](https://console.firebase.google.com/project/aligndata-arcop/authentication/settings) → agregar `d360-assessment.web.app` (sin esto el popup de Google falla).
 4. Publicar la app:
 
 ```bash
