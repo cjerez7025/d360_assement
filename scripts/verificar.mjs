@@ -308,5 +308,113 @@ seccion('11. Reunión en vivo (el cliente propone, el consultor confirma)');
   ok(/id="sv"/.test(leer2('public/index.html')) && /src="vivo\.js"/.test(leer2('public/index.html')), 'falta la pantalla o el script de la vista en vivo');
 }
 
+seccion('12. Referencias a la ley (popup con el texto oficial, enlace a la BCN y salto a la letra)');
+{
+  const raiz4 = path.resolve(path.dirname(file), '..');
+  const leer4 = (f) => fs.readFileSync(path.join(raiz4, f), 'utf8').replace(/\r\n/g, '\n');
+  const wl = {};
+  vm.runInNewContext(leer4('public/ley-texto.js'), { window: wl });
+  const L = wl.LEY;
+  ok(L && L.v === '2026-12-01' && L.n === 141599 && L.n21 === 1209272, 'ley-texto.js debe declarar la versión 2026-12-01 de la Ley 19.628 (idNorma 141599) y la Ley 21.719 (1209272)');
+  ok(Array.isArray(L.o) && L.o.length === Object.keys(L.a).length && L.o.every((k) => L.a[k]), 'el orden del articulado (o) debe coincidir con los artículos');
+  ok(Object.values(L.a).every((a) => Number.isInteger(a.id) && a.t.length > 3 && a.p.length > 0 && a.p.every((p) => p.length > 0 && !/Biblioteca del Congreso|p[áa]gina \d+ de/.test(p))), 'cada artículo debe tener identificador de la BCN, título y texto limpio (sin encabezados de página)');
+  ok(Object.values(L.a).every((a) => !/^Art[ií]culo/i.test(a.p[0])), 'el texto de cada artículo no debe repetir su cabecera');
+  // el texto debe ser el oficial: algunos datos ya verificados contra la ley
+  const T = (k) => L.a[k].p.join(' ');
+  ok(L.a['4'].t === 'Derechos del titular de datos' && /treinta días corridos/.test(T('11')) && /podrá designar un delegado/.test(T('50')), 'el texto de los arts. 4, 11 y 50 no coincide con la ley (6 derechos, 30 días corridos, delegado voluntario)');
+  ok(['5.000', '10.000', '20.000'].every((n) => T('35').includes(n + ' unidades tributarias mensuales')), 'el art. 35 debe traer las multas de 5.000, 10.000 y 20.000 UTM');
+  ok(L.a['14 ter'].p.filter((p) => /^[a-l]\) /.test(p)).length === 12, 'el art. 14 ter debe traer sus 12 letras (a a l)');
+
+  // detección de citas
+  const tk = (t) => sandbox.leyTokens(t).join('|');
+  const ls = (t) => sandbox.citasLey(t)[0].items.map((i) => i.a + ':' + i.l.join('')).join(' ');
+  ok(tk('Arts. 3 a), 12 y 13') === '3|12|13' && ls('Arts. 3 a), 12 y 13') === '3:a 12: 13:', 'cita con letra y lista: «Arts. 3 a), 12 y 13»');
+  ok(tk('Arts. 15 ter, 34-39 y 48-51') === '15 ter|34-39|48-51' && tk('Arts. 14 quáter a 14 sexies') === '14 quáter-14 sexies' && tk('Arts. 16 a 16 sexies') === '16-16 sexies', 'rangos con guion y entre artículos con sufijo');
+  ok(tk('Arts. 4 a 11') === '4-11' && tk('Arts. 13 a) y 17 a 19') === '13|17-19' && tk('Arts. 34 a 39') === '34-39', 'los rangos «4 a 11» deben quedar como un solo rango');
+  ok(ls('Art. 14 quinquies b) a d)') === '14 quinquies:bcd', 'una cita con rango de letras «b) a d)» debe resaltar b, c y d');
+  ok(tk('Buena práctica; sustenta arts. 14 ter, 15 ter y 49') === '14 ter|15 ter|49' && ls('Arts. 27 y 28; 14 ter h)') === '27: 28: 14 ter:h', 'citas con punto y coma y con sufijo latino');
+  ok(tk('sin ninguna referencia a la ley, solo el año 2026 y 30 días') === '' && tk('la Ley 21.719 exige') === '', 'un texto sin «art.» no debe generar citas');
+  ok(/ data-a="14 ter" data-l="a" /.test(sandbox.refLey('(art. 14 ter a) obliga')) && sandbox.refLey('Arts. 4 a 11').match(/<button/g).length === 2, 'refLey debe generar un botón por artículo');
+
+  // todas las citas reales de la aplicación: cada artículo y cada letra deben existir en el texto oficial, y refLey no debe alterar el texto
+  const fuentes = [];
+  for (const q of Q) { fuentes.push([q.id + ' ar', q.ar]); fuentes.push([q.id + ' cx', q.cx]); }
+  for (const x of CL) fuentes.push([x.ob + ' ar', x.ar]);
+  for (const d of D) fuentes.push([d.n + ' (dimensión)', d.a]);
+  let nCitas = 0;
+  const sinEtq = (h) => h.replace(/<button[^>]*>/g, '').replace(/<\/button>/g, '');
+  for (const [donde, texto] of fuentes) {
+    for (const cita of sandbox.citasLey(texto)) {
+      cita.items.forEach((it, i) => {
+        nCitas++;
+        ok(L.a[it.a], donde + ': el art. ' + it.a + ' no existe en el texto oficial');
+        if (it.rango) ok(L.o.indexOf(cita.items[i - 1].a) >= 0 && L.o.indexOf(cita.items[i - 1].a) <= L.o.indexOf(it.a), donde + ': rango de artículos inválido ' + cita.items[i - 1].a + ' a ' + it.a);
+        for (const l of it.l) ok(L.a[it.a] && L.a[it.a].p.some((p) => p.startsWith(l + ') ')), donde + ': el art. ' + it.a + ' no tiene la letra ' + l + ')');
+      });
+    }
+    ok(sinEtq(sandbox.refLey(texto)) === texto, donde + ': refLey alteró el texto');
+    ok(!/<button[^>]*>[^<]*<button/.test(sandbox.refLey(texto)), donde + ': botones anidados');
+  }
+  ok(nCitas > 100, 'se esperaban más de 100 citas a artículos en las preguntas (hay ' + nCitas + ')');
+  // toda pregunta cuya referencia nombra un artículo debe tener al menos un botón en «por qué se pregunta esto»
+  for (const q of Q) ok(/<button[^>]*class="ref"/.test(sandbox.refLey(q.ar)), q.id + ': su referencia legal «' + q.ar + '» no genera ningún botón');
+
+  // interfaz: diálogo, carga diferida, enlace directo a la BCN y accesibilidad
+  const ih = leer4('public/index.html'), lj = leer4('public/ley.js'), aj = leer4('public/app.js'), vj2 = leer4('public/vivo.js'), cs = leer4('public/styles.css');
+  ok(/<dialog[^>]*id="dlg-ley"[^>]*aria-labelledby="ley-t"/.test(ih) && /src="ley\.js"/.test(ih), 'falta el diálogo de la ley o su script en index.html');
+  ok(!/ley-texto\.js/.test(ih) && /ley-texto\.js/.test(lj), 'el texto de la ley (150 KB) debe cargarse solo al abrir el popup, no con la página');
+  ok(/idNorma=\$\{LEY\.n\}&idVersion=\$\{LEY\.v\}&idParte=\$\{a\.id\}/.test(lj), 'el enlace a la BCN debe llevar idNorma, idVersion e idParte (abre el artículo directo)');
+  ok((lj.match(/target="_blank"/g) || []).length === (lj.match(/rel="noopener noreferrer"/g) || []).length, 'todo enlace externo debe llevar rel="noopener noreferrer"');
+  ok(/showModal\(\)/.test(lj) && !/\beval\(|document\.write\(/.test(lj), 'el diálogo debe ser modal y no usar eval/document.write');
+  ok(/refLey\(q\.ar,leyRel\(q\)\)[\s\S]*refLey\(q\.cx,leyRel\(q\)\)/.test(aj) && /refLey\(q\.ar, leyRel\(q\)\)[\s\S]*refLey\(q\.cx, leyRel\(q\)\)/.test(vj2), 'la referencia y la explicación legal deben ser clicables en el panel del consultor y en el del cliente');
+  ok(/@media print\{\.ref\{[^}]*text-decoration:none/.test(cs), 'en el PDF las referencias deben verse como texto normal');
+  ok(!/<button[^>]*class="ref"/.test(leer4('public/app.js').split('function refLey')[0].replace(/'<button type="button" class="ref"/g, '')), 'no debe haber botones .ref escritos a mano');
+}
+
+seccion('13. ISO/IEC 25010: usabilidad (navegación, operabilidad) y adaptabilidad (multidispositivo)');
+{
+  const raiz5 = path.resolve(path.dirname(file), '..');
+  const leer5 = (f) => fs.readFileSync(path.join(raiz5, f), 'utf8').replace(/\r\n/g, '\n');
+  const ih = leer5('public/index.html'), cs = leer5('public/styles.css'), aj = leer5('public/app.js');
+  // ── Adaptabilidad ──
+  const vp = (ih.match(/<meta name="viewport" content="([^"]*)"/) || [])[1] || '';
+  ok(/width=device-width/.test(vp) && /initial-scale=1/.test(vp), 'falta el viewport responsivo');
+  ok(!/maximum-scale|user-scalable\s*=\s*(no|0)/i.test(vp), 'el viewport no debe impedir el zoom del usuario (WCAG 1.4.4)');
+  ok(/viewport-fit=cover/.test(vp) && /env\(safe-area-inset-left/.test(cs) && /env\(safe-area-inset-bottom/.test(cs), 'debe respetar las áreas seguras (muesca, barra de gestos)');
+  const mq = [...cs.matchAll(/@media\s*([^{]+)\{/g)].map((m) => m[1].replace(/\s+/g, ' ').trim());
+  const tiene = (re) => mq.some((q) => re.test(q));
+  ok(tiene(/max-width:\s*380px/) && tiene(/max-width:\s*640px/), 'faltan los puntos de quiebre de teléfono (380 y 640 px)');
+  ok(tiene(/min-width:\s*641px\) and \(max-width:\s*1024px/), 'falta el punto de quiebre de tableta (641–1024 px)');
+  ok(tiene(/max-height:\s*500px\) and \(orientation:\s*landscape/), 'falta la regla para teléfono en horizontal (poca altura)');
+  ok(tiene(/prefers-reduced-motion/) && tiene(/prefers-color-scheme:\s*dark/) && tiene(/forced-colors/) && tiene(/^print/), 'faltan preferencias del usuario: movimiento reducido, tema oscuro, alto contraste forzado o impresión');
+  ok(/min-height:100dvh/.test(cs), 'la altura mínima debe usar dvh (barra de direcciones del móvil)');
+  ok(/button,a,label\.opt,input,select,summary,\[role=tab\]\{touch-action:manipulation\}/.test(cs), 'los controles táctiles deben usar touch-action: manipulation');
+  ok(/\.tb\{flex-wrap:wrap;overflow-x:visible\}/.test(cs), 'en el teléfono todas las pestañas de resultados deben verse (sin scroll horizontal oculto)');
+  ok(!/(^|[^-])width:\s*\d{4,}px/.test(cs.replace(/@media[^{]+\{/g, '')), 'no deben quedar anchos fijos de 1000 px o más');
+  // ── Usabilidad: tamaño de los objetivos táctiles (≥ 44 px) ──
+  const alto = (clase) => {
+    let mejor = 0;
+    for (const m of cs.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+      if (!new RegExp('(^|[\\s,])' + clase.replace('.', '\\.') + '(?![\\w-])').test(m[1])) continue;
+      for (const d of m[2].matchAll(/(?:^|;)\s*(?:min-)?height:\s*(\d+)px/g)) mejor = Math.max(mejor, +d[1]);
+    }
+    return mejor;
+  };
+  for (const cl of ['.opt-i', '.pb-x', '.lb-btn', '.btn-go', '.bq', '.be', '.bc', '.tbtn', '.dlg-x', '.ley-chip', '.theme-btn']) ok(alto(cl) >= 44, 'el control ' + cl + ' mide menos de 44 px de alto (' + alto(cl) + ' px)');
+  // ── Usabilidad: navegación ──
+  ok(/<nav class="qn" aria-label="Navegación entre preguntas">/.test(aj) && /\.qn\{display:block;position:sticky;bottom:0/.test(cs), 'la barra Atrás/Siguiente debe quedar fija al pie (sticky) y ser una región <nav>');
+  ok(/\.qn:has\(#bnx:disabled\) \.qn-h\{display:block\}/.test(cs) && /Elija una respuesta para continuar/.test(aj), 'si «Siguiente» está desactivado debe decir por qué');
+  ok(/<nav class="pp-act" aria-label="Herramientas de la sesión">/.test(ih), 'los accesos del panel (índice, sesiones, en vivo) deben ser una región <nav>');
+  ok(/html\{scroll-padding-top:\d+px;scroll-padding-bottom:\d+px\}/.test(cs), 'la cabecera y la barra fijas no deben tapar el elemento enfocado (scroll-padding)');
+  ok(/lang="es"/.test(ih) && /class="skip" href="#main"/.test(ih) && /<main[^>]*id="main"/.test(ih), 'faltan el idioma, el enlace «Saltar al contenido» o el <main>');
+  for (const id of ['s0', 'sd', 'se', 's1', 's2', 'sv', 's3']) {
+    const i = ih.indexOf('id="' + id + '" class="screen'), j = ih.indexOf('class="screen', i + 10);
+    ok(i > 0 && /<h1[ >]/.test(ih.slice(i, j > 0 ? j : undefined)), 'la pantalla ' + id + ' debe tener un <h1> (estructura de encabezados)');
+  }
+  ok(/prev\.closest&&prev\.closest\('\.screen'\)[\s\S]*h\.focus\(\{preventScroll:true\}\)/.test(aj), 'al cambiar de pantalla el foco debe pasar al encabezado de la nueva (no perderse)');
+  ok(!/tabindex="[1-9]/.test(ih + aj), 'no debe haber tabindex positivo (rompe el orden de tabulación)');
+  ok(/@keyframes/.test(cs) && /\.sr-only\{/.test(cs) && /:focus-visible/.test(cs), 'faltan estilos de foco visible o de texto solo para lector de pantalla');
+}
+
 console.log('\n' + (fallos ? '✗ ' + fallos + ' problema(s)' : '✓ Todas las verificaciones pasaron'));
 process.exit(fallos ? 1 : 0);

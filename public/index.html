@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
@@ -99,6 +99,7 @@
 
   <!-- ══════ SCREEN D: PANEL DE SESIONES ══════ -->
   <div id="sd" class="screen">
+    <h1 class="sr-only">D360° Privacy Assessment: sesiones de diagnóstico</h1>
     <div class="dh">
       <div><h2>Sesiones de diagnóstico</h2><p class="dcount" id="dcount"></p></div>
       <button type="button" class="btn-go dh-new" onclick="nueva()"><i data-lucide="plus"></i> Nueva sesión</button>
@@ -120,6 +121,7 @@
 
   <!-- ══════ SCREEN E: MENSAJES ══════ -->
   <div id="se" class="screen">
+    <h1 class="sr-only">D360° Privacy Assessment: aviso</h1>
     <div class="ob-card se">
       <h2 id="se-t"></h2>
       <p class="desc" id="se-p"></p>
@@ -200,6 +202,7 @@
 
   <!-- ══════ SCREEN 2: ASSESSMENT ══════ -->
   <div id="s2" class="screen">
+    <h1 class="sr-only">D360° Privacy Assessment: diagnóstico en curso</h1>
     <div class="pp nvx" id="pp">
       <div class="pn" aria-live="polite">
         <span class="pn-chip"><span class="pn-dot" aria-hidden="true"></span><span id="pnv-t">Nivel: aún sin respuestas</span></span>
@@ -218,23 +221,25 @@
       </div>
       <div class="pbt" id="pgt" role="progressbar" aria-label="Avance total del diagnóstico" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="pbf gl" id="pgb" style="width:0%"></div></div>
     </div>
-    <div class="pp-act">
-      <button type="button" class="lb-btn" id="bix" aria-expanded="false" aria-controls="idxp" onclick="tix()"><i data-lucide="list-tree"></i> Índice de preguntas</button>
+    <nav class="pp-act" aria-label="Herramientas de la sesión">
+      <button type="button" class="lb-btn" id="bix" aria-expanded="false" aria-controls="idxp" onclick="tix()"><i data-lucide="list-tree"></i> Índice<span class="lb-x"> de preguntas</span></button>
       <button type="button" class="lb-btn only-nube" onclick="dash()"><i data-lucide="layout-list"></i> Sesiones</button>
       <button type="button" class="lb-btn only-nube" id="bviv" onclick="vivoDlg()" aria-haspopup="dialog"><i data-lucide="video"></i> <span id="bviv-t">Invitar al cliente</span></button>
-    </div>
+    </nav>
     <div class="idxp" id="idxp" hidden></div>
     <div id="qa"></div>
   </div>
 
   <!-- ══════ SCREEN V: CLIENTE EN VIVO ══════ -->
   <div id="sv" class="screen">
+    <h1 class="sr-only">Reunión en vivo con su consultor de AlignData</h1>
     <div id="sv-h"></div>
     <div id="sv-q"></div>
   </div>
 
   <!-- ══════ SCREEN 3: RESULTS ══════ -->
   <div id="s3" class="screen">
+    <h1 class="sr-only">Resultados del diagnóstico D360°</h1>
     <div id="rc"></div>
   </div>
 
@@ -247,6 +252,23 @@
       <button type="button" class="dlg-x" onclick="document.getElementById('dlg-vivo').close()" aria-label="Cerrar">×</button>
     </div>
     <div id="dv-body"></div>
+  </div>
+</dialog>
+
+<dialog class="dlg dlg-ley" id="dlg-ley" aria-labelledby="ley-t">
+  <div class="dlg-in">
+    <div class="dlg-h">
+      <div>
+        <p class="ley-kick"><i data-lucide="scale"></i> Lo que dice la ley</p>
+        <h2 id="ley-t">Artículo</h2>
+        <p class="ley-sub" id="ley-sub"></p>
+      </div>
+      <button type="button" class="dlg-x" onclick="document.getElementById('dlg-ley').close()" aria-label="Cerrar">×</button>
+    </div>
+    <div class="ley-rel" id="ley-rel" role="group" aria-label="Artículos relacionados"></div>
+    <div class="ley-rel ley-ir" id="ley-ir" role="group" aria-label="Ir a una letra del artículo" hidden></div>
+    <div class="ley-txt" id="ley-txt" tabindex="0" role="region" aria-label="Texto del artículo"></div>
+    <div class="ley-pie" id="ley-pie"></div>
   </div>
 </dialog>
 
@@ -266,5 +288,6 @@
 <script src="app.js"></script>
 <script src="sesiones.js"></script>
 <script src="vivo.js"></script>
+<script src="ley.js"></script>
 </body>
 </html>
