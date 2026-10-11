@@ -15,6 +15,8 @@
   let N = null, user = null, desub = null, lista = [], act = null, confirmaRev = false, vivoOff = null, confirmaVivo = false;
   const ms = (t) => (t && t.toMillis ? t.toMillis() : typeof t === 'number' ? t : null);
   window.pzUsuario = () => user; // autor verificado de los comentarios del consultor
+  // quién conduce la reunión o preparó los resultados: lo ve el cliente en la barra superior (nombre y foto de Google)
+  const yoConsultor = () => { const c = { nombre: String((user && (user.nombre || user.email)) || 'Consultor').slice(0, 80) }; const f = user && avFoto(user.foto); if (f) c.foto = f; return c; };
 
   function solo(id) { document.querySelectorAll('.screen').forEach((s) => s.classList.remove('active')); $(id).classList.add('active'); }
   function msg(titulo, texto, acciones) {
@@ -63,22 +65,23 @@
       const d = await N.leerCompartido(tk);
       if (!d) return invalido();
       en.rs(); en.ro = true; en.cargar(d); en.pubEn = ms(d.publicadoEn);
+      if (d.consultor) usuarioBarra({ con: { nombre: d.consultor.nombre, foto: d.consultor.foto, etq: 'Preparado por', rol: 'Consultor AlignData' } });
       let pz = []; try { pz = await N.pzLeerCompartido(tk); } catch (e) { pz = []; } // sin pizarra publicada o sin acceso: se muestran solo los resultados
-      PZ.lectura(pz);
+      PZ.lectura(pz, tk, N);
       sr();
     } catch (e) { invalido(); }
   }
 
   // ── consultor: acceso ──
   function fuera() {
-    $('uchip').hidden = true; $('saveind').hidden = true; if (desub) { desub(); desub = null; }
+    usuarioBarra(null); $('saveind').hidden = true; if (desub) { desub(); desub = null; }
     en.rs(); lista = []; PZ.parar(); ss('s0');
   }
   function noAutorizado() {
     msg('Cuenta no autorizada', 'La cuenta ' + (user ? user.email : '') + ' no tiene permiso para conducir sesiones D360°. Pida a AlignData que la autorice o ingrese con otra cuenta.', [['Cerrar sesión', () => window.salir()]]);
   }
   function entrar() {
-    $('uchip').hidden = false; $('uemail').textContent = user.email;
+    usuarioBarra({ yo: { nombre: user.nombre || user.email, foto: user.foto, rol: 'Consultor', sub: user.email }, salir: true });
     if (desub) desub();
     desub = N.escucharSesiones((s) => {
       lista = s;
@@ -213,8 +216,8 @@ ${parcial}<div class="dlg-act"><a class="be" href="${esc(url)}" target="_blank" 
     const b = $('dlg-pub'); if (b) b.disabled = true;
     try {
       await N.vaciarYa();
-      const tk = await N.compartir(act.id, en.pub(), act.compartido && act.compartido.token);
-      await N.pzPublicar(tk, PZ.entries);
+      const tk = await N.compartir(act.id, { ...en.pub(), consultor: yoConsultor() }, act.compartido && act.compartido.token);
+      await N.pzPublicar(tk, PZ.entries, act.id);
       act.compartido = { token: tk, en: Date.now() };
     } catch (e) { $('dlg-body').insertAdjacentHTML('afterbegin', '<p class="dlg-warn" role="alert">No se pudo publicar (' + esc(e.code || e.message) + '). Intente de nuevo.</p>'); if (b) b.disabled = false; return; }
     dlgRender();
@@ -272,7 +275,7 @@ ${parcial}<div class="dlg-act"><a class="be" href="${esc(url)}" target="_blank" 
     const b = $('dv-go'); if (b) b.disabled = true;
     try {
       const enPregunta = !!document.querySelector('#s2.active'), enRes = !!document.querySelector('#s3.active');
-      const datos = { perfil: { nombre: String((en.p && en.p.nombre) || '').slice(0, 200) }, ...vivoEstado(en, enPregunta ? curQ : null, enRes ? 'resultados' : enPregunta ? 'pregunta' : 'pausa') };
+      const datos = { perfil: { nombre: String((en.p && en.p.nombre) || '').slice(0, 200) }, consultor: yoConsultor(), ...vivoEstado(en, enPregunta ? curQ : null, enRes ? 'resultados' : enPregunta ? 'pregunta' : 'pausa') };
       en.viv = await N.vivoCrear(en.sid, datos); vivoOn();
     } catch (e) { $('dv-body').insertAdjacentHTML('afterbegin', '<p class="dlg-warn" role="alert">No se pudo crear el enlace (' + esc(e.code || e.message) + '). Intente de nuevo.</p>'); if (b) b.disabled = false; return; }
     vivoRender();

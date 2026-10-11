@@ -17,6 +17,20 @@ service cloud.firestore {
         ];
     }
 
+    // Foto de perfil del consultor: solo una URL https de Google (googleusercontent.com), corta y sin espacios.
+    function fotoOk(f) {
+      return f is string && f.size() <= 400 && f.matches('^https://[a-z0-9-]+[.]googleusercontent[.]com/[^ ]+$');
+    }
+    // Quién conduce la reunión / preparó los resultados: se muestra a los clientes en la barra superior.
+    function consultorOk(d) {
+      return !('consultor' in d)
+        || (d.consultor is map
+            && d.consultor.keys().hasOnly(['nombre', 'foto'])
+            && d.consultor.keys().hasAll(['nombre'])
+            && d.consultor.nombre is string && d.consultor.nombre.size() >= 1 && d.consultor.nombre.size() <= 80
+            && (!('foto' in d.consultor) || fotoOk(d.consultor.foto)));
+    }
+
     // ── Pizarra compartida: comentarios con autor e imágenes, por pregunta o generales ──
     // Cada comentario es un documento propio: no se puede editar (solo crear y, el consultor, borrar).
     // Las imágenes van reducidas en el propio documento (JPEG en base64, ≤ 240.000 caracteres c/u, hasta 3).
@@ -32,16 +46,41 @@ service cloud.firestore {
         && (l.size() < 2 || imagenPz(l[1]))
         && (l.size() < 3 || imagenPz(l[2]));
     }
+    // Documentos adjuntos (PDF, Word, Excel…): hasta 3 por comentario, 5 MB cada uno, solo de la lista de extensiones.
+    // El comentario guarda los metadatos {n: nombre, t: tipo, z: bytes, p: partes}; el contenido va en partes de ≤ 700.000
+    // caracteres (base64) en pizarra/{id}/partes/{indice_parte}, que se suben ANTES de crear el comentario.
+    function adjuntoPz(a) {
+      return a is map
+        && a.keys().hasOnly(['n', 't', 'z', 'p'])
+        && a.keys().hasAll(['n', 'z', 'p'])
+        && a.n is string && a.n.size() >= 3 && a.n.size() <= 120
+        && a.n.lower().matches('^[^/]+[.](pdf|doc|docx|xls|xlsx|ppt|pptx|odt|ods|odp|csv|txt|rtf|zip)$')
+        && a.z is int && a.z > 0 && a.z <= 5242880
+        && a.p is int && a.p >= 1 && a.p <= 10
+        && (!('t' in a) || (a.t is string && a.t.size() <= 100));
+    }
+    function adjuntosPz(l) {
+      return l is list && l.size() <= 3
+        && (l.size() < 1 || adjuntoPz(l[0]))
+        && (l.size() < 2 || adjuntoPz(l[1]))
+        && (l.size() < 3 || adjuntoPz(l[2]));
+    }
+    function partePz(d) {
+      return d.keys().hasOnly(['d']) && d.d is string && d.d.size() > 0 && d.d.size() <= 700000;
+    }
+
     // Forma válida de un comentario nuevo. «ahora» es la hora del servidor (no se puede falsear).
     function comentarioPz(d) {
-      return d.keys().hasOnly(['autor', 'rol', 'email', 'cargo', 'qid', 'texto', 'imgs', 'creadoEn'])
+      return d.keys().hasOnly(['autor', 'rol', 'email', 'cargo', 'foto', 'qid', 'texto', 'imgs', 'adjuntos', 'creadoEn'])
         && d.keys().hasAll(['autor', 'rol', 'qid', 'texto', 'creadoEn'])
         && d.autor is string && d.autor.size() >= 1 && d.autor.size() <= 60
         && d.qid is string && d.qid.size() >= 1 && d.qid.size() <= 20
         && d.texto is string && d.texto.size() <= 2000
         && (!('cargo' in d) || (d.cargo is string && d.cargo.size() <= 60))
+        && (!('foto' in d) || (d.rol == 'consultor' && fotoOk(d.foto)))
         && (!('imgs' in d) || imagenesPz(d.imgs))
-        && (d.texto.size() > 0 || ('imgs' in d && d.imgs.size() > 0));
+        && (!('adjuntos' in d) || adjuntosPz(d.adjuntos))
+        && (d.texto.size() > 0 || ('imgs' in d && d.imgs.size() > 0) || ('adjuntos' in d && d.adjuntos.size() > 0));
     }
 
     // Sesiones de diagnóstico (respuestas, notas de la reunión, datos del cliente): solo consultores.
@@ -52,6 +91,10 @@ service cloud.firestore {
       // la reunión en vivo los copia aquí el propio consultor, conservando autor y hora.
       match /pizarra/{eid} {
         allow read, write: if esConsultor();
+
+        match /partes/{pid} {
+          allow read, write: if esConsultor();
+        }
       }
     }
 
@@ -64,7 +107,8 @@ service cloud.firestore {
       allow list: if false;
       allow create, update: if esConsultor()
         && token.size() == 32
-        && request.resource.data.keys().hasOnly(['perfil', 'respuestas', 'notas', 'publicadoEn', 'version']);
+        && request.resource.data.keys().hasOnly(['perfil', 'respuestas', 'notas', 'consultor', 'publicadoEn', 'version'])
+        && consultorOk(request.resource.data);
       allow delete: if esConsultor();
 
       // Copia publicada de la pizarra: el cliente la ve en sus resultados. Se lee conociendo el token del enlace
@@ -72,6 +116,13 @@ service cloud.firestore {
       match /pizarra/{eid} {
         allow get, list: if true;
         allow create, update, delete: if esConsultor() && esIdPz(eid);
+
+        match /partes/{pid} {
+          allow get: if true;
+          allow list: if false;
+          allow create, update: if esConsultor() && pid.matches('^[0-2]_[0-9]$') && partePz(request.resource.data);
+          allow delete: if esConsultor();
+        }
       }
     }
 
@@ -91,8 +142,9 @@ service cloud.firestore {
           && (!('clienteVisto' in cambios) || request.resource.data.clienteVisto == request.time);
       }
       function camposConsultor() {
-        return request.resource.data.keys().hasOnly(['perfil', 'qid', 'fase', 'respuestas', 'notas', 'total',
-          'propuestas', 'clienteVisto', 'activo', 'creadoEn', 'actualizadoEn', 'venceEn']);
+        return request.resource.data.keys().hasOnly(['perfil', 'consultor', 'qid', 'fase', 'respuestas', 'notas', 'total',
+          'propuestas', 'clienteVisto', 'activo', 'creadoEn', 'actualizadoEn', 'venceEn'])
+          && consultorOk(request.resource.data);
       }
       allow get: if esConsultor() || vigente(resource.data);
       allow list: if false;
@@ -121,6 +173,15 @@ service cloud.firestore {
           );
         allow update: if false;
         allow delete: if esConsultor();
+
+        // Contenido de los documentos adjuntos: el cliente y el consultor suben las partes; no se pueden listar ni editar.
+        match /partes/{pid} {
+          allow get: if esConsultor() || enlaceVigente();
+          allow list: if false;
+          allow create: if esIdPz(eid) && pid.matches('^[0-2]_[0-9]$') && partePz(request.resource.data) && (esConsultor() || enlaceVigente());
+          allow update: if false;
+          allow delete: if esConsultor();
+        }
       }
     }
 

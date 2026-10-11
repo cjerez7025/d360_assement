@@ -14,7 +14,7 @@ const oyentes = new Set();
 // otra pestaña del mismo navegador escribió: se avisa a quienes escuchan (así se prueba la reunión en vivo con dos pestañas)
 window.addEventListener('storage', (e) => { if (e.key === K) oyentes.forEach((f) => f()); });
 let cbUsuario = null;
-const USUARIO = { uid: 'prueba-1', email: 'modo prueba (este navegador)', nombre: 'Modo de prueba' };
+const USUARIO = { uid: 'prueba-1', email: 'modo prueba (este navegador)', nombre: 'Modo de prueba', foto: null };
 
 export function iniciar() {}
 export function alCambiarUsuario(cb) { cbUsuario = cb; setTimeout(() => cb(USUARIO), 0); return () => {}; }
@@ -85,7 +85,13 @@ export async function vivoLatido(tk) { const d = leerTodo(); if (d.vivo[tk]) { d
 export async function vivoCerrar(sid, tk) { const d = leerTodo(); delete d.vivo[tk]; if (d.sesiones[sid]) d.sesiones[sid].vivo = null; guardarTodo(d); }
 
 // ── pizarra compartida (simulada): misma interfaz que nube.js; ses = registro de la sesión, vivo = reunión, comp = publicada ──
-const pzD = (d) => { d.pz = d.pz || { ses: {}, vivo: {}, comp: {} }; for (const k of ['ses', 'vivo', 'comp']) d.pz[k] = d.pz[k] || {}; return d.pz; };
+const pzD = (d) => { d.pz = d.pz || { ses: {}, vivo: {}, comp: {} }; for (const k of ['ses', 'vivo', 'comp', 'partes']) d.pz[k] = d.pz[k] || {}; return d.pz; };
+const kParte = (amb, k, eid, pid) => amb + ':' + k + ':' + eid + ':' + pid;
+const idsPartes = (e) => (e.adjuntos || []).flatMap((a, i) => Array.from({ length: Math.min(+a.p || 0, 10) }, (_, k) => i + '_' + k));
+const quitarPartes = (p, amb, k, e) => idsPartes(e).forEach((pid) => { delete p.partes[kParte(amb, k, e.id, pid)]; });
+export async function pzSubirParte(amb, k, eid, pid, datos) { const d = leerTodo(); pzD(d).partes[kParte(amb, k, eid, pid)] = datos; guardarTodo(d); }
+export async function pzLeerParte(amb, k, eid, pid) { const v = pzD(leerTodo()).partes[kParte(amb, k, eid, pid)]; if (v == null) throw new Error('parte faltante'); return v; }
+export async function pzCopiarPartes(de, a, e) { for (const pid of idsPartes(e)) await pzSubirParte(a[0], a[1], e.id, pid, await pzLeerParte(de[0], de[1], e.id, pid)); }
 const ordenadas = (o) => Object.values(o || {}).sort((a, b) => a.creadoEn - b.creadoEn);
 const copia = (e, t) => { const { id, ...r } = e; return { ...r, id, creadoEn: t }; };
 function escucharPz(sel, cb) {
@@ -103,10 +109,11 @@ export async function pzGuardar(sid, e, vivoTk) {
   guardarTodo(d);
 }
 export async function pzEspejar(sid, e) { const d = leerTodo(), p = pzD(d); (p.ses[sid] = p.ses[sid] || {})[e.id] = copia(e, e.creadoEn); guardarTodo(d); }
-export async function pzBorrar(sid, id, vivoTk) {
+export async function pzBorrar(sid, e, vivoTk) {
   const d = leerTodo(), p = pzD(d);
-  if (p.ses[sid]) delete p.ses[sid][id];
-  if (vivoTk && p.vivo[vivoTk]) delete p.vivo[vivoTk][id];
+  if (p.ses[sid]) delete p.ses[sid][e.id];
+  if (vivoTk && p.vivo[vivoTk]) delete p.vivo[vivoTk][e.id];
+  quitarPartes(p, 'ses', sid, e); if (vivoTk) quitarPartes(p, 'vivo', vivoTk, e);
   guardarTodo(d);
 }
 export const pzVivoEscuchar = (tk, cb) => escucharPz((p) => p.vivo[tk], cb);
@@ -115,11 +122,15 @@ export async function pzVivoGuardar(tk, e) {
   const d = leerTodo(); if (!d.vivo[tk]) throw new Error('enlace cerrado');
   (pzD(d).vivo[tk] = pzD(d).vivo[tk] || {})[e.id] = copia(e, Date.now()); guardarTodo(d);
 }
-export async function pzVivoLimpiar(tk) { const d = leerTodo(); delete pzD(d).vivo[tk]; guardarTodo(d); }
+export async function pzVivoLimpiar(tk) { const d = leerTodo(), p = pzD(d); Object.values(p.vivo[tk] || {}).forEach((e) => quitarPartes(p, 'vivo', tk, e)); delete p.vivo[tk]; guardarTodo(d); }
 export async function pzLeerCompartido(tk) { return ordenadas(pzD(leerTodo()).comp[tk]); }
-export async function pzPublicar(tk, entradas) {
-  const d = leerTodo(), p = pzD(d); p.comp[tk] = {};
-  for (const e of entradas) p.comp[tk][e.id] = copia(e, e.creadoEn);
+export async function pzPublicar(tk, entradas, sid) {
+  const d = leerTodo(), p = pzD(d);
+  Object.values(p.comp[tk] || {}).forEach((e) => quitarPartes(p, 'comp', tk, e)); p.comp[tk] = {};
+  for (const e of entradas) {
+    p.comp[tk][e.id] = copia(e, e.creadoEn);
+    idsPartes(e).forEach((pid) => { const v = p.partes[kParte('ses', sid, e.id, pid)]; if (v != null) p.partes[kParte('comp', tk, e.id, pid)] = v; });
+  }
   guardarTodo(d);
 }
-export async function pzBorrarCompartido(tk) { const d = leerTodo(); delete pzD(d).comp[tk]; guardarTodo(d); }
+export async function pzBorrarCompartido(tk) { const d = leerTodo(), p = pzD(d); Object.values(p.comp[tk] || {}).forEach((e) => quitarPartes(p, 'comp', tk, e)); delete p.comp[tk]; guardarTodo(d); }

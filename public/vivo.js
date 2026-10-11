@@ -16,8 +16,11 @@
     if (!/^[A-Za-z0-9_-]{32}$/.test(tk)) return fin('Enlace no disponible', 'Este enlace no es válido. Pida a su consultor de AlignData que le envíe uno nuevo.');
 
     N.iniciar({ persistente: false });
-    PZ.cliente(N, tk); PZ.pedirPersona(); // la pizarra empieza a cargar ya; el nombre se pide antes de comentar
-    let actual = null, ultimaClave = null, hb = null, apagar = null;
+    PZ.cliente(N, tk); // la pizarra empieza a cargar ya; el nombre se pide antes de comentar
+    let actual = null, ultimaClave = null, hb = null, apagar = null, conduce = null;
+    // barra superior: quién conduce la reunión y quién es usted
+    const barra = () => usuarioBarra({ con: conduce ? { nombre: conduce.nombre, foto: conduce.foto, etq: 'Conduce', rol: 'Consultor AlignData' } : null, yo: PZ.persona && PZ.persona.n ? { nombre: PZ.persona.n, rol: 'Cliente', sub: PZ.persona.c } : null, salir: false });
+    window.pzPersonaCambio = barra; PZ.pedirPersona().then(barra);
     ss('sv'); $('sv-h').innerHTML = '<p class="vh-n" role="status">Conectando con su consultor…</p>';
 
     const cerrar = (t, p) => { if (hb) clearInterval(hb); if (apagar) { apagar(); apagar = null; } fin(t, p); };
@@ -42,6 +45,7 @@
       const lst = e.ga(), total = lst.length, hechas = lst.filter((q) => e.a[q.id] !== undefined).length;
       const q = d.qid ? Q.find((x) => x.id === d.qid) : null, idx = q ? lst.findIndex((x) => x.id === q.id) : -1;
       actual = q ? q.id : null;
+      conduce = d.consultor && d.consultor.nombre ? d.consultor : null; barra();
       $('sv-h').innerHTML = `<div class="pp nvx vh"><div class="pr"><span class="lb"><i data-lucide="video"></i> Reunión en vivo · ${esc((d.perfil && d.perfil.nombre) || '')}</span><span class="pc">${idx >= 0 ? 'Pregunta ' + (idx + 1) + ' de ' + total : hechas + ' de ' + total + ' respondidas'}</span></div><div class="pbt" role="progressbar" aria-label="Avance de la reunión" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${total ? Math.round(hechas / total * 100) : 0}"><div class="pbf dm" style="width:${total ? Math.round(hechas / total * 100) : 0}%"></div></div><p class="vh-n"><span class="pn-dot" aria-hidden="true"></span> Conectado con su consultor</p><div class="pp-act vh-act">${PZ.boton()}</div></div>`;
       const clave = JSON.stringify([d.qid, d.fase, q ? (d.respuestas || {})[q.id] : null, q ? (d.notas || {})[q.id] : null, q ? (d.propuestas || {})[q.id] : null]);
       if (clave !== ultimaClave) {

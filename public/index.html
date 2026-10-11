@@ -50,7 +50,7 @@
       <span>Plazo: <strong id="cd-d"></strong> días</span>
     </div>
     <div class="saveind" id="saveind" data-s="guardado" hidden role="status" aria-live="polite"><span class="sd-dot" aria-hidden="true"></span><span id="saveind-t">Guardado</span></div>
-    <div class="uchip" id="uchip" hidden><span class="uemail" id="uemail"></span><button type="button" class="uout" onclick="salir()">Salir</button></div>
+    <div class="uchip" id="uchip" hidden role="group" aria-label="Personas conectadas"><div class="ugrp" id="upers"></div><button type="button" class="uout" id="uout" onclick="salir()">Salir</button></div>
     <button type="button" class="theme-btn" id="theme-btn" aria-label="Cambiar tema de color">
       <svg class="i-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
       <svg class="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2m-7.07-2.93 1.41-1.41m11.32-11.32 1.41-1.41M2 12h2m16 0h2M6.34 6.34 4.93 4.93m14.14 14.14-1.41-1.41"/></svg>
@@ -225,6 +225,7 @@
       <button type="button" class="lb-btn" id="bix" aria-expanded="false" aria-controls="idxp" onclick="tix()"><i data-lucide="list-tree"></i> Índice<span class="lb-x"> de preguntas</span></button>
       <button type="button" class="lb-btn only-nube" onclick="dash()"><i data-lucide="layout-list"></i> Sesiones</button>
       <button type="button" class="lb-btn only-nube" id="bviv" onclick="vivoDlg()" aria-haspopup="dialog"><i data-lucide="video"></i> <span id="bviv-t">Invitar al cliente</span></button>
+      <button type="button" class="lb-btn" id="bmet" onclick="metDlg()" aria-haspopup="dialog"><i data-lucide="calculator"></i> Cómo se calcula</button>
       <button type="button" class="lb-btn only-nube" id="bpz" onclick="pzDlg()" aria-haspopup="dialog"><i data-lucide="messages-square"></i> Pizarra <span class="pz-cnt" hidden></span></button>
     </nav>
     <div class="idxp" id="idxp" hidden></div>
@@ -253,6 +254,16 @@
       <button type="button" class="dlg-x" onclick="document.getElementById('dlg-vivo').close()" aria-label="Cerrar">×</button>
     </div>
     <div id="dv-body"></div>
+  </div>
+</dialog>
+
+<dialog class="dlg dlg-met" id="dlg-met" aria-label="Metodología: cómo se calcula el resultado">
+  <div class="dlg-in">
+    <div class="dlg-h">
+      <h2 id="met-dlg-t"><i data-lucide="calculator"></i> Metodología</h2>
+      <button type="button" class="dlg-x" onclick="document.getElementById('dlg-met').close()" aria-label="Cerrar">×</button>
+    </div>
+    <div id="met-slot"></div>
   </div>
 </dialog>
 

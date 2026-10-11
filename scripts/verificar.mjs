@@ -263,10 +263,10 @@ seccion('10. Sesiones guardadas (consultor y cliente)');
   const leer = (f) => fs.readFileSync(path.join(raiz, f), 'utf8').replace(/\r\n/g, '\n');
   const reglas = leer('firestore.d360.rules'), fbj = JSON.parse(leer('firebase.json'));
   ok(/allow list: if false/.test(reglas), 'los resultados compartidos no deben poder listarse');
-  ok((reglas.match(/if true/g) || []).length === 2 && /allow get: if true/.test(reglas) && /match \/pizarra\/\{eid\} \{\s+allow get, list: if true;/.test(reglas), 'las únicas lecturas públicas son get de un resultado compartido y la pizarra publicada bajo ese mismo token');
+  ok((reglas.match(/if true/g) || []).length === 3 && /allow get: if true/.test(reglas) && /match \/pizarra\/\{eid\} \{\s+allow get, list: if true;/.test(reglas) && /match \/partes\/\{pid\} \{\s+allow get: if true;\s+allow list: if false;/.test(reglas), 'las únicas lecturas públicas son get de un resultado compartido, su pizarra publicada y el contenido de sus documentos (todo bajo el mismo token)');
   ok(/match \/sesiones\/\{id\}\s*\{\s*allow read, write: if esConsultor\(\);/.test(reglas), 'las sesiones solo las ven los consultores');
   ok(/email_verified == true/.test(reglas) && /request\.auth\.token\.email in \[/.test(reglas), 'los consultores se validan por correo verificado en una lista');
-  ok(/hasOnly\(\['perfil', 'respuestas', 'notas', 'publicadoEn', 'version'\]\)/.test(reglas) && /token\.size\(\) == 32/.test(reglas), 'lo compartido solo admite esos campos y un token de 32 caracteres');
+  ok(/hasOnly\(\['perfil', 'respuestas', 'notas', 'consultor', 'publicadoEn', 'version'\]\)/.test(reglas) && /token\.size\(\) == 32/.test(reglas), 'lo compartido solo admite esos campos (incluye quién lo preparó) y un token de 32 caracteres');
   ok(/match \/\{document=\*\*\}\s*\{\s*allow read, write: if false;/.test(reglas), 'todo lo demás debe estar denegado');
   ok(Array.isArray(fbj.firestore) && fbj.firestore.length === 1 && fbj.firestore[0].database === 'd360', 'solo debe publicarse la base d360 (nunca la (default) del portal)');
   const cfgTxt = leer('public/firebase-config.js');
@@ -277,7 +277,7 @@ seccion('10. Sesiones guardadas (consultor y cliente)');
   ok(fbj.hosting.headers.some((h) => h.source === '**' && h.headers.some((x) => x.key === 'Cache-Control' && x.value === 'no-cache')), 'los scripts deben revalidarse siempre: un sesiones.js nuevo con un nube.js viejo en caché rompe el ingreso');
   ok(/databaseId:\s*'d360'/.test(leer('public/firebase-config.js')), 'la app debe usar la base d360');
   const ses = leer('public/sesiones.js'), nub = leer('public/nube.js');
-  ok(/N\.compartir\(act\.id, en\.pub\(\)/.test(ses), 'solo se publica lo que devuelve en.pub()');
+  ok(/N\.compartir\(act\.id, \{ \.\.\.en\.pub\(\), consultor: yoConsultor\(\) \}/.test(ses), 'solo se publica lo que devuelve en.pub() más quién lo preparó (nombre y foto)');
   ok(/\^\[A-Za-z0-9_-\]\{32\}\$/.test(ses) && /new Uint8Array\(24\)/.test(nub), 'el token debe ser de 24 bytes al azar (32 caracteres) y validarse al abrir el enlace');
   ok(/clearIndexedDbPersistence/.test(nub), 'al cerrar sesión se borra la copia local de los datos');
   ok(/memoryLocalCache/.test(nub), 'el cliente no debe guardar datos en su equipo');
@@ -301,7 +301,7 @@ seccion('11. Reunión en vivo (el cliente propone, el consultor confirma)');
   ok(/affectedKeys\(\);\s+return cambios\.hasOnly\(\['propuestas', 'clienteVisto'\]\)/.test(rv), 'el cliente solo puede escribir sus propuestas y la marca de conexión');
   ok(/values\(\)\.hasOnly\(\[0, 1, 2, 3\]\)/.test(rv) && /propuestas\.size\(\) <= 80/.test(rv) && /clienteVisto == request\.time/.test(rv), 'las propuestas deben ser valores 0 a 3, acotadas, y la marca de conexión debe ser la hora del servidor');
   ok(/venceEn > request\.time/.test(rv) && /d\.activo == true/.test(rv), 'el enlace en vivo debe estar activo y vigente');
-  ok((rv.match(/if true/g) || []).length === 2, 'solo hay dos reglas abiertas: leer un resultado compartido y su pizarra publicada');
+  ok((rv.match(/if true/g) || []).length === 3, 'solo hay tres reglas abiertas: leer un resultado compartido, su pizarra publicada y los documentos de esa pizarra');
   ok(/new F\.FieldPath\('propuestas', qid\)/.test(nb) && /vivoCerrar/.test(nb) && /vivoCerrar/.test(nbp) && /storage/.test(nbp), 'el módulo de nube y el de prueba deben tener la reunión en vivo (el de prueba sincroniza entre pestañas)');
   ok(!/\.sc\(|\.ml\(|pintarNivel|puntaje/.test(vj.replace(/\/\*[\s\S]*?\*\//, '')), 'la vista en vivo del cliente no muestra niveles ni puntajes');
   ok(/vivoCliente\(N, P\.get\('v'\)\)/.test(ss2), 'el enlace ?v= debe abrir la vista del cliente en vivo');
@@ -467,10 +467,117 @@ seccion('14. Pizarra compartida (comentarios con autor e imágenes)');
   ok(/typeof en !== 'undefined' && en\.viv/.test(pj) && !/window\.en\b/.test(pj), '`en` no es propiedad de window: debe usarse typeof en');
   ok(/d\.length <= 200000/.test(pj) && /image\/jpeg/.test(pj), 'las imágenes se reducen a JPEG de hasta 200.000 caracteres antes de enviarse');
   ok(/PZ\.sincronizarVivo\(\)[\s\S]{0,80}pzVivoLimpiar[\s\S]{0,80}vivoCerrar/.test(ss3), 'al terminar la reunión se copia a la sesión lo que escribieron los clientes antes de borrar la pizarra en vivo');
-  ok(/pzPublicar\(tk, PZ\.entries\)/.test(ss3) && /pzBorrarCompartido/.test(ss3) && /pzLeerCompartido\(tk\)/.test(ss3), 'publicar sube la pizarra, revocar la retira y el cliente la lee en sus resultados');
-  ok(/PZ\.cliente\(N, tk\); PZ\.pedirPersona\(\)/.test(vj3) && /onsubmit|f\.onsubmit/.test(pj) && /oncancel/.test(pj), 'el cliente debe escribir su nombre antes de comentar');
+  ok(/pzPublicar\(tk, PZ\.entries, act\.id\)/.test(ss3) && /pzBorrarCompartido/.test(ss3) && /pzLeerCompartido\(tk\)/.test(ss3), 'publicar sube la pizarra, revocar la retira y el cliente la lee en sus resultados');
+  ok(/PZ\.cliente\(N, tk\);/.test(vj3) && /PZ\.pedirPersona\(\)\.then\(barra\)/.test(vj3) && /onsubmit|f\.onsubmit/.test(pj) && /oncancel/.test(pj), 'el cliente debe escribir su nombre antes de comentar');
   ok(!/innerHTML\s*=[^;]*\be\.(texto|autor|cargo)\b/.test(pj), 'pizarra.js no debe insertar texto de un comentario sin escapar');
   ok(/@media print\{[^}]*\.pz-slot/.test(leer6('public/styles.css')), 'en el PDF no deben salir el formulario ni los botones de la pizarra');
+}
+
+seccion('15. Usuario conectado en la barra superior (foto de Google, nombre y rol)');
+{
+  const raiz7 = path.resolve(path.dirname(file), '..');
+  const leer7 = (f) => fs.readFileSync(path.join(raiz7, f), 'utf8').replace(/\r\n/g, '\n');
+  const sb = sandbox, G = 'https://lh3.googleusercontent.com/a/ACg8ocKexample=s96-c';
+  ok(sb.avFoto(G) === G && sb.avFoto('https://lh3.googleusercontent.com/a-/AOh14Gx') !== '', 'se acepta una foto https de googleusercontent.com');
+  ok(['http://lh3.googleusercontent.com/a', 'https://evil.example.com/p.png', 'https://googleusercontent.com.evil.example/a', 'https://googleusercontent.com/a', 'javascript:alert(1)', 'data:image/png;base64,AAAA', 'https://lh3.googleusercontent.com/a"onerror="x', "https://lh3.googleusercontent.com/a'b", 'https://lh3.googleusercontent.com/a b', 'https://lh3.googleusercontent.com/' + 'a'.repeat(400), '', null, 5].every((f) => sb.avFoto(f) === ''), 'se rechazan fotos http, de otros dominios, con comillas o espacios, demasiado largas o que no son texto');
+  const h = sb.personaHtml({ nombre: '<img src=x onerror=alert(1)> Ana', foto: G, rol: 'Consultor', sub: 'a@b.cl' });
+  ok(!/<img src=x/.test(h) && /&lt;img src=x/.test(h) && /referrerpolicy="no-referrer"/.test(h) && h.includes(G), 'el nombre se escapa y la foto se pide sin enviar la dirección de esta página');
+  ok(!/<img /.test(sb.personaHtml({ nombre: 'Ana Pérez', foto: 'https://evil.example.com/p.png' })) && /<b>AP<\/b>/.test(sb.personaHtml({ nombre: 'Ana Pérez' })), 'sin foto válida se muestran las iniciales');
+  ok(/<em>Conduce<\/em> Carlos/.test(sb.personaHtml({ nombre: 'Carlos', etq: 'Conduce' })), 'la persona puede llevar una etiqueta («Conduce», «Preparado por»)');
+  const ih = leer7('public/index.html'), cs = leer7('public/styles.css'), ss4 = leer7('public/sesiones.js'), vj4 = leer7('public/vivo.js'), rv = leer7('firestore.d360.rules'), nb = leer7('public/nube.js'), pj = leer7('public/pizarra.js');
+  ok(/id="uchip"[^>]*role="group"/.test(ih) && /id="upers"/.test(ih) && /id="uout"/.test(ih), 'la barra superior debe tener el bloque de usuario (uchip, upers, uout)');
+  ok(!/\.cliente \.uchip/.test(cs) && !/\.uemail/.test(cs), 'la barra del usuario no debe ocultarse para el cliente ni dejar el correo oculto en pantallas medianas');
+  ok(/\.upn\{position:absolute;width:1px/.test(cs), 'en el teléfono se ve la foto y el nombre queda para lectores de pantalla');
+  ok(/photoURL/.test(nb), 'nube.js debe entregar la foto de la cuenta de Google');
+  ok(/usuarioBarra\(\{ yo: \{ nombre: user\.nombre \|\| user\.email, foto: user\.foto, rol: 'Consultor'/.test(ss4) && /usuarioBarra\(null\)/.test(ss4), 'el consultor ve su foto, nombre, rol y correo en la barra');
+  ok(/consultor: yoConsultor\(\)/.test(ss4) && /avFoto\(user\.foto\)/.test(ss4), 'la reunión en vivo y los resultados publicados llevan el nombre y la foto de quien los conduce');
+  ok(/conduce = d\.consultor/.test(vj4) && /usuarioBarra\(\{ con:/.test(vj4) && /etq: 'Conduce'/.test(vj4) && /pzPersonaCambio = barra/.test(vj4), 'el cliente ve en la barra quién conduce la reunión y su propio nombre');
+  ok(/etq: 'Preparado por'/.test(ss4), 'en los resultados el cliente ve quién los preparó');
+  ok(/function fotoOk\(f\)[\s\S]{0,200}googleusercontent/.test(rv) && /function consultorOk/.test(rv) && /d\.rol == 'consultor' && fotoOk\(d\.foto\)/.test(rv), 'las reglas solo admiten fotos de googleusercontent.com y solo en comentarios del consultor');
+  ok(/foto: avFoto\(u\.foto\) \|\| undefined/.test(pj), 'los comentarios del consultor llevan su foto (validada)');
+  ok(/@media print\{\.uchip\{display:none!important\}\}/.test(cs), 'en el PDF no sale la barra de usuario');
+}
+
+seccion('16. Metodología: la explicación coincide con el cálculo real');
+{
+  const raiz8 = path.resolve(path.dirname(file), '..');
+  const leer8 = (f) => fs.readFileSync(path.join(raiz8, f), 'utf8').replace(/\r\n/g, '\n');
+  const sb = sandbox;
+  const armar = (perfil, f) => { const e = new E2(); e.p = perfil; Q.filter((q) => !q.iS).forEach((q, i) => { e.a[q.id] = f(q, i); }); return e; };
+  const e1 = armar({ sector: 'salud', 'tamaño': 'micro' }, (q, i) => (i * 7 + 1) % 4);
+  // 1) las cifras de la tabla son las del motor
+  const m = sb.metDatos(e1), sc = e1.sc();
+  ok(m.filas.length === D.length && m.filas.every((f) => f.pt === sc.d[f.d.id]), 'la tabla de metodología usa los puntajes reales de cada dimensión');
+  ok(m.filas.every((f) => f.mx === 0 || Math.round(f.sm / f.mx * 100) === f.pt), 'puntaje de la dimensión = Σ(valor×peso) ÷ Σ(3×peso) × 100 (redondeado)');
+  ok(Math.abs(m.filas.reduce((t2, f) => t2 + f.ap, 0) - sc.g) <= 0.5, 'los aportes de las dimensiones suman el puntaje global (±0,5 por el redondeo): ' + m.filas.reduce((t2, f) => t2 + f.ap, 0).toFixed(2) + ' vs ' + sc.g);
+  const e0 = new E2(); const m0 = sb.metDatos(e0);
+  ok(m0.sc.g === 0 && m0.filas.every((f) => f.rs === 0 && f.pt === 0 && f.ap === 0), 'sin respuestas todo vale 0 (una dimensión sin respuestas cuenta como 0%)');
+  // 2) el rubro y el tamaño NO cambian el resultado (si algún día cambian, hay que actualizar la sección 6 de metHtml y esta prueba)
+  const e2 = armar({ sector: 'finanzas', 'tamaño': 'grande' }, (q, i) => (i * 7 + 1) % 4);
+  const huella = (e) => JSON.stringify([e.sc(), e.res(), e.fl(), e.cl2(), e.pl().map((p) => [p.d.id, p.s, p.rk]), e.ga().map((q) => q.id)]);
+  ok(huella(e1) === huella(e2), 'con las mismas respuestas, el puntaje, el nivel, las banderas, el semáforo, el plan y las preguntas son idénticos para cualquier rubro y tamaño');
+  const gid = sb.document.getElementById; sb.document.getElementById = () => ({ ...el(), options: [] }); // lbl() lee las opciones del <select>
+  const html = sb.metHtml(e1);
+  sb.document.getElementById = gid;
+  ok(/no modifican el puntaje ni el nivel/.test(html) && /ley 20\.416|Ley 20\.416/.test(html) && /la actividad que desarrolla/.test(html) && /artículo sexto transitorio/.test(html), 'la metodología dice que el rubro y el tamaño no cambian el puntaje, y explica por qué sí importan para la ley (art. 14 septies y sexto transitorio)');
+  ok(/class="ref"[^>]*data-a="14 septies"/.test(html), 'la mención al art. 14 septies abre el texto de la ley');
+  // 3) lo que el texto afirma coincide con los datos y el motor
+  const ws = Q.map((q) => q.w);
+  ok(Math.min(...ws) === 0.8 && Math.max(...ws) === 1.3 && /de 0,8 a 1,3/.test(html), 'los pesos de las preguntas van de 0,8 a 1,3 (como dice el texto)');
+  ok([[20, 0], [21, 1], [40, 1], [41, 2], [60, 2], [61, 3], [80, 3], [81, 4], [100, 4]].every(([p, n]) => e0.ml(p).n === n) && /0 a 20/.test(html) && /21 a 40/.test(html) && /41 a 60/.test(html) && /61 a 80/.test(html) && /81 a 100/.test(html), 'los rangos de los niveles del texto son los del motor');
+  const codigo = leer8('public/app.js');
+  ok(/if\(s>=80\)continue;let rk='MEDIO',rc='rme';if\(s<=30\)\{rk='CRÍTICO'/.test(codigo) && /else if\(s<=55\)\{rk='ALTO'/.test(codigo) && /hasta 30%/.test(html) && /hasta 55%/.test(html) && /por debajo de 80%/.test(html), 'los umbrales del plan de acción del texto (80, 30 y 55) son los del motor');
+  ok(new Set(CL.map((c2) => c2.tV)).size === 1 && new Set(CL.map((c2) => c2.tY)).size === 1 && new RegExp(CL[0].tV + ' o más es <em>Cumple').test(html) && new RegExp(CL[0].tY + ' o más es <em>Parcial').test(html), 'los umbrales del semáforo del texto son los de las obligaciones');
+  ok(Q.filter((q) => q.cd).every((q) => q.cd.lt === 2) && /menor a 2/.test(html), 'el umbral de las preguntas de profundización del texto es el de los datos');
+  ok(new RegExp(Q.filter((q) => !q.iS).length + ' preguntas base').test(html) && new RegExp('más ' + Q.filter((q) => q.iS).length + ' de profundización').test(html), 'el texto cuenta bien las preguntas base y de profundización');
+  ok(/Σ \(valor × peso\)/.test(html) && /Σ \(puntaje de la dimensión × peso de la dimensión\)/.test(html), 'las dos fórmulas aparecen en el texto');
+  // 4) pantalla
+  const ih = leer8('public/index.html'), cs = leer8('public/styles.css');
+  ok(/\['t7','calculator','Método',''\]/.test(codigo) && /id=\\"t7\\" role=\\"tabpanel\\"/.test(codigo.replace(/"/g, '\\"').replace(/\\\\"/g, '\\"')) || /id="t7"/.test(codigo), 'la pestaña «Método» está en los resultados');
+  ok(/id="dlg-met"/.test(ih) && /id="bmet"/.test(ih) && /function metDlg\(\)/.test(codigo), 'el consultor puede abrir la metodología desde la pregunta («Cómo se calcula»)');
+  ok(/@media print\{#t7,#bmet\{display:none!important\}\}/.test(cs), 'la metodología no sale en el PDF (no cambia su paginación)');
+}
+
+seccion('17. Documentos adjuntos (PDF, Word, Excel…) y pegado');
+{
+  const raiz9 = path.resolve(path.dirname(file), '..');
+  const leer9 = (f) => fs.readFileSync(path.join(raiz9, f), 'utf8').replace(/\r\n/g, '\n');
+  const sb = sandbox;
+  const PDF = [0x25, 0x50, 0x44, 0x46, 0x2d, 0x31], PK = [0x50, 0x4b, 0x03, 0x04], OLE = [0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1], EXE = [0x4d, 0x5a, 0x90, 0x00], TXT = [0x48, 0x6f, 0x6c, 0x61];
+  // tipo y contenido deben corresponderse
+  ok(sb.pzTipoAdj('Politica.pdf', PDF) === '' && sb.pzTipoAdj('INFORME.PDF', PDF) === '', 'un PDF con firma %PDF se acepta (también en mayúsculas)');
+  ok(['a.docx', 'b.xlsx', 'c.pptx', 'd.odt', 'e.ods', 'f.odp', 'g.zip'].every((n) => sb.pzTipoAdj(n, PK) === '') && ['a.doc', 'b.xls', 'c.ppt'].every((n) => sb.pzTipoAdj(n, OLE) === ''), 'Word, Excel y PowerPoint (nuevos y antiguos), OpenOffice y ZIP se aceptan con su firma');
+  ok(sb.pzTipoAdj('datos.csv', TXT) === '' && sb.pzTipoAdj('nota.txt', TXT) === '' && sb.pzTipoAdj('a.rtf', [0x7b, 0x5c, 0x72, 0x74, 0x66]) === '', 'CSV, texto y RTF se aceptan');
+  ok(['virus.exe', 'macro.xlsm', 'macro.docm', 'pagina.html', 'grafico.svg', 'script.js', 'accesos.lnk', 'instalar.msi', 'run.bat', 'sin_extension', 'informe.pdf.exe', 'x.PDF.vbs'].every((n) => sb.pzTipoAdj(n, PDF) !== ''), 'se rechazan ejecutables, archivos con macros, HTML, SVG, scripts y nombres sin extensión permitida');
+  ok(sb.pzTipoAdj('falso.pdf', EXE) !== '' && sb.pzTipoAdj('falso.docx', EXE) !== '' && sb.pzTipoAdj('falso.csv', EXE) !== '' && sb.pzTipoAdj('falso.txt', [0x7f, 0x45, 0x4c, 0x46]) !== '', 'un ejecutable (MZ, ELF) disfrazado con extensión permitida se rechaza');
+  ok(sb.pzTipoAdj('falso.pdf', PK) !== '' && sb.pzTipoAdj('falso.docx', PDF) !== '' && sb.pzTipoAdj('falso.xls', PK) !== '' && sb.pzTipoAdj('falso.csv', PK) !== '', 'si el contenido no corresponde a la extensión se rechaza');
+  // nombres y tamaños
+  ok(sb.pzNombreSeguro('../../etc/pass:wd?.pdf') === 'etc pass wd .pdf' || !/[\/\\:?]/.test(sb.pzNombreSeguro('../../etc/pass:wd?.pdf')), 'el nombre de descarga no lleva rutas ni caracteres peligrosos');
+  ok(sb.pzNombreSeguro('a'.repeat(300) + '.pdf').length <= 120 && sb.pzNombreSeguro('a'.repeat(300) + '.pdf').endsWith('.pdf') && sb.pzNombreSeguro('') === 'archivo', 'el nombre se acorta a 120 conservando la extensión');
+  ok(sb.pzTam(500) === '500 B' && sb.pzTam(2048) === '2 KB' && sb.pzTam(1572864) === '1,5 MB', 'tamaños legibles');
+  ok(sb.pzPartes(1) === 1 && sb.pzPartes(5242880) === 10 && sb.pzPartes(525000) === 1 && sb.pzPartes(525001) === 2, 'un archivo de 5 MB cabe en 10 partes de 700.000 caracteres (base64)');
+  // validación del comentario
+  const base = { id: 'abcdefghijKLMNOPQR12', autor: 'Ana', rol: 'cliente', qid: 'general', texto: '', creadoEn: 1 };
+  const adj = { n: 'Inventario.xlsx', t: 'x', z: 120000, p: 1 };
+  ok(sb.pzValidar({ ...base, adjuntos: [adj] }) === '' && sb.pzValidar({ ...base, adjuntos: [adj, adj, adj] }) === '' && sb.pzValidar({ ...base, adjuntos: [adj, adj, adj, adj] }) !== '', 'un comentario puede tener solo documentos, hasta 3');
+  ok(sb.pzValidar({ ...base, adjuntos: [{ ...adj, z: 5242881, p: 10 }] }) !== '' && sb.pzValidar({ ...base, adjuntos: [{ ...adj, n: 'x.exe' }] }) !== '' && sb.pzValidar({ ...base, adjuntos: [{ ...adj, p: 3 }] }) !== '' && sb.pzValidar({ ...base, adjuntos: [{ ...adj, z: 0 }] }) !== '', 'se rechazan documentos de más de 5 MB, de tipo no permitido, con un número de partes que no corresponde o vacíos');
+  // dibujo
+  const h = sb.pzTarjeta({ ...base, id: 'a"b', adjuntos: [{ ...adj, n: '<img src=x onerror=alert(1)>.pdf' }, { n: 'malo.exe', z: 10, p: 1 }, adj] });
+  ok(!/<img src=x/.test(h) && (h.match(/class="pz-file"/g) || []).length === 2 && /data-i="2"/.test(h) && /XLSX · 117 KB/.test(h), 'los documentos se dibujan escapados, solo los válidos, con su posición original, tipo y tamaño');
+  ok(/title="Archivo enviado por un participante del cliente/.test(h) && !/title="Archivo enviado/.test(sb.pzTarjeta({ ...base, rol: 'consultor', adjuntos: [adj] })), 'los archivos de un cliente llevan el aviso de abrirlos con precaución');
+
+  // reglas, datos y pantalla
+  const rv = leer9('firestore.d360.rules'), nb = leer9('public/nube.js'), nbp = leer9('public/nube-prueba.js'), pj = leer9('public/pizarra.js'), cs = leer9('public/styles.css');
+  ok(/function adjuntoPz\(a\)[\s\S]*?pdf\|doc\|docx\|xls\|xlsx\|ppt\|pptx\|odt\|ods\|odp\|csv\|txt\|rtf\|zip/.test(rv) && !/xlsm|docm|exe|html|svg/.test(rv.slice(rv.indexOf('function adjuntoPz'), rv.indexOf('function partePz'))), 'las reglas solo permiten las extensiones de la lista segura (sin macros, ejecutables, HTML ni SVG)');
+  ok(/a\.z <= 5242880/.test(rv) && /a\.p <= 10/.test(rv) && /d\.d\.size\(\) <= 700000/.test(rv) && (rv.match(/\^\[0-2\]_\[0-9\]\$/g) || []).length >= 2, 'las reglas limitan el tamaño (5 MB), las partes (10 de 700.000) y su índice');
+  const exp = (x) => [...x.matchAll(/export (?:async function |const )(pz\w+)/g)].map((m) => m[1]).sort().join();
+  ok(exp(nb) === exp(nbp) && /pzSubirParte/.test(exp(nb)) && /pzLeerParte/.test(exp(nb)) && /pzCopiarPartes/.test(exp(nb)), 'nube.js y nube-prueba.js tienen las mismas funciones, incluidas las de partes de archivo');
+  ok(/await subirPartes\(c, docs[\s\S]*?limpiar\(\);[\s\S]*?enviar\(c\)/.test(pj), 'el contenido de los documentos se sube completo antes de crear el comentario');
+  ok(/await PZS\.N\.pzSubirParte\(amb, clave, c\.id/.test(pj) && /pzCopiarPartes\(\['vivo', PZS\.vivoTk\], \['ses', PZS\.sid\], e\)[\s\S]{0,80}pzEspejar/.test(pj), 'lo que sube un cliente se copia a la sesión (contenido primero, luego el comentario)');
+  ok(/document\.addEventListener\('paste'/.test(pj) && /e\.clipboardData \? e\.clipboardData\.files/.test(pj) && /v\.agregarArchivos\(fs\)/.test(pj), 'se puede pegar (Ctrl+V) un archivo o una captura en cualquier parte de la pantalla');
+  ok(/PZ_EXT\[pzExt\(a\.n\)\] \|\| 'application\/octet-stream'/.test(pj) && !/text\/html/.test(pj), 'al descargar, el tipo sale de la extensión permitida y nunca de lo que declara el archivo');
+  ok(/pzBorrar\(PZS\.sid, ent,/.test(pj) && /idsPartes\(e\)/.test(nb) && /quitarPartes\(p, 'ses', sid, e\)/.test(nbp), 'borrar un comentario borra también el contenido de sus documentos');
+  ok(/@media print\{\.pz-file\{/.test(cs), 'los documentos adjuntos no rompen el PDF');
 }
 
 console.log('\n' + (fallos ? '✗ ' + fallos + ' problema(s)' : '✓ Todas las verificaciones pasaron'));

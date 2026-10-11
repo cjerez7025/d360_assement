@@ -29,7 +29,7 @@ export function iniciar({ persistente }) {
 export function alCambiarUsuario(cb) {
   return A.onAuthStateChanged(auth, (u) => {
     usuario = u;
-    cb(u ? { uid: u.uid, email: u.email, nombre: u.displayName || u.email } : null);
+    cb(u ? { uid: u.uid, email: u.email, nombre: u.displayName || u.email, foto: u.photoURL || null } : null);
   });
 }
 export async function ingresar() {
@@ -165,12 +165,33 @@ const cuerpoPz = (e, ts) => {
   const d = { autor: e.autor, rol: e.rol, qid: e.qid, texto: e.texto || '', creadoEn: ts };
   if (e.email) d.email = e.email;
   if (e.cargo) d.cargo = e.cargo;
+  if (e.foto) d.foto = e.foto;
   if (e.imgs && e.imgs.length) d.imgs = e.imgs;
+  if (e.adjuntos && e.adjuntos.length) d.adjuntos = e.adjuntos.map((a) => ({ n: a.n, t: a.t || '', z: a.z, p: a.p }));
   return d;
 };
 const escucharPz = (ruta, cb, err) => F.onSnapshot(consulta(ruta), (s) => cb(s.docs.map(aEntrada)), err);
 const leerPz = async (ruta) => (await F.getDocs(consulta(ruta))).docs.map(aEntrada);
-const borrarTodoPz = async (ruta) => { const s = await F.getDocs(F.collection(db, ...ruta)); for (const d of s.docs) await F.deleteDoc(d.ref); };
+// Documentos adjuntos: su contenido vive en pizarra/{id}/partes/{adjunto}_{parte}
+const raizPz = { ses: (k) => ['sesiones', k], vivo: (k) => ['en_vivo', k], comp: (k) => ['compartidos', k] };
+const rutaParte = (amb, k, eid, pid) => [...raizPz[amb](k), 'pizarra', eid, 'partes', pid];
+const idsPartes = (e) => (e.adjuntos || []).flatMap((a, i) => Array.from({ length: Math.min(+a.p || 0, 10) }, (_, k) => i + '_' + k));
+const borrarPartes = async (amb, k, e) => { for (const pid of idsPartes(e)) await F.deleteDoc(F.doc(db, ...rutaParte(amb, k, e.id, pid))); };
+const borrarTodoPz = async (ruta) => {
+  const amb = ruta[0] === 'sesiones' ? 'ses' : ruta[0] === 'en_vivo' ? 'vivo' : 'comp';
+  const s = await F.getDocs(F.collection(db, ...ruta));
+  for (const d of s.docs) { await borrarPartes(amb, ruta[1], { id: d.id, ...d.data() }); await F.deleteDoc(d.ref); }
+};
+export async function pzSubirParte(amb, k, eid, pid, datos) { await F.setDoc(F.doc(db, ...rutaParte(amb, k, eid, pid)), { d: datos }); }
+export async function pzLeerParte(amb, k, eid, pid) {
+  const s = await F.getDoc(F.doc(db, ...rutaParte(amb, k, eid, pid)));
+  if (!s.exists()) throw new Error('parte faltante');
+  return s.data().d;
+}
+/** Copia el contenido de los adjuntos de un comentario de un lugar a otro: de = [amb, clave], a = [amb, clave]. */
+export async function pzCopiarPartes(de, a, e) {
+  for (const pid of idsPartes(e)) await pzSubirParte(a[0], a[1], e.id, pid, await pzLeerParte(de[0], de[1], e.id, pid));
+}
 
 export const pzEscuchar = (sid, cb, err) => escucharPz(rutaSes(sid), cb, err);
 export const pzLeer = (sid) => leerPz(rutaSes(sid));
@@ -183,10 +204,11 @@ export async function pzGuardar(sid, e, vivoTk) {
 }
 /** Consultor: copia a la sesión un comentario que hizo un cliente en vivo, conservando su hora. */
 export async function pzEspejar(sid, e) { await F.setDoc(F.doc(db, ...rutaSes(sid), e.id), cuerpoPz(e, F.Timestamp.fromMillis(e.creadoEn))); }
-export async function pzBorrar(sid, id, vivoTk) {
+export async function pzBorrar(sid, e, vivoTk) {
   const b = F.writeBatch(db);
-  b.delete(F.doc(db, ...rutaSes(sid), id));
-  if (vivoTk) b.delete(F.doc(db, ...rutaVivo(vivoTk), id));
+  b.delete(F.doc(db, ...rutaSes(sid), e.id));
+  if (vivoTk) b.delete(F.doc(db, ...rutaVivo(vivoTk), e.id));
+  for (const pid of idsPartes(e)) { b.delete(F.doc(db, ...rutaParte('ses', sid, e.id, pid))); if (vivoTk) b.delete(F.doc(db, ...rutaParte('vivo', vivoTk, e.id, pid))); }
   await b.commit();
 }
 // en vivo
@@ -196,9 +218,12 @@ export async function pzVivoGuardar(tk, e) { await F.setDoc(F.doc(db, ...rutaViv
 export const pzVivoLimpiar = (tk) => borrarTodoPz(rutaVivo(tk));
 // resultados publicados (los comentarios son inmutables: solo se suben los nuevos y se quitan los borrados)
 export const pzLeerCompartido = (tk) => leerPz(rutaComp(tk));
-export async function pzPublicar(tk, entradas) {
-  const ya = new Set((await leerPz(rutaComp(tk))).map((x) => x.id)), ids = new Set(entradas.map((x) => x.id));
-  for (const e of entradas) if (!ya.has(e.id)) await F.setDoc(F.doc(db, ...rutaComp(tk), e.id), cuerpoPz(e, F.Timestamp.fromMillis(e.creadoEn)));
-  for (const id of ya) if (!ids.has(id)) await F.deleteDoc(F.doc(db, ...rutaComp(tk), id));
+export async function pzPublicar(tk, entradas, sid) {
+  const publicadas = await leerPz(rutaComp(tk)), ya = new Set(publicadas.map((x) => x.id)), ids = new Set(entradas.map((x) => x.id));
+  for (const e of entradas) if (!ya.has(e.id)) {
+    if (e.adjuntos && e.adjuntos.length) await pzCopiarPartes(['ses', sid], ['comp', tk], e); // el contenido va antes que el comentario
+    await F.setDoc(F.doc(db, ...rutaComp(tk), e.id), cuerpoPz(e, F.Timestamp.fromMillis(e.creadoEn)));
+  }
+  for (const x of publicadas) if (!ids.has(x.id)) { await borrarPartes('comp', tk, x); await F.deleteDoc(F.doc(db, ...rutaComp(tk), x.id)); }
 }
 export const pzBorrarCompartido = (tk) => borrarTodoPz(rutaComp(tk));
