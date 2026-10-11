@@ -1,7 +1,9 @@
 /* Capa de datos en la nube del D360°: Firebase Auth (Google) + Firestore, base nombrada «d360».
    Colecciones:
      sesiones/{id}      → solo consultores autorizados (ver firestore.d360.rules)
-     compartidos/{token} → lectura por enlace (el token es el secreto); solo los consultores escriben */
+     compartidos/{token} → lectura por enlace (el token es el secreto); solo los consultores escriben
+     en_vivo/{token}     → reunión en vivo
+     …/pizarra/{id}     → comentarios de la pizarra compartida (al final de este archivo) */
 const C = window.D360_NUBE;
 const B = 'https://www.gstatic.com/firebasejs/' + (C.sdk || '10.14.1') + '/';
 const [{ initializeApp }, A, F] = await Promise.all([
@@ -145,3 +147,58 @@ export async function vivoCerrar(sid, tk) {
   await F.deleteDoc(vivoRef(tk));
   if (sid) await F.updateDoc(F.doc(db, 'sesiones', sid), { vivo: F.deleteField() });
 }
+
+// ── pizarra compartida: comentarios con autor e imágenes, por pregunta o generales ──
+// sesiones/{sid}/pizarra/{id}    → registro permanente (solo consultores)
+// en_vivo/{token}/pizarra/{id}   → durante la reunión: los integrantes agregan y todos ven
+// compartidos/{token}/pizarra/{id} → copia publicada: el cliente la ve en sus resultados
+// Un comentario no se edita: se crea y, el consultor, lo puede borrar. Ver firestore.d360.rules.
+const rutaSes = (sid) => ['sesiones', sid, 'pizarra'];
+const rutaVivo = (tk) => ['en_vivo', tk, 'pizarra'];
+const rutaComp = (tk) => ['compartidos', tk, 'pizarra'];
+const consulta = (ruta) => F.query(F.collection(db, ...ruta), F.orderBy('creadoEn', 'asc'));
+const aEntrada = (d) => {
+  const x = d.data({ serverTimestamps: 'estimate' });
+  return { ...x, id: d.id, creadoEn: x.creadoEn && x.creadoEn.toMillis ? x.creadoEn.toMillis() : (x.creadoEn || Date.now()) };
+};
+const cuerpoPz = (e, ts) => {
+  const d = { autor: e.autor, rol: e.rol, qid: e.qid, texto: e.texto || '', creadoEn: ts };
+  if (e.email) d.email = e.email;
+  if (e.cargo) d.cargo = e.cargo;
+  if (e.imgs && e.imgs.length) d.imgs = e.imgs;
+  return d;
+};
+const escucharPz = (ruta, cb, err) => F.onSnapshot(consulta(ruta), (s) => cb(s.docs.map(aEntrada)), err);
+const leerPz = async (ruta) => (await F.getDocs(consulta(ruta))).docs.map(aEntrada);
+const borrarTodoPz = async (ruta) => { const s = await F.getDocs(F.collection(db, ...ruta)); for (const d of s.docs) await F.deleteDoc(d.ref); };
+
+export const pzEscuchar = (sid, cb, err) => escucharPz(rutaSes(sid), cb, err);
+export const pzLeer = (sid) => leerPz(rutaSes(sid));
+/** Consultor: guarda en la sesión y, si hay reunión en vivo, también en la pizarra en vivo (misma hora del servidor). */
+export async function pzGuardar(sid, e, vivoTk) {
+  const b = F.writeBatch(db), ts = F.serverTimestamp();
+  b.set(F.doc(db, ...rutaSes(sid), e.id), cuerpoPz(e, ts));
+  if (vivoTk) b.set(F.doc(db, ...rutaVivo(vivoTk), e.id), cuerpoPz(e, ts));
+  await b.commit();
+}
+/** Consultor: copia a la sesión un comentario que hizo un cliente en vivo, conservando su hora. */
+export async function pzEspejar(sid, e) { await F.setDoc(F.doc(db, ...rutaSes(sid), e.id), cuerpoPz(e, F.Timestamp.fromMillis(e.creadoEn))); }
+export async function pzBorrar(sid, id, vivoTk) {
+  const b = F.writeBatch(db);
+  b.delete(F.doc(db, ...rutaSes(sid), id));
+  if (vivoTk) b.delete(F.doc(db, ...rutaVivo(vivoTk), id));
+  await b.commit();
+}
+// en vivo
+export const pzVivoEscuchar = (tk, cb, err) => escucharPz(rutaVivo(tk), cb, err);
+export const pzVivoLeer = (tk) => leerPz(rutaVivo(tk));
+export async function pzVivoGuardar(tk, e) { await F.setDoc(F.doc(db, ...rutaVivo(tk), e.id), cuerpoPz(e, F.serverTimestamp())); }
+export const pzVivoLimpiar = (tk) => borrarTodoPz(rutaVivo(tk));
+// resultados publicados (los comentarios son inmutables: solo se suben los nuevos y se quitan los borrados)
+export const pzLeerCompartido = (tk) => leerPz(rutaComp(tk));
+export async function pzPublicar(tk, entradas) {
+  const ya = new Set((await leerPz(rutaComp(tk))).map((x) => x.id)), ids = new Set(entradas.map((x) => x.id));
+  for (const e of entradas) if (!ya.has(e.id)) await F.setDoc(F.doc(db, ...rutaComp(tk), e.id), cuerpoPz(e, F.Timestamp.fromMillis(e.creadoEn)));
+  for (const id of ya) if (!ids.has(id)) await F.deleteDoc(F.doc(db, ...rutaComp(tk), id));
+}
+export const pzBorrarCompartido = (tk) => borrarTodoPz(rutaComp(tk));

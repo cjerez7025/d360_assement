@@ -263,7 +263,7 @@ seccion('10. Sesiones guardadas (consultor y cliente)');
   const leer = (f) => fs.readFileSync(path.join(raiz, f), 'utf8').replace(/\r\n/g, '\n');
   const reglas = leer('firestore.d360.rules'), fbj = JSON.parse(leer('firebase.json'));
   ok(/allow list: if false/.test(reglas), 'los resultados compartidos no deben poder listarse');
-  ok((reglas.match(/if true/g) || []).length === 1 && /allow get: if true/.test(reglas), 'la única lectura pública permitida es get de un resultado compartido');
+  ok((reglas.match(/if true/g) || []).length === 2 && /allow get: if true/.test(reglas) && /match \/pizarra\/\{eid\} \{\s+allow get, list: if true;/.test(reglas), 'las únicas lecturas públicas son get de un resultado compartido y la pizarra publicada bajo ese mismo token');
   ok(/match \/sesiones\/\{id\}\s*\{\s*allow read, write: if esConsultor\(\);/.test(reglas), 'las sesiones solo las ven los consultores');
   ok(/email_verified == true/.test(reglas) && /request\.auth\.token\.email in \[/.test(reglas), 'los consultores se validan por correo verificado en una lista');
   ok(/hasOnly\(\['perfil', 'respuestas', 'notas', 'publicadoEn', 'version'\]\)/.test(reglas) && /token\.size\(\) == 32/.test(reglas), 'lo compartido solo admite esos campos y un token de 32 caracteres');
@@ -301,7 +301,7 @@ seccion('11. Reunión en vivo (el cliente propone, el consultor confirma)');
   ok(/affectedKeys\(\);\s+return cambios\.hasOnly\(\['propuestas', 'clienteVisto'\]\)/.test(rv), 'el cliente solo puede escribir sus propuestas y la marca de conexión');
   ok(/values\(\)\.hasOnly\(\[0, 1, 2, 3\]\)/.test(rv) && /propuestas\.size\(\) <= 80/.test(rv) && /clienteVisto == request\.time/.test(rv), 'las propuestas deben ser valores 0 a 3, acotadas, y la marca de conexión debe ser la hora del servidor');
   ok(/venceEn > request\.time/.test(rv) && /d\.activo == true/.test(rv), 'el enlace en vivo debe estar activo y vigente');
-  ok((rv.match(/if true/g) || []).length === 1, 'la única regla abierta sigue siendo leer un resultado compartido');
+  ok((rv.match(/if true/g) || []).length === 2, 'solo hay dos reglas abiertas: leer un resultado compartido y su pizarra publicada');
   ok(/new F\.FieldPath\('propuestas', qid\)/.test(nb) && /vivoCerrar/.test(nb) && /vivoCerrar/.test(nbp) && /storage/.test(nbp), 'el módulo de nube y el de prueba deben tener la reunión en vivo (el de prueba sincroniza entre pestañas)');
   ok(!/\.sc\(|\.ml\(|pintarNivel|puntaje/.test(vj.replace(/\/\*[\s\S]*?\*\//, '')), 'la vista en vivo del cliente no muestra niveles ni puntajes');
   ok(/vivoCliente\(N, P\.get\('v'\)\)/.test(ss2), 'el enlace ?v= debe abrir la vista del cliente en vivo');
@@ -414,6 +414,63 @@ seccion('13. ISO/IEC 25010: usabilidad (navegación, operabilidad) y adaptabilid
   ok(/prev\.closest&&prev\.closest\('\.screen'\)[\s\S]*h\.focus\(\{preventScroll:true\}\)/.test(aj), 'al cambiar de pantalla el foco debe pasar al encabezado de la nueva (no perderse)');
   ok(!/tabindex="[1-9]/.test(ih + aj), 'no debe haber tabindex positivo (rompe el orden de tabulación)');
   ok(/@keyframes/.test(cs) && /\.sr-only\{/.test(cs) && /:focus-visible/.test(cs), 'faltan estilos de foco visible o de texto solo para lector de pantalla');
+}
+
+seccion('14. Pizarra compartida (comentarios con autor e imágenes)');
+{
+  const raiz6 = path.resolve(path.dirname(file), '..');
+  const leer6 = (f) => fs.readFileSync(path.join(raiz6, f), 'utf8').replace(/\r\n/g, '\n');
+  const sb = sandbox;
+  const img = 'data:image/jpeg;base64,' + 'A'.repeat(200);
+  const base = { id: 'abcdefghijKLMNOPQR12', autor: 'Marcela Soto', rol: 'cliente', qid: 'GOB-01', texto: 'Hola', imgs: [], creadoEn: 1700000000000 };
+  // validación de un comentario
+  ok(sb.pzValidar(base) === '' && sb.pzValidar({ ...base, texto: '', imgs: [img] }) === '', 'un comentario con texto, o solo con imagen, es válido');
+  ok(sb.pzValidar({ ...base, texto: '  ' }) !== '' && sb.pzValidar({ ...base, autor: '' }) !== '', 'un comentario vacío o sin autor no es válido');
+  ok(sb.pzValidar({ ...base, texto: 'x'.repeat(2001) }) !== '' && sb.pzValidar({ ...base, texto: 'x'.repeat(2000) }) === '', 'el texto admite hasta 2000 caracteres');
+  ok(sb.pzValidar({ ...base, imgs: [img, img, img, img] }) !== '' && sb.pzValidar({ ...base, imgs: [img, img, img] }) === '', 'hasta 3 imágenes por comentario');
+  ok(sb.pzValidar({ ...base, imgs: ['javascript:alert(1)'] }) !== '' && sb.pzValidar({ ...base, imgs: ['data:image/svg+xml;base64,AAAA'] }) !== '' && sb.pzValidar({ ...base, imgs: ['data:image/jpeg;base64,' + 'A'.repeat(240000)] }) !== '', 'solo se aceptan JPEG en data URL y de hasta 240.000 caracteres');
+  // dibujo: todo lo que escribe una persona debe ir escapado
+  const mal = { ...base, id: 'a"b', autor: '<img src=x onerror=alert(1)>', cargo: '<b>Jefe</b>', texto: '<script>alert(1)</script> & "comillas"', imgs: [img, 'javascript:alert(1)', 'data:text/html;base64,AAAA'] };
+  const html = sb.pzTarjeta(mal, { borrar: true });
+  ok(!/<script|<img src=x|<b>Jefe/.test(html) && /&lt;script&gt;/.test(html) && /&lt;img src=x onerror/.test(html), 'el texto, el autor y el cargo de un comentario se escapan (sin HTML ni scripts)');
+  ok((html.match(/<img src="/g) || []).length === 1 && !/javascript:|text\/html/.test(html), 'solo se dibujan las imágenes JPEG válidas; una URL javascript: o text/html se descarta');
+  ok(/data-e="a&quot;b"/.test(html) && !/data-e="a"b"/.test(html), 'el id del comentario no puede romper el atributo HTML');
+  ok(/pz-del/.test(html) && !/pz-del/.test(sb.pzTarjeta(base)), 'el botón Eliminar solo aparece cuando se pide (consultor)');
+  ok(/Consultor/.test(sb.pzTarjeta({ ...base, rol: 'consultor' })) && /Cliente/.test(html), 'cada comentario muestra si lo escribió el consultor o el cliente');
+  ok(sb.pzIniciales('Marcela Soto') === 'MS' && sb.pzIniciales('Ana') === 'A' && sb.pzIniciales('') === '?', 'iniciales del avatar');
+  ok(sb.pzCuando(Date.now()) === 'ahora' && /hace 5 min/.test(sb.pzCuando(Date.now() - 5 * 60000)) && /hace 3 h/.test(sb.pzCuando(Date.now() - 3 * 3600000)), 'tiempo relativo');
+  // agrupar por pregunta en el orden del cuestionario
+  const g = sb.pzAgrupar([{ ...base, qid: Q[5].id }, { ...base, qid: 'general' }, { ...base, qid: Q[1].id }, { ...base, qid: Q[5].id }]);
+  ok(g.map((x) => x.qid).join() === ['general', Q[1].id, Q[5].id].join() && g[2].items.length === 2, 'la pizarra general va primero y luego cada pregunta en el orden del cuestionario');
+  ok(/Pizarra general/.test(sb.pzHtml([{ ...base, qid: 'general' }])) && sb.pzHtml([]) === '', 'pzHtml agrupa y no dibuja nada si no hay comentarios');
+
+  // reglas de seguridad (la prueba de comportamiento está en scripts/probar-reglas.mjs)
+  const rv = leer6('firestore.d360.rules');
+  ok(/match \/sesiones\/\{id\} \{[\s\S]*?match \/pizarra\/\{eid\} \{\s+allow read, write: if esConsultor\(\);/.test(rv), 'sesiones/{id}/pizarra: solo consultores');
+  ok(/match \/en_vivo\/\{token\} \{[\s\S]*?match \/pizarra\/\{eid\} \{[\s\S]*?allow update: if false;[\s\S]*?allow delete: if esConsultor\(\);/.test(rv), 'en_vivo/{token}/pizarra: los comentarios no se editan y solo el consultor borra');
+  ok(/rol == 'consultor'\s+&& request\.resource\.data\.email == request\.auth\.token\.email/.test(rv) && /rol == 'cliente'\s+&& !\('email' in request\.resource\.data\)\s+&& enlaceVigente\(\)/.test(rv), 'un cliente solo puede comentar como cliente (sin email) y con el enlace vigente; el consultor, con su propio correo');
+  ok(/d\.texto\.size\(\) <= 2000/.test(rv) && /l\.size\(\) <= 3/.test(rv) && /s\.size\(\) <= 240000/.test(rv) && /d\.autor\.size\(\) <= 60/.test(rv) && /esIdPz/.test(rv), 'las reglas limitan texto, imágenes, nombre e id');
+  ok(/match \/compartidos\/\{token\} \{[\s\S]*?match \/pizarra\/\{eid\} \{\s+allow get, list: if true;\s+allow create, update, delete: if esConsultor\(\) && esIdPz\(eid\);/.test(rv), 'compartidos/{token}/pizarra: lectura por enlace y escritura solo del consultor');
+  ok(fs.existsSync(path.join(raiz6, 'scripts/probar-reglas.mjs')), 'falta scripts/probar-reglas.mjs (prueba de comportamiento de las reglas)');
+
+  // la capa de nube real y la de prueba deben tener las mismas funciones de pizarra
+  const exp = (t) => [...t.matchAll(/export (?:async function |const )(pz\w+)/g)].map((m) => m[1]).sort().join();
+  const nb = leer6('public/nube.js'), nbp = leer6('public/nube-prueba.js');
+  ok(exp(nb) === exp(nbp) && exp(nb).split(',').length >= 11, 'nube.js y nube-prueba.js deben exportar las mismas funciones pz* (hoy: ' + exp(nb) + ' / ' + exp(nbp) + ')');
+  ok(/F\.writeBatch/.test(nb) && /F\.serverTimestamp\(\)/.test(nb.slice(nb.indexOf('pzGuardar'))), 'el comentario del consultor se escribe en la sesión y en la reunión en vivo en una sola operación, con la hora del servidor');
+
+  // pantalla e integración
+  const ih = leer6('public/index.html'), pj = leer6('public/pizarra.js'), ss3 = leer6('public/sesiones.js'), vj3 = leer6('public/vivo.js'), aj3 = leer6('public/app.js');
+  ok(/id="dlg-pz"/.test(ih) && /id="dlg-img"/.test(ih) && /id="dlg-nombre"/.test(ih) && /id="bpz"/.test(ih), 'faltan los diálogos o el botón de la pizarra en index.html');
+  ok(ih.indexOf('src="pizarra.js"') > ih.indexOf('src="app.js"') && ih.indexOf('src="pizarra.js"') < ih.indexOf('src="sesiones.js"'), 'pizarra.js debe cargarse después de app.js y antes de sesiones.js');
+  ok(/pzMontar\('pz-slot',q\.id\)/.test(aj3) && /pzMontar\('pz-slot', q\.id\)/.test(vj3) && /id="pz-slot"/.test(aj3) && /id="pz-slot"/.test(vj3), 'la pregunta del consultor y la del cliente deben montar la pizarra');
+  ok(/typeof en !== 'undefined' && en\.viv/.test(pj) && !/window\.en\b/.test(pj), '`en` no es propiedad de window: debe usarse typeof en');
+  ok(/d\.length <= 200000/.test(pj) && /image\/jpeg/.test(pj), 'las imágenes se reducen a JPEG de hasta 200.000 caracteres antes de enviarse');
+  ok(/PZ\.sincronizarVivo\(\)[\s\S]{0,80}pzVivoLimpiar[\s\S]{0,80}vivoCerrar/.test(ss3), 'al terminar la reunión se copia a la sesión lo que escribieron los clientes antes de borrar la pizarra en vivo');
+  ok(/pzPublicar\(tk, PZ\.entries\)/.test(ss3) && /pzBorrarCompartido/.test(ss3) && /pzLeerCompartido\(tk\)/.test(ss3), 'publicar sube la pizarra, revocar la retira y el cliente la lee en sus resultados');
+  ok(/PZ\.cliente\(N, tk\); PZ\.pedirPersona\(\)/.test(vj3) && /onsubmit|f\.onsubmit/.test(pj) && /oncancel/.test(pj), 'el cliente debe escribir su nombre antes de comentar');
+  ok(!/innerHTML\s*=[^;]*\be\.(texto|autor|cargo)\b/.test(pj), 'pizarra.js no debe insertar texto de un comentario sin escapar');
+  ok(/@media print\{[^}]*\.pz-slot/.test(leer6('public/styles.css')), 'en el PDF no deben salir el formulario ni los botones de la pizarra');
 }
 
 console.log('\n' + (fallos ? '✗ ' + fallos + ' problema(s)' : '✓ Todas las verificaciones pasaron'));

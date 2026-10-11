@@ -2,9 +2,13 @@
    Se usa en localhost con ?mock=1 y, mientras firebase-config.js tenga «prueba: true», en el sitio publicado
    con el botón «Probar sin cuenta». Los datos NO salen de este navegador. */
 const K = 'd360mock';
-const vacio = () => ({ sesiones: {}, compartidos: {}, vivo: {}, sesion: null });
+const vacio = () => ({ sesiones: {}, compartidos: {}, vivo: {}, sesion: null, pz: { ses: {}, vivo: {}, comp: {} } });
 const leerTodo = () => { try { return { ...vacio(), ...(JSON.parse(localStorage.getItem(K)) || {}) }; } catch (e) { return vacio(); } };
-const guardarTodo = (d) => { localStorage.setItem(K, JSON.stringify(d)); oyentes.forEach((f) => f()); };
+const guardarTodo = (d) => {
+  try { localStorage.setItem(K, JSON.stringify(d)); }
+  catch (e) { const x = new Error('almacenamiento lleno'); x.code = 'resource-exhausted'; throw x; } // las imágenes de la pizarra ocupan lugar
+  oyentes.forEach((f) => f());
+};
 const aviso = (estado) => window.dispatchEvent(new CustomEvent('nube:estado', { detail: { estado } }));
 const oyentes = new Set();
 // otra pestaña del mismo navegador escribió: se avisa a quienes escuchan (así se prueba la reunión en vivo con dos pestañas)
@@ -79,3 +83,43 @@ export async function vivoProponer(tk, qid, v) {
 }
 export async function vivoLatido(tk) { const d = leerTodo(); if (d.vivo[tk]) { d.vivo[tk].clienteVisto = Date.now(); guardarTodo(d); } }
 export async function vivoCerrar(sid, tk) { const d = leerTodo(); delete d.vivo[tk]; if (d.sesiones[sid]) d.sesiones[sid].vivo = null; guardarTodo(d); }
+
+// ── pizarra compartida (simulada): misma interfaz que nube.js; ses = registro de la sesión, vivo = reunión, comp = publicada ──
+const pzD = (d) => { d.pz = d.pz || { ses: {}, vivo: {}, comp: {} }; for (const k of ['ses', 'vivo', 'comp']) d.pz[k] = d.pz[k] || {}; return d.pz; };
+const ordenadas = (o) => Object.values(o || {}).sort((a, b) => a.creadoEn - b.creadoEn);
+const copia = (e, t) => { const { id, ...r } = e; return { ...r, id, creadoEn: t }; };
+function escucharPz(sel, cb) {
+  let ultimo = null;
+  const emitir = () => { const l = ordenadas(sel(pzD(leerTodo()))), txt = l.map((x) => x.id).join(','); if (txt !== ultimo) { ultimo = txt; cb(l); } };
+  oyentes.add(emitir); emitir();
+  return () => oyentes.delete(emitir);
+}
+export const pzEscuchar = (sid, cb) => escucharPz((p) => p.ses[sid], cb);
+export async function pzLeer(sid) { return ordenadas(pzD(leerTodo()).ses[sid]); }
+export async function pzGuardar(sid, e, vivoTk) {
+  const d = leerTodo(), p = pzD(d), t = Date.now();
+  (p.ses[sid] = p.ses[sid] || {})[e.id] = copia(e, t);
+  if (vivoTk && d.vivo[vivoTk]) (p.vivo[vivoTk] = p.vivo[vivoTk] || {})[e.id] = copia(e, t);
+  guardarTodo(d);
+}
+export async function pzEspejar(sid, e) { const d = leerTodo(), p = pzD(d); (p.ses[sid] = p.ses[sid] || {})[e.id] = copia(e, e.creadoEn); guardarTodo(d); }
+export async function pzBorrar(sid, id, vivoTk) {
+  const d = leerTodo(), p = pzD(d);
+  if (p.ses[sid]) delete p.ses[sid][id];
+  if (vivoTk && p.vivo[vivoTk]) delete p.vivo[vivoTk][id];
+  guardarTodo(d);
+}
+export const pzVivoEscuchar = (tk, cb) => escucharPz((p) => p.vivo[tk], cb);
+export async function pzVivoLeer(tk) { return ordenadas(pzD(leerTodo()).vivo[tk]); }
+export async function pzVivoGuardar(tk, e) {
+  const d = leerTodo(); if (!d.vivo[tk]) throw new Error('enlace cerrado');
+  (pzD(d).vivo[tk] = pzD(d).vivo[tk] || {})[e.id] = copia(e, Date.now()); guardarTodo(d);
+}
+export async function pzVivoLimpiar(tk) { const d = leerTodo(); delete pzD(d).vivo[tk]; guardarTodo(d); }
+export async function pzLeerCompartido(tk) { return ordenadas(pzD(leerTodo()).comp[tk]); }
+export async function pzPublicar(tk, entradas) {
+  const d = leerTodo(), p = pzD(d); p.comp[tk] = {};
+  for (const e of entradas) p.comp[tk][e.id] = copia(e, e.creadoEn);
+  guardarTodo(d);
+}
+export async function pzBorrarCompartido(tk) { const d = leerTodo(); delete pzD(d).comp[tk]; guardarTodo(d); }

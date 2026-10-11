@@ -225,6 +225,7 @@
       <button type="button" class="lb-btn" id="bix" aria-expanded="false" aria-controls="idxp" onclick="tix()"><i data-lucide="list-tree"></i> Índice<span class="lb-x"> de preguntas</span></button>
       <button type="button" class="lb-btn only-nube" onclick="dash()"><i data-lucide="layout-list"></i> Sesiones</button>
       <button type="button" class="lb-btn only-nube" id="bviv" onclick="vivoDlg()" aria-haspopup="dialog"><i data-lucide="video"></i> <span id="bviv-t">Invitar al cliente</span></button>
+      <button type="button" class="lb-btn only-nube" id="bpz" onclick="pzDlg()" aria-haspopup="dialog"><i data-lucide="messages-square"></i> Pizarra <span class="pz-cnt" hidden></span></button>
     </nav>
     <div class="idxp" id="idxp" hidden></div>
     <div id="qa"></div>
@@ -253,6 +254,42 @@
     </div>
     <div id="dv-body"></div>
   </div>
+</dialog>
+
+<dialog class="dlg dlg-pizarra" id="dlg-pz" aria-labelledby="pz-dlg-t">
+  <div class="dlg-in">
+    <div class="dlg-h">
+      <h2 id="pz-dlg-t"><i data-lucide="messages-square"></i> Pizarra compartida</h2>
+      <button type="button" class="dlg-x" onclick="document.getElementById('dlg-pz').close()" aria-label="Cerrar">×</button>
+    </div>
+    <div id="pz-dlg-slot"></div>
+  </div>
+</dialog>
+
+<dialog class="dlg dlg-img" id="dlg-img" aria-labelledby="dlg-img-t">
+  <div class="dlg-in">
+    <div class="dlg-h">
+      <h2 id="dlg-img-t">Imagen</h2>
+      <button type="button" class="dlg-x" onclick="document.getElementById('dlg-img').close()" aria-label="Cerrar">×</button>
+    </div>
+    <img id="dlg-img-i" alt="">
+  </div>
+</dialog>
+
+<dialog class="dlg" id="dlg-nombre" aria-labelledby="nom-t">
+  <form class="dlg-in" id="nom-f" novalidate>
+    <div class="dlg-h">
+      <h2 id="nom-t"><i data-lucide="user-round"></i> ¿Quién participa?</h2>
+      <button type="button" class="dlg-x" id="nom-x" aria-label="Cerrar" hidden>×</button>
+    </div>
+    <p>Su nombre aparecerá en los comentarios que escriba en la pizarra, para que todos sepan quién los hizo.</p>
+    <label class="dlg-l" for="nom-n">Su nombre</label>
+    <input class="dlg-inp" id="nom-n" type="text" maxlength="60" autocomplete="name" required>
+    <label class="dlg-l" for="nom-c">Su cargo (opcional)</label>
+    <input class="dlg-inp" id="nom-c" type="text" maxlength="60" autocomplete="organization-title">
+    <p class="dlg-warn" id="nom-e" role="alert" hidden><i data-lucide="triangle-alert"></i>Escriba su nombre para continuar.</p>
+    <div class="dlg-act"><button type="submit" class="be be-p"><i data-lucide="log-in"></i>Entrar a la reunión</button></div>
+  </form>
 </dialog>
 
 <dialog class="dlg dlg-ley" id="dlg-ley" aria-labelledby="ley-t">
@@ -286,6 +323,7 @@
 <script src="theme.js"></script>
 <script src="firebase-config.js"></script>
 <script src="app.js"></script>
+<script src="pizarra.js"></script>
 <script src="sesiones.js"></script>
 <script src="vivo.js"></script>
 <script src="ley.js"></script>

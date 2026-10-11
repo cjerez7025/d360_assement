@@ -17,9 +17,42 @@ service cloud.firestore {
         ];
     }
 
+    // ── Pizarra compartida: comentarios con autor e imágenes, por pregunta o generales ──
+    // Cada comentario es un documento propio: no se puede editar (solo crear y, el consultor, borrar).
+    // Las imágenes van reducidas en el propio documento (JPEG en base64, ≤ 240.000 caracteres c/u, hasta 3).
+    function esIdPz(id) {
+      return id.matches('^[A-Za-z0-9]{20}$');
+    }
+    function imagenPz(s) {
+      return s is string && s.size() > 20 && s.size() <= 240000;
+    }
+    function imagenesPz(l) {
+      return l is list && l.size() <= 3
+        && (l.size() < 1 || imagenPz(l[0]))
+        && (l.size() < 2 || imagenPz(l[1]))
+        && (l.size() < 3 || imagenPz(l[2]));
+    }
+    // Forma válida de un comentario nuevo. «ahora» es la hora del servidor (no se puede falsear).
+    function comentarioPz(d) {
+      return d.keys().hasOnly(['autor', 'rol', 'email', 'cargo', 'qid', 'texto', 'imgs', 'creadoEn'])
+        && d.keys().hasAll(['autor', 'rol', 'qid', 'texto', 'creadoEn'])
+        && d.autor is string && d.autor.size() >= 1 && d.autor.size() <= 60
+        && d.qid is string && d.qid.size() >= 1 && d.qid.size() <= 20
+        && d.texto is string && d.texto.size() <= 2000
+        && (!('cargo' in d) || (d.cargo is string && d.cargo.size() <= 60))
+        && (!('imgs' in d) || imagenesPz(d.imgs))
+        && (d.texto.size() > 0 || ('imgs' in d && d.imgs.size() > 0));
+    }
+
     // Sesiones de diagnóstico (respuestas, notas de la reunión, datos del cliente): solo consultores.
     match /sesiones/{id} {
       allow read, write: if esConsultor();
+
+      // Pizarra de la sesión (registro permanente): solo consultores. Los comentarios que hacen los clientes durante
+      // la reunión en vivo los copia aquí el propio consultor, conservando autor y hora.
+      match /pizarra/{eid} {
+        allow read, write: if esConsultor();
+      }
     }
 
     // Resultados publicados para el cliente.
@@ -33,6 +66,13 @@ service cloud.firestore {
         && token.size() == 32
         && request.resource.data.keys().hasOnly(['perfil', 'respuestas', 'notas', 'publicadoEn', 'version']);
       allow delete: if esConsultor();
+
+      // Copia publicada de la pizarra: el cliente la ve en sus resultados. Se lee conociendo el token del enlace
+      // (la ruta lo incluye, así que no se puede leer la de otra sesión); solo los consultores escriben.
+      match /pizarra/{eid} {
+        allow get, list: if true;
+        allow create, update, delete: if esConsultor() && esIdPz(eid);
+      }
     }
 
     // Reunión en vivo: el cliente sigue la pregunta del consultor y puede PROPONER respuestas.
@@ -59,6 +99,29 @@ service cloud.firestore {
       allow create: if esConsultor() && token.size() == 32 && camposConsultor();
       allow update: if (esConsultor() && camposConsultor()) || (vigente(resource.data) && soloCliente());
       allow delete: if esConsultor();
+
+      // Pizarra en vivo: mientras el enlace está vigente, cualquiera con el token ve los comentarios y puede AGREGAR
+      // los suyos (con su nombre). No puede editar ni borrar; el consultor puede borrar cualquiera.
+      match /pizarra/{eid} {
+        function enlaceVigente() {
+          let p = get(/databases/$(database)/documents/en_vivo/$(token)).data;
+          return p.activo == true && p.venceEn > request.time;
+        }
+        allow get, list: if esConsultor() || enlaceVigente();
+        allow create: if esIdPz(eid)
+          && comentarioPz(request.resource.data)
+          && request.resource.data.creadoEn == request.time
+          && (
+            (esConsultor()
+              && request.resource.data.rol == 'consultor'
+              && request.resource.data.email == request.auth.token.email)
+            || (request.resource.data.rol == 'cliente'
+              && !('email' in request.resource.data)
+              && enlaceVigente())
+          );
+        allow update: if false;
+        allow delete: if esConsultor();
+      }
     }
 
     // Todo lo demás, denegado.

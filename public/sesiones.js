@@ -11,9 +11,10 @@
   const guardado = (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } };
   // modo de prueba: solo si firebase-config.js lo permite (prueba: true); los datos quedan en este navegador
   const PRUEBA = !!CFG.prueba && (guardado('d360prueba') === '1' || P.get('prueba') === '1');
-  const MOCK = PRUEBA || (P.get('mock') === '1' && location.hostname === 'localhost');
+  const MOCK = PRUEBA || (P.get('mock') === '1' && (location.hostname === 'localhost' || location.hostname === '127.0.0.1'));
   let N = null, user = null, desub = null, lista = [], act = null, confirmaRev = false, vivoOff = null, confirmaVivo = false;
   const ms = (t) => (t && t.toMillis ? t.toMillis() : typeof t === 'number' ? t : null);
+  window.pzUsuario = () => user; // autor verificado de los comentarios del consultor
 
   function solo(id) { document.querySelectorAll('.screen').forEach((s) => s.classList.remove('active')); $(id).classList.add('active'); }
   function msg(titulo, texto, acciones) {
@@ -41,7 +42,7 @@
   async function arrancar() {
     document.body.classList.add('nube');
     // en localhost se evita el caché de módulos; en producción lo resuelve la cabecera Cache-Control de firebase.json
-    const sufijo = location.hostname === 'localhost' ? '?t=' + Date.now() : '';
+    const sufijo = (location.hostname === 'localhost' || location.hostname === '127.0.0.1') ? '?t=' + Date.now() : '';
     try { N = await import((MOCK ? './nube-prueba.js' : './nube.js') + sufijo); }
     catch (e) { msg('No se pudo conectar', 'El servicio de sesiones no está disponible. Revise su conexión e intente de nuevo.', [['Reintentar', () => location.reload()]]); return; }
     if (P.get('v')) return window.vivoCliente(N, P.get('v'));
@@ -62,6 +63,8 @@
       const d = await N.leerCompartido(tk);
       if (!d) return invalido();
       en.rs(); en.ro = true; en.cargar(d); en.pubEn = ms(d.publicadoEn);
+      let pz = []; try { pz = await N.pzLeerCompartido(tk); } catch (e) { pz = []; } // sin pizarra publicada o sin acceso: se muestran solo los resultados
+      PZ.lectura(pz);
       sr();
     } catch (e) { invalido(); }
   }
@@ -69,7 +72,7 @@
   // ── consultor: acceso ──
   function fuera() {
     $('uchip').hidden = true; $('saveind').hidden = true; if (desub) { desub(); desub = null; }
-    en.rs(); lista = []; ss('s0');
+    en.rs(); lista = []; PZ.parar(); ss('s0');
   }
   function noAutorizado() {
     msg('Cuenta no autorizada', 'La cuenta ' + (user ? user.email : '') + ' no tiene permiso para conducir sesiones D360°. Pida a AlignData que la autorice o ingrese con otra cuenta.', [['Cerrar sesión', () => window.salir()]]);
@@ -105,7 +108,7 @@
 
   // ── consultor: panel de sesiones ──
   const estado = (s) => (s.compartido ? (cambios(s) ? 'cambios' : 'compartida') : s.estado === 'completa' ? 'completa' : 'en_curso');
-  function cambios(s) { const c = s.compartido && ms(s.compartido.en), a = ms(s.actualizadoEn); return !!(c && a && a > c + 1500); }
+  function cambios(s) { const c = s.compartido && ms(s.compartido.en), a = ms(s.actualizadoEn); return !!(c && ((a && a > c + 1500) || (act && act.id === s.id && PZ.ultimo() > c + 1500))); }
   const CHIP = { en_curso: ['lvn', 'En curso'], completa: ['lv3', 'Completa'], compartida: ['lv4', 'Compartida con el cliente'], cambios: ['lv2', 'Cambios sin publicar'] };
   const nivelDe = (s) => (s.puntaje != null ? en.ml(s.puntaje).n : 'x');
   function tarjeta(s) {
@@ -140,6 +143,7 @@
   window.dash = async function () {
     if (N && N.vaciarYa) { try { await N.vaciarYa(); } catch (e) { /* se reintenta al reconectar */ } }
     vivoPush('pausa'); if (vivoOff) { vivoOff(); vivoOff = null; }
+    PZ.parar();
     en.rs(); cs = null; act = null; $('saveind').hidden = true; vivoBtn();
     ss('sd'); renderDash();
   };
@@ -157,6 +161,7 @@
     const perfil = { nombre: n.value.trim(), sector: s.value, 'tamaño': z.value, contacto: $('f5').value.trim(), email: $('f4').value.trim() };
     const id = N.crear(perfil);
     en.rs(); en.sp(perfil); en.sid = id; act = { id, compartido: null };
+    PZ.abrirSesion(N, id);
     ss('s2'); rq(en.ga()[0].id);
   };
   async function cargar(id) {
@@ -165,7 +170,8 @@
     d = d || lista.find((s) => s.id === id);
     if (!d) { msg('No se encontró la sesión', 'Puede que otra persona la haya eliminado.', [['Volver a las sesiones', () => window.dash()]]); throw new Error('sin sesión'); }
     en.rs(); en.cargar(d); en.sid = id; modo = 'auditor'; act = { id, compartido: d.compartido || null };
-    en.viv = d.vivo && d.vivo.venceEn > Date.now() ? d.vivo : null; vivoOn();
+    en.viv = d.vivo && d.vivo.venceEn > Date.now() ? d.vivo : null;
+    await PZ.abrirSesion(N, id); vivoOn();
   }
   window.abrirSes = async (id) => { try { await cargar(id); } catch (e) { return; } ss('s2'); const n = en.nx(); if (n) rq(n.id); else sr(); };
   window.resSes = async (id) => { try { await cargar(id); } catch (e) { return; } sr(); };
@@ -192,7 +198,7 @@
     const parcial = r.completa ? '' : `<p class="dlg-warn"><i data-lucide="triangle-alert"></i>La sesión tiene ${r.hechas} de ${r.total} preguntas respondidas: los resultados serán parciales.</p>`;
     let h;
     if (!tk) {
-      h = `<p>Quien reciba el enlace verá los resultados de <strong>${esc(p.nombre)}</strong> en modo lectura: las respuestas y las notas de la reunión. No podrá modificar nada.</p>${parcial}<div class="dlg-act"><button class="be be-p" id="dlg-pub" onclick="pub()"><i data-lucide="link"></i>Publicar y crear enlace</button></div>`;
+      h = `<p>Quien reciba el enlace verá los resultados de <strong>${esc(p.nombre)}</strong> en modo lectura: las respuestas, las notas de la reunión y la pizarra con los comentarios. No podrá modificar nada.</p>${parcial}<div class="dlg-act"><button class="be be-p" id="dlg-pub" onclick="pub()"><i data-lucide="link"></i>Publicar y crear enlace</button></div>`;
     } else {
       const url = enlace(tk), cam = s && cambios(s);
       h = `<p>Los resultados de <strong>${esc(p.nombre)}</strong> están publicados${c.en ? ' desde el ' + fchd(new Date(ms(c.en) || Date.now())) : ''}.</p>
@@ -208,13 +214,14 @@ ${parcial}<div class="dlg-act"><a class="be" href="${esc(url)}" target="_blank" 
     try {
       await N.vaciarYa();
       const tk = await N.compartir(act.id, en.pub(), act.compartido && act.compartido.token);
+      await N.pzPublicar(tk, PZ.entries);
       act.compartido = { token: tk, en: Date.now() };
     } catch (e) { $('dlg-body').insertAdjacentHTML('afterbegin', '<p class="dlg-warn" role="alert">No se pudo publicar (' + esc(e.code || e.message) + '). Intente de nuevo.</p>'); if (b) b.disabled = false; return; }
     dlgRender();
   };
   window.rev = async function () {
     if (!confirmaRev) { confirmaRev = true; dlgRender(); return; }
-    try { await N.revocar(act.id, act.compartido.token); act.compartido = null; confirmaRev = false; } catch (e) { $('dlg-body').insertAdjacentHTML('afterbegin', '<p class="dlg-warn" role="alert">No se pudo revocar (' + esc(e.code || e.message) + ').</p>'); return; }
+    try { try { await N.pzBorrarCompartido(act.compartido.token); } catch (e) { /* sin pizarra publicada */ } await N.revocar(act.id, act.compartido.token); act.compartido = null; confirmaRev = false; } catch (e) { $('dlg-body').insertAdjacentHTML('afterbegin', '<p class="dlg-warn" role="alert">No se pudo revocar (' + esc(e.code || e.message) + ').</p>'); return; }
     const s = lista.find((x) => x.id === act.id); if (s) s.compartido = null;
     dlgRender();
   };
@@ -237,6 +244,7 @@ ${parcial}<div class="dlg-act"><a class="be" href="${esc(url)}" target="_blank" 
   function vivoOn() {
     if (vivoOff) { vivoOff(); vivoOff = null; }
     en.prop = {}; en.clienteVisto = null; vivoBtn();
+    PZ.vivo(en.viv ? en.viv.token : null);
     if (!en.viv || !N.vivoEscuchar) return;
     vivoOff = N.vivoEscuchar(en.viv.token, (d) => {
       if (!d) { en.viv = null; en.prop = {}; en.clienteVisto = null; }
@@ -247,7 +255,7 @@ ${parcial}<div class="dlg-act"><a class="be" href="${esc(url)}" target="_blank" 
   function vivoRender() {
     if (!en.viv) {
       $('dv-body').innerHTML = `<p>Invite a su cliente a seguir la reunión desde su propio computador o celular mientras siguen conectados por la videollamada.</p>
-<ul class="dv-l"><li>Verá <strong>la misma pregunta</strong> que usted, con sus ejemplos, y las notas que usted escriba.</li><li>Podrá <strong>proponer una respuesta</strong>: usted la ve en su pantalla y decide cuál queda registrada.</li><li><strong>No</strong> ve el nivel ni los puntajes mientras responde.</li><li>El enlace vence en 12 horas y usted puede cerrarlo cuando quiera.</li></ul>
+<ul class="dv-l"><li>Verá <strong>la misma pregunta</strong> que usted, con sus ejemplos, y las notas que usted escriba.</li><li>Podrá <strong>escribir comentarios y subir imágenes</strong> en la pizarra, con su nombre; usted y todos los participantes los ven al instante.</li><li>Podrá <strong>proponer una respuesta</strong>: usted la ve en su pantalla y decide cuál queda registrada.</li><li><strong>No</strong> ve el nivel ni los puntajes mientras responde.</li><li>El enlace vence en 12 horas y usted puede cerrarlo cuando quiera.</li></ul>
 <div class="dlg-act"><button class="be be-p" id="dv-go" onclick="vivoCrear()"><i data-lucide="link"></i>Crear enlace en vivo</button></div>`;
     } else {
       const url = enlaceVivo(en.viv.token), on = !!(en.clienteVisto && Date.now() - en.clienteVisto < 60000), n = Object.keys(en.prop).length;
@@ -272,9 +280,9 @@ ${parcial}<div class="dlg-act"><a class="be" href="${esc(url)}" target="_blank" 
   window.vivoCopiar = async () => { const i = $('dv-url'), ok = $('dv-cp'); try { await navigator.clipboard.writeText(i.value); ok.textContent = 'Enlace copiado.'; } catch (e) { i.select(); ok.textContent = 'Seleccionado: use Ctrl+C para copiarlo.'; } };
   window.vivoTerminar = async () => {
     if (!confirmaVivo) { confirmaVivo = true; vivoRender(); return; }
-    try { await N.vivoCerrar(en.sid, en.viv.token); } catch (e) { $('dv-body').insertAdjacentHTML('afterbegin', '<p class="dlg-warn" role="alert">No se pudo cerrar (' + esc(e.code || e.message) + ').</p>'); return; }
+    try { await PZ.sincronizarVivo(); await N.pzVivoLimpiar(en.viv.token); await N.vivoCerrar(en.sid, en.viv.token); } catch (e) { $('dv-body').insertAdjacentHTML('afterbegin', '<p class="dlg-warn" role="alert">No se pudo cerrar (' + esc(e.code || e.message) + ').</p>'); return; }
     if (vivoOff) { vivoOff(); vivoOff = null; }
-    en.viv = null; en.prop = {}; en.clienteVisto = null; confirmaVivo = false; propUI(); vivoBtn(); vivoRender();
+    PZ.vivo(null); en.viv = null; en.prop = {}; en.clienteVisto = null; confirmaVivo = false; propUI(); vivoBtn(); vivoRender();
   };
   $('dlg-vivo').addEventListener('click', (e) => { if (e.target === $('dlg-vivo')) $('dlg-vivo').close(); });
 
