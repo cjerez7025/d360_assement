@@ -18,7 +18,7 @@ Otros problemas: las opciones de respuesta no se podían usar con teclado (eran 
 | `--lvN-soft` | fondo de la etiqueta | — |
 | `--lvN-mark` | barras, puntos, íconos | ≥ 3:1 sobre la tarjeta y sobre el riel del medidor |
 
-Hay una única escala de estado: `lv0` rojo (sin protección / crítico) → `lv1` naranja → `lv2` ámbar → `lv3` teal → `lv4` verde (optimizado), más `lvn` neutro para «Sin datos». Se usa igual en el puntaje, las dimensiones, las brechas, el plan y el semáforo. **Nunca va solo con color:** siempre hay texto («Riesgo alto», «Cumple», «En desarrollo») y, en etiquetas y semáforo, un ícono.
+Hay una única escala de estado: `lv0` rojo (inexistente / crítico) → `lv1` naranja → `lv2` ámbar → `lv3` teal → `lv4` verde (optimizado), más `lvn` neutro para «Sin datos». Se usa igual en el puntaje, las dimensiones, las brechas, el plan y el semáforo. **Nunca va solo con color:** siempre hay texto («Riesgo alto», «Cumple», «En desarrollo») y, en etiquetas y semáforo, un ícono.
 
 La marca se mantiene: navy `#0A0F1E` y teal `#00B894`. El teal vibrante se usa para relleno (botones con texto navy, 7,5:1); el teal para texto es una variante más oscura (`--brand-ink`).
 

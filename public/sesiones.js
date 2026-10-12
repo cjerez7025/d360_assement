@@ -174,7 +174,22 @@
     if (!d) { msg('No se encontró la sesión', 'Puede que otra persona la haya eliminado.', [['Volver a las sesiones', () => window.dash()]]); throw new Error('sin sesión'); }
     en.rs(); en.cargar(d); en.sid = id; modo = 'auditor'; act = { id, compartido: d.compartido || null };
     en.viv = d.vivo && d.vivo.venceEn > Date.now() ? d.vivo : null;
-    await PZ.abrirSesion(N, id); vivoOn();
+    await PZ.abrirSesion(N, id); await migrarNotas(d, id); vivoOn();
+  }
+  // Las antiguas «Notas de la reunión» (un texto por pregunta) pasan a la pizarra de su pregunta, con el mismo autor y la fecha de la sesión.
+  // El id es fijo (pzIdNota), así que repetirlo no duplica nada; recién después se borran de la sesión.
+  async function migrarNotas(d, sid) {
+    const notas = Object.entries(en.n || {}).filter(([, t]) => String(t).trim());
+    if (!notas.length || !N.pzEspejar) return;
+    const cr = d.creadoPor || {}, autor = String(cr.nombre || cr.email || (user && (user.nombre || user.email)) || 'Consultor').slice(0, 60), email = cr.email || (user && user.email);
+    try {
+      for (const [qid, texto] of notas) {
+        const e = { id: pzIdNota(sid, qid), autor, rol: 'consultor', qid, texto: String(texto).slice(0, 2000), creadoEn: ms(d.actualizadoEn) || Date.now() };
+        if (email) e.email = email;
+        await N.pzEspejar(sid, e);
+      }
+      en.n = {}; en.sv();
+    } catch (e) { /* sin permiso o sin conexión: las notas siguen en la sesión y se reintenta al abrirla de nuevo */ }
   }
   window.abrirSes = async (id) => { try { await cargar(id); } catch (e) { return; } ss('s2'); const n = en.nx(); if (n) rq(n.id); else sr(); };
   window.resSes = async (id) => { try { await cargar(id); } catch (e) { return; } sr(); };
@@ -201,7 +216,7 @@
     const parcial = r.completa ? '' : `<p class="dlg-warn"><i data-lucide="triangle-alert"></i>La sesión tiene ${r.hechas} de ${r.total} preguntas respondidas: los resultados serán parciales.</p>`;
     let h;
     if (!tk) {
-      h = `<p>Quien reciba el enlace verá los resultados de <strong>${esc(p.nombre)}</strong> en modo lectura: las respuestas, las notas de la reunión y la pizarra con los comentarios. No podrá modificar nada.</p>${parcial}<div class="dlg-act"><button class="be be-p" id="dlg-pub" onclick="pub()"><i data-lucide="link"></i>Publicar y crear enlace</button></div>`;
+      h = `<p>Quien reciba el enlace verá los resultados de <strong>${esc(p.nombre)}</strong> en modo lectura: las respuestas y la pizarra con los comentarios y archivos de la reunión. No podrá modificar nada.</p>${parcial}<div class="dlg-act"><button class="be be-p" id="dlg-pub" onclick="pub()"><i data-lucide="link"></i>Publicar y crear enlace</button></div>`;
     } else {
       const url = enlace(tk), cam = s && cambios(s);
       h = `<p>Los resultados de <strong>${esc(p.nombre)}</strong> están publicados${c.en ? ' desde el ' + fchd(new Date(ms(c.en) || Date.now())) : ''}.</p>
@@ -258,7 +273,7 @@ ${parcial}<div class="dlg-act"><a class="be" href="${esc(url)}" target="_blank" 
   function vivoRender() {
     if (!en.viv) {
       $('dv-body').innerHTML = `<p>Invite a su cliente a seguir la reunión desde su propio computador o celular mientras siguen conectados por la videollamada.</p>
-<ul class="dv-l"><li>Verá <strong>la misma pregunta</strong> que usted, con sus ejemplos, y las notas que usted escriba.</li><li>Podrá <strong>escribir comentarios y subir imágenes</strong> en la pizarra, con su nombre; usted y todos los participantes los ven al instante.</li><li>Podrá <strong>proponer una respuesta</strong>: usted la ve en su pantalla y decide cuál queda registrada.</li><li><strong>No</strong> ve el nivel ni los puntajes mientras responde.</li><li>El enlace vence en 12 horas y usted puede cerrarlo cuando quiera.</li></ul>
+<ul class="dv-l"><li>Verá <strong>la misma pregunta</strong> que usted, con sus ejemplos.</li><li>Podrá <strong>escribir comentarios y subir imágenes</strong> en la pizarra, con su nombre; usted y todos los participantes los ven al instante.</li><li>Podrá <strong>proponer una respuesta</strong>: usted la ve en su pantalla y decide cuál queda registrada.</li><li><strong>No</strong> ve el nivel ni los puntajes mientras responde.</li><li>El enlace vence en 12 horas y usted puede cerrarlo cuando quiera.</li></ul>
 <div class="dlg-act"><button class="be be-p" id="dv-go" onclick="vivoCrear()"><i data-lucide="link"></i>Crear enlace en vivo</button></div>`;
     } else {
       const url = enlaceVivo(en.viv.token), on = !!(en.clienteVisto && Date.now() - en.clienteVisto < 60000), n = Object.keys(en.prop).length;

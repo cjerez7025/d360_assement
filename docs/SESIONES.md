@@ -8,7 +8,7 @@ El D360° pasa de ser un cuestionario público a una **herramienta para conducir
 |---|---|---|
 | Entra con | Cuenta de Google autorizada | Un enlace privado con código |
 | Ve las preguntas y registra respuestas | Sí, navegando libremente (índice, atrás, saltar) | No |
-| Escribe notas de la reunión por pregunta | Sí | Las ve (en la reunión en vivo y en sus resultados) |
+| Comenta en la pizarra de la reunión (texto, imágenes, documentos) | Sí | Sí, con su nombre (ver `docs/PIZARRA.md`) |
 | Ve el panel con todas las sesiones y retoma cualquiera | Sí | No |
 | Ve los resultados (puntaje, radar, brechas, plan, semáforo, alertas) | Sí, siempre | Sí, **lo que el consultor publicó**, en modo lectura |
 | Descarga el PDF | Sí | Sí |
@@ -19,7 +19,7 @@ La portada pública anterior (cuestionario abierto a cualquiera) **ya no existe*
 ## Cómo se usa en una reunión
 
 1. El consultor ingresa con Google y pulsa **Nueva sesión** (empresa, sector, tamaño, contacto).
-2. Conduce la reunión: lee la pregunta, usa «Ver ejemplos» con el cliente, marca la respuesta (`1`–`4` en el teclado, `Enter` para avanzar) y anota lo que comenta el cliente. El indicador de la barra superior muestra «Guardado». Si se cae internet, la sesión se guarda en el equipo y se sube sola al reconectar.
+2. Conduce la reunión: lee la pregunta, usa «Ver ejemplos» con el cliente, marca la respuesta (`1`–`4` en el teclado, `Enter` para avanzar) y anota lo que comenta el cliente en la pizarra. El indicador de la barra superior muestra «Guardado». Si se cae internet, la sesión se guarda en el equipo y se sube sola al reconectar.
 3. Puede salir en cualquier momento («Sesiones») y retomar después con **Continuar**: queda en la primera pregunta pendiente. Con el **Índice de preguntas** salta a cualquiera, y puede volver a una respuesta para cambiarla.
 4. Al terminar abre **Resultados**, los revisa y pulsa **Compartir con el cliente → Publicar y crear enlace**. Copia el enlace y se lo envía.
 5. Si después corrige una respuesta, la tarjeta de la sesión muestra «Cambios sin publicar» y el diálogo ofrece **Actualizar resultados publicados**. **Revocar enlace** lo desactiva de inmediato.
@@ -32,7 +32,7 @@ Firebase Firestore, proyecto `aligndata-arcop`, **base nombrada `d360`** (regió
 sesiones/{id}          Solo consultores autorizados
   perfil               nombre, sector, tamaño, contacto, email
   respuestas           { "GOB-01": 3, ... }
-  notas                { "GOB-01": "texto", ... }   ← privadas
+  notas                (antiguo) se pasa a la pizarra al abrir la sesión
   estado, avance, hechas, total, puntaje, nivel     (resumen para el panel)
   compartido           { token, en } | null
   creadoPor, creadoEn, actualizadoEn, actualizadoPor, version
@@ -40,11 +40,10 @@ sesiones/{id}          Solo consultores autorizados
 compartidos/{token}    Lectura por enlace; solo consultores escriben
   perfil               nombre, sector, tamaño         ← sin email ni contacto
   respuestas           solo las de preguntas visibles
-  notas                las de preguntas visibles: el cliente las ve
   publicadoEn, version
 
 en_vivo/{token}        Reunión en vivo (ver abajo)
-  perfil.nombre, qid, fase, respuestas, notas, total   ← lo escribe el consultor
+  perfil.nombre, qid, fase, respuestas, total   ← lo escribe el consultor
   propuestas, clienteVisto                             ← lo escribe el cliente
   activo, venceEn, creadoEn, actualizadoEn
 ```
@@ -67,7 +66,7 @@ Las reglas están en [`firestore.d360.rules`](../firestore.d360.rules):
 
 Para reuniones por Zoom u otra plataforma: el consultor pulsa **Invitar al cliente** y envía el enlace por el chat de la videollamada. El cliente lo abre en su computador o celular y:
 
-- ve **la misma pregunta** que el consultor, con los ejemplos de cada respuesta y las notas que este escribe;
+- ve **la misma pregunta** que el consultor, con los ejemplos de cada respuesta y la pizarra de la pregunta;
 - puede **proponer una respuesta**; el consultor la ve en su pantalla («El cliente propone…»), y la **confirma** con un botón o elige otra: la respuesta registrada siempre es la que decide el consultor;
 - **no ve** el nivel ni los puntajes mientras se responde (eso se comparte después, con el enlace de resultados).
 

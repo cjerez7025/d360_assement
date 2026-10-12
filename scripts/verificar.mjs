@@ -20,8 +20,8 @@ const sandbox = {
 };
 sandbox.globalThis = sandbox;
 vm.createContext(sandbox);
-vm.runInContext(code + '\n;globalThis.__t={D,Q,A,CL,E2,en};', sandbox);
-const { D, Q, A, CL, E2, en } = sandbox.__t;
+vm.runInContext(code + '\n;globalThis.__t={D,Q,A,CL,E2,en,SEC,SEC_F,SEC_DIM,SEC_N,SEC_J,SEC_K,SEC_V,SEC_B,SEC_BN,TAM,TAM_K,TAM_V,TAM_DIM};', sandbox);
+const { D, Q, A, CL, E2, en, SEC, SEC_F, SEC_DIM, SEC_N, SEC_J, SEC_K, SEC_V, SEC_B, SEC_BN, TAM, TAM_K, TAM_V, TAM_DIM } = sandbox.__t;
 
 let fallos = 0;
 const ok = (c, m) => { if (!c) { fallos++; console.log('  ✗ ' + m); } };
@@ -208,30 +208,23 @@ seccion('10. Sesiones guardadas (consultor y cliente)');
   ok(e1.sig(lst[0].id).id === lst[1].id && e1.ant(lst[0].id) === null && e1.sig(ult.id) === null && e1.ant(lst[1].id).id === lst[0].id, 'la navegación libre debe recorrer las preguntas en orden y terminar en los extremos');
   e1.ans('GOB-01', 0);
   ok(e1.sig('GOB-01').id === 'GOB-01b', 'la pregunta de profundización debe aparecer justo después de la que la dispara');
-  e1.nota('GOB-01', '  El cliente dice que TI se encarga  ');
-  ok(e1.n['GOB-01'] && e1.n['GOB-01'].includes('TI'), 'las notas de la reunión se guardan por pregunta');
-  e1.nota('GOB-01', '   ');
-  ok(!('GOB-01' in e1.n), 'una nota vacía se elimina');
-  e1.nota('GOB-02', 'x'.repeat(5000));
-  ok(e1.n['GOB-02'].length === 2000, 'las notas se limitan a 2000 caracteres');
+  ok(typeof e1.nota === 'undefined', 'el motor ya no escribe «notas de la reunión»: los comentarios van en la pizarra');
 
-  // lo que ve el cliente: solo perfil mínimo y respuestas visibles; nunca notas ni contacto
+  // lo que ve el cliente: solo perfil mínimo y respuestas visibles; nunca contacto
   const e2 = new E2();
   e2.sp({ nombre: 'Acme SpA', sector: 'salud', 'tamaño': '11-50', email: 'ana@acme.cl', contacto: 'Ana Pérez' });
   e2.a = { 'GOB-01': 3, 'GOB-01b': 2, 'GOB-02': 2 };
-  e2.n = { 'GOB-01': 'nota privada' };
+  e2.n = { 'GOB-01': 'nota antigua' }; // las notas antiguas ya no se publican
   const pub = e2.pub();
-  ok(Object.keys(pub).sort().join() === 'notas,perfil,respuestas', 'lo publicado solo tiene perfil, respuestas y notas');
+  ok(Object.keys(pub).sort().join() === 'perfil,respuestas', 'lo publicado solo tiene perfil y respuestas (los comentarios van en la pizarra)');
   ok(Object.keys(pub.perfil).sort().join() === 'nombre,sector,tamaño', 'el perfil publicado no incluye email ni contacto');
   ok(!('GOB-01b' in pub.respuestas) && pub.respuestas['GOB-01'] === 3, 'no se publican respuestas de preguntas que ya no aplican');
-  ok(JSON.stringify(pub).includes('nota privada') && pub.notas['GOB-01'] === 'nota privada', 'las notas de la reunión se publican: el cliente las ve');
+  ok(!JSON.stringify(pub).includes('nota antigua'), 'las notas antiguas no se publican (se pasan a la pizarra al abrir la sesión)');
   ok(!JSON.stringify(pub).includes('ana@acme.cl') && !JSON.stringify(pub).includes('Ana Pérez'), 'lo publicado no debe contener el email ni el contacto del cliente');
-  const eN = new E2(); eN.a = { 'GOB-01': 3 }; eN.n = { 'GOB-01': ' ', 'GOB-01b': 'no aplica', 'GOB-02': 'x'.repeat(3000) };
-  ok(!('GOB-01' in eN.pub().notas) && !('GOB-01b' in eN.pub().notas) && eN.pub().notas['GOB-02'].length === 2000, 'las notas vacías o de preguntas que no aplican no se publican y se limitan a 2000 caracteres');
   const e3 = new E2().cargar(pub);
   ok(JSON.stringify(e3.sc()) === JSON.stringify(e2.sc()), 'el cliente debe ver el mismo puntaje que el consultor');
   const e4 = new E2().cargar({ perfil: e2.p, respuestas: e2.a, notas: e2.n });
-  ok(e4.n['GOB-01'] === 'nota privada' && e4.p.contacto === 'Ana Pérez', 'cargar una sesión restaura notas y perfil');
+  ok(e4.n['GOB-01'] === 'nota antigua' && e4.p.contacto === 'Ana Pérez', 'cargar una sesión conserva las notas antiguas (para pasarlas a la pizarra) y el perfil');
   ok(e2.pub().respuestas !== e2.a, 'lo publicado es una copia y no la referencia interna');
 
   // resumen para el panel de sesiones
@@ -289,11 +282,11 @@ seccion('11. Reunión en vivo (el cliente propone, el consultor confirma)');
 {
   const raiz2 = path.resolve(path.dirname(file), '..');
   const leer2 = (f) => fs.readFileSync(path.join(raiz2, f), 'utf8').replace(/\r\n/g, '\n');
-  const e = new E2(); e.a = { 'GOB-01': 3, 'GOB-01b': 2 }; e.n = { 'GOB-01': 'nota visible', 'GOB-01b': 'no aplica', 'GOB-02': '  ' };
+  const e = new E2(); e.a = { 'GOB-01': 3, 'GOB-01b': 2 }; e.n = { 'GOB-01': 'nota antigua' };
   const st = sandbox.vivoEstado(e, 'GOB-02', 'pregunta');
   ok(st.qid === 'GOB-02' && st.fase === 'pregunta' && st.respuestas['GOB-01'] === 3 && !('GOB-01b' in st.respuestas), 'el estado en vivo lleva la pregunta actual y solo las respuestas de preguntas que aplican');
-  ok(st.notas['GOB-01'] === 'nota visible' && !('GOB-01b' in st.notas) && !('GOB-02' in st.notas) && st.total === e.ga().length, 'el estado en vivo lleva las notas que aplican y no las vacías');
-  ok(Object.keys(st).sort().join() === 'fase,notas,qid,respuestas,total', 'el estado en vivo no incluye puntajes, niveles ni datos de contacto');
+  ok(!('notas' in st) && !JSON.stringify(st).includes('nota antigua') && st.total === e.ga().length, 'el estado en vivo ya no lleva notas: lo que se escribe va en la pizarra');
+  ok(Object.keys(st).sort().join() === 'fase,qid,respuestas,total', 'el estado en vivo no incluye puntajes, niveles ni datos de contacto');
   ok(sandbox.vivoEstado(e, null, 'resultados').qid === null && sandbox.vivoEstado(e, null).fase === 'pausa', 'sin pregunta actual el cliente ve «pausa» o «resultados»');
   const rv = leer2('firestore.d360.rules'), vj = leer2('public/vivo.js'), nb = leer2('public/nube.js'), nbp = leer2('public/nube-prueba.js'), ss2 = leer2('public/sesiones.js');
   ok(/match \/en_vivo\/\{token\}/.test(rv) && /allow list: if false;[\s\S]*allow create: if esConsultor\(\)/.test(rv.slice(rv.indexOf('en_vivo'))), 'en_vivo: no se puede listar y solo el consultor crea');
@@ -498,42 +491,88 @@ seccion('15. Usuario conectado en la barra superior (foto de Google, nombre y ro
   ok(/@media print\{\.uchip\{display:none!important\}\}/.test(cs), 'en el PDF no sale la barra de usuario');
 }
 
-seccion('16. Metodología: la explicación coincide con el cálculo real');
+seccion('16. Metodología y ponderación sectorial: la explicación coincide con el cálculo real');
 {
   const raiz8 = path.resolve(path.dirname(file), '..');
   const leer8 = (f) => fs.readFileSync(path.join(raiz8, f), 'utf8').replace(/\r\n/g, '\n');
   const sb = sandbox;
   const armar = (perfil, f) => { const e = new E2(); e.p = perfil; Q.filter((q) => !q.iS).forEach((q, i) => { e.a[q.id] = f(q, i); }); return e; };
-  const e1 = armar({ sector: 'salud', 'tamaño': 'micro' }, (q, i) => (i * 7 + 1) % 4);
-  // 1) las cifras de la tabla son las del motor
+  const mixto = (q, i) => (i * 7 + 1) % 4;
+  const ih = leer8('public/index.html'), codigo = leer8('public/app.js'), cs = leer8('public/styles.css');
+
+  // ── 1) integridad de la tabla de rubros ──
+  const sel = ih.match(/id="f2"[\s\S]*?<\/select>/)[0];
+  const opciones = [...sel.matchAll(/<option value="([^"]*)"[^>]*>([^<]*)/g)].map((m) => [m[1], m[2].trim()]).filter(([v]) => v && v !== 'otro');
+  ok(opciones.length === Object.keys(SEC).length && opciones.every(([v, n]) => SEC[v] && SEC_N[v] === n) && Object.keys(SEC).every((k) => opciones.some(([v]) => v === k)), 'cada rubro del formulario (menos «Otro») tiene su fila en la tabla de exposición, con el mismo nombre');
+  ok(Object.values(SEC).every((n) => SEC_F.every((f) => [0, 1, 2].includes(n[f.id])) && Object.keys(n).length === SEC_F.length), 'cada rubro tiene un nivel 0, 1 o 2 en cada uno de los factores');
+  ok(D.every((d) => (SEC_DIM[d.id] || []).length > 0 && SEC_DIM[d.id].every((f) => SEC_F.some((x) => x.id === f))), 'cada dimensión está vinculada a al menos un factor válido');
+  ok(Object.keys(SEC).every((k) => SEC_F.every((f) => (SEC[k][f.id] > 0) === !!(SEC_J[k] && SEC_J[k][f.id]))), 'cada nivel medio o alto de un rubro tiene su justificación escrita (y no hay justificaciones de niveles bajos)');
+  ok(SEC_F.every((f) => /^Arts?\. /.test(f.ar) && f.n && f.d), 'cada factor indica su base legal');
+  ok(SEC_K > 0 && SEC_K <= 0.3 && /^\d+\.\d+$/.test(SEC_V), 'el ajuste máximo es de hasta +30% y la metodología tiene versión');
+  // los artículos citados existen en el texto oficial
+  const wl = {}; vm.runInNewContext(leer8('public/ley-texto.js'), { window: wl });
+  ok(SEC_F.every((f) => sb.citasLey(f.ar).every((c) => c.items.every((it) => wl.LEY.a[it.a]))), 'los artículos de cada factor existen en el texto oficial de la ley');
+
+  // ── 2) el ajuste: acotado y sin efecto para «Otro» o sin rubro ──
+  const mult = (r) => sb.secMult(r);
+  ok(Object.keys(SEC).every((k) => D.every((d) => { const x = mult(k)[d.id]; return x >= 1 && x <= 1 + SEC_K + 1e-9; })), 'el ajuste de cada dimensión va de 1,00 a 1,25 para todos los rubros');
+  ok(['otro', '', undefined, 'inexistente'].every((r) => D.every((d) => mult(r)[d.id] === 1)), '«Otro», sin rubro o un rubro desconocido no llevan ajuste (todo × 1,00)');
+  ok(Math.abs(mult('fintech').terceros - 1.25) < 1e-9 && Math.abs(mult('salud').sensibles - 1.1875) < 1e-9 && Math.abs(mult('alimentos').gobernanza - 1.125) < 1e-9 && mult('alimentos').seguridad === 1.0625, 'ejemplos calculados a mano: fintech·terceros 1,25; salud·sensibles 1,1875; alimentos·gobernanza 1,125 y seguridad 1,0625');
+
+  // ── 3) el puntaje coincide con una recomputación independiente de la fórmula ──
+  const indep = (e) => {
+    const lista = e.ga(); let num = 0, den = 0, numB = 0, denB = 0; const ms = mult((e.p || {}).sector), mt = sb.tamMult((e.p || {})['tamaño']), m = {}; for (const d of D) m[d.id] = ms[d.id] * mt[d.id];
+    for (const d of D) {
+      const qs = lista.filter((q) => q.dm === d.id && e.a[q.id] !== undefined);
+      const pt = Math.round(qs.reduce((t2, q) => t2 + e.a[q.id] * (q.w || 1), 0) / (qs.reduce((t2, q) => t2 + 3 * (q.w || 1), 0) || 1) * 100) * (qs.length ? 1 : 0);
+      num += pt * d.w * m[d.id]; den += 100 * d.w * m[d.id]; numB += pt * d.w; denB += 100 * d.w;
+    }
+    return [Math.round(num / den * 100), Math.round(numB / denB * 100)];
+  };
+  const sectores = [...Object.keys(SEC), 'otro', ''];
+  ok(sectores.every((r) => { const e = armar({ sector: r }, mixto), [g, gb] = indep(e), x = e.sc(); return x.g === g && x.gb === gb; }), 'el puntaje global y el puntaje sin ajuste del motor coinciden con la fórmula recalculada de forma independiente, para todos los rubros');
+  ok(armar({ sector: 'otro' }, mixto).sc().g === armar({ sector: 'otro' }, mixto).sc().gb && armar({}, mixto).sc().g === armar({}, mixto).sc().gb, 'sin ajuste, el puntaje oficial es igual al base');
+  ok(sectores.every((r) => armar({ sector: r }, () => 3).sc().g === 100 && armar({ sector: r }, () => 0).sc().g === 0), 'todo en 3 vale 100 y todo en 0 vale 0 en cualquier rubro');
+  // el efecto va en la dirección que dice el texto: una brecha donde el rubro está más expuesto resta más
+  const debilEn = (dim) => (q) => (q.dm === dim ? 0 : 3);
+  ok(armar({ sector: 'fintech' }, debilEn('terceros')).sc().g < armar({ sector: 'otro' }, debilEn('terceros')).sc().g && armar({ sector: 'fintech' }, debilEn('sensibles')).sc().g > armar({ sector: 'otro' }, debilEn('sensibles')).sc().g, 'en fintech, una brecha en terceros (muy expuesta) baja el puntaje y una en datos sensibles (la menos expuesta) lo sube respecto de sin ajuste');
+  // lo que NO cambia con el rubro
+  const e1 = armar({ sector: 'salud', 'tamaño': 'micro' }, mixto), e2 = armar({ sector: 'fintech', 'tamaño': 'grande' }, mixto);
+  const sinGlobal = (e) => JSON.stringify([e.sc().d, e.fl(), e.cl2(), e.pl().map((p) => [p.d.id, p.s, p.rk]), e.ga().map((q) => q.id)]);
+  ok(sinGlobal(e1) === sinGlobal(e2), 'con las mismas respuestas, el puntaje de cada dimensión, las banderas, el semáforo, el plan y las preguntas son idénticos para cualquier rubro (el rubro solo cambia el peso en el puntaje global)');
+  ok(/secMult\(p\.sector\)/.test(codigo) && /tamMult\(p\['tamaño'\]\)/.test(codigo), 'el motor usa el rubro y el tamaño');
+
+  // ── 4) las cifras de la tabla son las del motor ──
   const m = sb.metDatos(e1), sc = e1.sc();
-  ok(m.filas.length === D.length && m.filas.every((f) => f.pt === sc.d[f.d.id]), 'la tabla de metodología usa los puntajes reales de cada dimensión');
+  ok(m.filas.length === D.length && m.filas.every((f) => f.pt === sc.d[f.d.id] && Math.abs(f.w - f.d.w * mult('salud')[f.d.id]) < 1e-9), 'la tabla usa los puntajes de cada dimensión y los pesos aplicados reales');
   ok(m.filas.every((f) => f.mx === 0 || Math.round(f.sm / f.mx * 100) === f.pt), 'puntaje de la dimensión = Σ(valor×peso) ÷ Σ(3×peso) × 100 (redondeado)');
   ok(Math.abs(m.filas.reduce((t2, f) => t2 + f.ap, 0) - sc.g) <= 0.5, 'los aportes de las dimensiones suman el puntaje global (±0,5 por el redondeo): ' + m.filas.reduce((t2, f) => t2 + f.ap, 0).toFixed(2) + ' vs ' + sc.g);
   const e0 = new E2(); const m0 = sb.metDatos(e0);
   ok(m0.sc.g === 0 && m0.filas.every((f) => f.rs === 0 && f.pt === 0 && f.ap === 0), 'sin respuestas todo vale 0 (una dimensión sin respuestas cuenta como 0%)');
-  // 2) el rubro y el tamaño NO cambian el resultado (si algún día cambian, hay que actualizar la sección 6 de metHtml y esta prueba)
-  const e2 = armar({ sector: 'finanzas', 'tamaño': 'grande' }, (q, i) => (i * 7 + 1) % 4);
-  const huella = (e) => JSON.stringify([e.sc(), e.res(), e.fl(), e.cl2(), e.pl().map((p) => [p.d.id, p.s, p.rk]), e.ga().map((q) => q.id)]);
-  ok(huella(e1) === huella(e2), 'con las mismas respuestas, el puntaje, el nivel, las banderas, el semáforo, el plan y las preguntas son idénticos para cualquier rubro y tamaño');
-  const gid = sb.document.getElementById; sb.document.getElementById = () => ({ ...el(), options: [] }); // lbl() lee las opciones del <select>
-  const html = sb.metHtml(e1);
+
+  // ── 5) lo que dice el texto coincide con los datos y el motor ──
+  const gid = sb.document.getElementById; sb.document.getElementById = () => ({ ...el(), options: [] });
+  const html = sb.metHtml(e1), htmlOtro = sb.metHtml(armar({ sector: 'otro' }, mixto)), htmlVacio = sb.metHtml(e0);
   sb.document.getElementById = gid;
-  ok(/no modifican el puntaje ni el nivel/.test(html) && /ley 20\.416|Ley 20\.416/.test(html) && /la actividad que desarrolla/.test(html) && /artículo sexto transitorio/.test(html), 'la metodología dice que el rubro y el tamaño no cambian el puntaje, y explica por qué sí importan para la ley (art. 14 septies y sexto transitorio)');
-  ok(/class="ref"[^>]*data-a="14 septies"/.test(html), 'la mención al art. 14 septies abre el texto de la ley');
-  // 3) lo que el texto afirma coincide con los datos y el motor
+  ok(new RegExp('versión ' + SEC_V.replace('.', '\\.')).test(html) && /ponderación por exposición sectorial/.test(html) && /No cambia ninguna respuesta ni el puntaje de cada dimensión/.test(html), 'el texto presenta la ponderación sectorial con su versión y aclara qué no cambia');
+  ok(new RegExp('Su sesión: ' + SEC_N.salud.replace(/[/]/g, '\\/')).test(html) && /sin ajustes: \d+%/.test(html) && new RegExp('solo con el ajuste sectorial: ' + sc.gs + '%').test(html) && new RegExp('sin ajustes: ' + sc.gb + '%').test(html), 'la sesión muestra el puntaje sin ajustes y con el ajuste sectorial (los reales)');
+  ok(/El rubro «Otro» no lleva ajuste sectorial/.test(htmlOtro) && /no tiene rubro con ajuste sectorial/.test(htmlVacio), 'para «Otro» o sin rubro el texto dice que no hay ajuste sectorial');
+  ok(Object.keys(SEC).every((k) => html.includes(SEC_N[k])) && SEC_F.every((f) => html.includes(f.n)), 'el texto muestra la tabla completa de rubros y factores');
+  ok(/data-a="14 septies"/.test(html) && /data-a="8 bis"/.test(html) && /data-a="16 quáter"/.test(html), 'los artículos citados abren el texto de la ley');
+  ok(/artículo sexto transitorio/.test(html) && !/todavía no entra en el cálculo/.test(html) && /sujetos a revisión/.test(html), 'el texto aclara el alcance: los niveles están sujetos a revisión y ya no dice que el tamaño no entra');
   const ws = Q.map((q) => q.w);
   ok(Math.min(...ws) === 0.8 && Math.max(...ws) === 1.3 && /de 0,8 a 1,3/.test(html), 'los pesos de las preguntas van de 0,8 a 1,3 (como dice el texto)');
   ok([[20, 0], [21, 1], [40, 1], [41, 2], [60, 2], [61, 3], [80, 3], [81, 4], [100, 4]].every(([p, n]) => e0.ml(p).n === n) && /0 a 20/.test(html) && /21 a 40/.test(html) && /41 a 60/.test(html) && /61 a 80/.test(html) && /81 a 100/.test(html), 'los rangos de los niveles del texto son los del motor');
-  const codigo = leer8('public/app.js');
   ok(/if\(s>=80\)continue;let rk='MEDIO',rc='rme';if\(s<=30\)\{rk='CRÍTICO'/.test(codigo) && /else if\(s<=55\)\{rk='ALTO'/.test(codigo) && /hasta 30%/.test(html) && /hasta 55%/.test(html) && /por debajo de 80%/.test(html), 'los umbrales del plan de acción del texto (80, 30 y 55) son los del motor');
   ok(new Set(CL.map((c2) => c2.tV)).size === 1 && new Set(CL.map((c2) => c2.tY)).size === 1 && new RegExp(CL[0].tV + ' o más es <em>Cumple').test(html) && new RegExp(CL[0].tY + ' o más es <em>Parcial').test(html), 'los umbrales del semáforo del texto son los de las obligaciones');
   ok(Q.filter((q) => q.cd).every((q) => q.cd.lt === 2) && /menor a 2/.test(html), 'el umbral de las preguntas de profundización del texto es el de los datos');
   ok(new RegExp(Q.filter((q) => !q.iS).length + ' preguntas base').test(html) && new RegExp('más ' + Q.filter((q) => q.iS).length + ' de profundización').test(html), 'el texto cuenta bien las preguntas base y de profundización');
-  ok(/Σ \(valor × peso\)/.test(html) && /Σ \(puntaje de la dimensión × peso de la dimensión\)/.test(html), 'las dos fórmulas aparecen en el texto');
-  // 4) pantalla
-  const ih = leer8('public/index.html'), cs = leer8('public/styles.css');
-  ok(/\['t7','calculator','Método',''\]/.test(codigo) && /id=\\"t7\\" role=\\"tabpanel\\"/.test(codigo.replace(/"/g, '\\"').replace(/\\\\"/g, '\\"')) || /id="t7"/.test(codigo), 'la pestaña «Método» está en los resultados');
+  ok(/Σ \(valor × peso\)/.test(html) && /Σ \(puntaje de la dimensión × peso aplicado\)/.test(html) && /Peso aplicado = peso base de la dimensión × ajuste sectorial × ajuste por tamaño/.test(html) && /Ajuste de la dimensión = 1 \+ 0,25/.test(html), 'las fórmulas del texto (dimensión, global y ajuste) coinciden con las del motor');
+  // ── 6) pantalla ──
+  const nota = sb.secNota(e1);
+  ok(/Incluye la ponderación sectorial de «Salud \/ Clínicas» \(v1\.0\)/.test(nota) && new RegExp('Sin ajuste: ' + e1.sc().gb + '%').test(nota) && sb.secNota(armar({ sector: 'otro' }, mixto)) === '' && sb.secNota(e0) === '', 'el encabezado de resultados avisa del ajuste y muestra el puntaje sin ajuste (nada si no hay ajuste)');
+  ok(/\$\{secNota\(en\)\}/.test(codigo), 'la nota del ajuste está en el encabezado de los resultados');
+  ok(/\['t7','calculator','Método',''\]/.test(codigo) && /id="t7"/.test(codigo), 'la pestaña «Método» está en los resultados');
   ok(/id="dlg-met"/.test(ih) && /id="bmet"/.test(ih) && /function metDlg\(\)/.test(codigo), 'el consultor puede abrir la metodología desde la pregunta («Cómo se calcula»)');
   ok(/@media print\{#t7,#bmet\{display:none!important\}\}/.test(cs), 'la metodología no sale en el PDF (no cambia su paginación)');
 }
@@ -578,6 +617,93 @@ seccion('17. Documentos adjuntos (PDF, Word, Excel…) y pegado');
   ok(/PZ_EXT\[pzExt\(a\.n\)\] \|\| 'application\/octet-stream'/.test(pj) && !/text\/html/.test(pj), 'al descargar, el tipo sale de la extensión permitida y nunca de lo que declara el archivo');
   ok(/pzBorrar\(PZS\.sid, ent,/.test(pj) && /idsPartes\(e\)/.test(nb) && /quitarPartes\(p, 'ses', sid, e\)/.test(nbp), 'borrar un comentario borra también el contenido de sus documentos');
   ok(/@media print\{\.pz-file\{/.test(cs), 'los documentos adjuntos no rompen el PDF');
+}
+
+seccion('18. La pizarra reemplaza a las notas de la reunión');
+{
+  const raiz10 = path.resolve(path.dirname(file), '..');
+  const leer10 = (f) => fs.readFileSync(path.join(raiz10, f), 'utf8').replace(/\r\n/g, '\n');
+  const aj = leer10('public/app.js'), vj = leer10('public/vivo.js'), ss5 = leer10('public/sesiones.js'), sb = sandbox;
+  ok(!/class="notas"|id="nota"|en\.nota\(/.test(aj) && !/\bnota\b.*vnota|vnota/.test(vj), 'la pregunta del consultor y la del cliente ya no tienen cuadro ni bloque de «notas»');
+  ok(/<div class="pz-slot" id="pz-slot"><\/div><nav class="qn"/.test(aj), 'la pizarra es el único lugar para anotar en cada pregunta');
+  ok(!/notas/.test(ss5.slice(ss5.indexOf('function dlgRender'), ss5.indexOf('window.pub'))) && /y la pizarra con los comentarios y archivos de la reunión/.test(ss5), 'los textos del diálogo de compartir ya no hablan de notas');
+  ok(/\['t6','messages-square','Pizarra'/.test(aj) && /Notas anteriores/.test(aj), 'en los resultados la pestaña se llama «Pizarra» y las notas antiguas salen aparte, bajo «Notas anteriores»');
+  // id fijo y válido para las reglas (20 letras o números)
+  const id1 = sb.pzIdNota('sesion1', 'GOB-01'), id2 = sb.pzIdNota('sesion1', 'GOB-01b'), id3 = sb.pzIdNota('sesion2', 'GOB-01');
+  ok(/^[A-Za-z0-9]{20}$/.test(id1) && id1 === sb.pzIdNota('sesion1', 'GOB-01') && id1 !== id2 && id1 !== id3, 'el id de una nota migrada es de 20 letras/números, siempre el mismo para la misma sesión y pregunta, y distinto entre preguntas y sesiones');
+  const todas = new Set(); for (const q of Q) todas.add(sb.pzIdNota('mockabc123', q.id)); ok(todas.size === Q.length, 'ninguna pregunta repite el id de nota');
+  // la migración: usa el id fijo, conserva autor y fecha, y solo después borra las notas antiguas
+  const mig = ss5.slice(ss5.indexOf('async function migrarNotas'), ss5.indexOf('window.abrirSes'));
+  ok(/pzIdNota\(sid, qid\)/.test(mig) && /rol: 'consultor'/.test(mig) && /creadoEn: ms\(d\.actualizadoEn\)/.test(mig) && /cr\.nombre \|\| cr\.email/.test(mig), 'la migración conserva el autor original y la fecha de la sesión');
+  ok(mig.indexOf('await N.pzEspejar(sid, e)') > 0 && mig.indexOf('await N.pzEspejar(sid, e)') < mig.indexOf('en.n = {}; en.sv()'), 'las notas antiguas solo se borran después de haberlas copiado a la pizarra (si falla, siguen en la sesión)');
+  ok(/await PZ\.abrirSesion\(N, id\); await migrarNotas\(d, id\)/.test(ss5), 'las notas se migran al abrir la sesión (para trabajar, ver resultados o compartir)');
+  ok(/\.slice\(0, 2000\)/.test(mig), 'una nota migrada respeta el máximo de 2000 caracteres de la pizarra');
+}
+
+seccion('19. Rubros de AlignData, tamaño de la empresa y escala de madurez única');
+{
+  const raiz11 = path.resolve(path.dirname(file), '..');
+  const leer11 = (f) => fs.readFileSync(path.join(raiz11, f), 'utf8').replace(/\r\n/g, '\n');
+  const sb = sandbox, codigo = leer11('public/app.js'), ih = leer11('public/index.html');
+  const armar = (perfil, f) => { const e = new E2(); e.p = perfil; Q.filter((q) => !q.iS).forEach((q, i) => { e.a[q.id] = f(q, i); }); return e; };
+  const mixto = (q, i) => (i * 7 + 1) % 4;
+  const suma = (k) => SEC_F.reduce((t2, f) => t2 + SEC[k][f.id], 0);
+  const por = (b) => Object.keys(SEC).filter((k) => SEC_B[k] === b);
+
+  // ── clasificación de exposición de AlignData ──
+  ok(['salud', 'fintech', 'rrhh'].every((k) => SEC_B[k] === 'alta') && ['educacion', 'retail', 'tecnologia', 'publico'].every((k) => SEC_B[k] === 'media'), 'salud, finanzas/seguros y RR.HH. son de exposición alta; educación, retail, tecnología y sector público/ONG de media-alta (clasificación de AlignData)');
+  ok(Object.keys(SEC).every((k) => SEC_B[k] && SEC_BN[SEC_B[k]]) && Object.keys(SEC_B).length === Object.keys(SEC).length, 'cada rubro tiene su banda de exposición');
+  ok(Math.min(...por('alta').map(suma)) > Math.max(...por('media').map(suma)) && Math.min(...por('media').map(suma)) > Math.max(...por('ext').map(suma)), 'los niveles por factor respetan la banda: todo rubro de exposición alta suma más que uno de media-alta, y este más que uno por clasificar');
+  ok(['rrhh', 'publico'].every((k) => SEC[k] && SEC_N[k] && new RegExp('value="' + k + '"').test(ih)), 'RR.HH. / Reclutamiento y Sector público / ONG están en el formulario y en la tabla');
+
+  // ── tamaño ──
+  const sel3 = ih.match(/id="f3"[\s\S]*?<\/select>/)[0];
+  const rangos = [...sel3.matchAll(/<option value="([^"]*)"/g)].map((m) => m[1]).filter(Boolean);
+  ok(rangos.length === Object.keys(TAM).length && rangos.every((r) => TAM[r]), 'cada rango de empleados del formulario tiene su categoría de tamaño');
+  ok(TAM['1-10'].lv === 0 && TAM['11-50'].lv === 1 && TAM['51-200'].lv === 2 && TAM['201+'].lv === 3 && TAM_K > 0 && TAM_K <= 0.2 && /^\d+\.\d+$/.test(TAM_V), 'micro, pequeña, mediana y grande tienen niveles 0 a 3; el ajuste máximo es de hasta +20% y tiene versión');
+  ok(Object.keys(TAM_DIM).every((id) => D.some((d) => d.id === id)) && Object.keys(TAM_DIM).sort().join() === 'gobernanza,registro,seguridad', 'el tamaño pesa en gobernanza, registro y seguridad (deberes de los arts. 14 ter, 14 quinquies y 50)');
+  const wl2 = {}; vm.runInNewContext(leer11('public/ley-texto.js'), { window: wl2 });
+  ok(Object.values(TAM_DIM).every((x) => sb.citasLey(x.ar).every((c) => c.items.every((it) => wl2.LEY.a[it.a]))) && wl2.LEY.a['14 septies'].p.join(' ').includes('20.416'), 'los artículos del ajuste por tamaño existen en la ley, y el art. 14 septies cita la ley 20.416');
+  const tm = (t2) => sb.tamMult(t2);
+  ok(D.every((d) => tm('1-10')[d.id] === 1 && tm('')[d.id] === 1 && tm('xx')[d.id] === 1 && tm(undefined)[d.id] === 1), 'micro, sin tamaño o un valor desconocido no llevan ajuste (× 1,00)');
+  ok(Math.abs(tm('201+').seguridad - 1.15) < 1e-9 && Math.abs(tm('51-200').gobernanza - 1.1) < 1e-9 && Math.abs(tm('11-50').registro - 1.05) < 1e-9 && tm('201+').arcop === 1 && tm('201+').terceros === 1, 'ejemplos a mano: grande·seguridad 1,15; mediana·gobernanza 1,10; pequeña·registro 1,05; las demás dimensiones no cambian');
+  // sentido del ajuste: una brecha en seguridad resta más en una empresa grande que en una micro
+  const debil = (dim) => (q) => (q.dm === dim ? 0 : 3);
+  ok(armar({ 'tamaño': '201+' }, debil('seguridad')).sc().g < armar({ 'tamaño': '1-10' }, debil('seguridad')).sc().g && armar({ 'tamaño': '201+' }, debil('arcop')).sc().g > armar({ 'tamaño': '1-10' }, debil('arcop')).sc().g, 'una brecha en seguridad baja más el puntaje de una empresa grande que el de una micro, y una brecha en derechos (sin ajuste por tamaño) lo baja menos');
+  const tamanos = ['1-10', '11-50', '51-200', '201+', ''];
+  ok(sectores19().every(([r, z]) => armar({ sector: r, 'tamaño': z }, () => 3).sc().g === 100 && armar({ sector: r, 'tamaño': z }, () => 0).sc().g === 0), 'todo en 3 vale 100 y todo en 0 vale 0 con cualquier rubro y tamaño');
+  function sectores19() { const o = []; for (const r of [...Object.keys(SEC), 'otro', '']) for (const z of tamanos) o.push([r, z]); return o; }
+  // los dos ajustes se componen y se pueden separar
+  ok(sectores19().every(([r, z]) => { const x = armar({ sector: r, 'tamaño': z }, mixto).sc(); return D.every((d) => Math.abs(x.m[d.id] - x.ms[d.id] * x.mt[d.id]) < 1e-12) && Math.abs(x.gs - armar({ sector: r }, mixto).sc().g) <= 0; }), 'el ajuste total es rubro × tamaño y «solo con el ajuste sectorial» es el mismo puntaje que sin tamaño');
+  ok(sectores19().every(([r, z]) => D.every((d) => { const x = armar({ sector: r, 'tamaño': z }, mixto).sc().m[d.id]; return x >= 1 && x <= (1 + SEC_K) * (1 + TAM_K) + 1e-9; })), 'el ajuste de una dimensión no pasa de × 1,25 × 1,15');
+  const sg = (e) => JSON.stringify([e.sc().d, e.fl(), e.cl2(), e.pl().map((p) => [p.d.id, p.s, p.rk]), e.ga().map((q) => q.id)]);
+  ok(sg(armar({ sector: 'rrhh', 'tamaño': '1-10' }, mixto)) === sg(armar({ sector: 'otro', 'tamaño': '201+' }, mixto)), 'con las mismas respuestas, el puntaje de cada dimensión, las banderas, el semáforo, el plan y las preguntas no dependen del rubro ni del tamaño');
+  // la pantalla
+  const gid = sb.document.getElementById; sb.document.getElementById = () => ({ ...el(), options: [] });
+  const e5 = armar({ sector: 'salud', 'tamaño': '51-200' }, mixto), h5 = sb.metHtml(e5), h5m = sb.metHtml(armar({ sector: 'salud', 'tamaño': '1-10' }, mixto)), h5v = sb.metHtml(new E2());
+  sb.document.getElementById = gid;
+  const x5 = e5.sc();
+  ok(/7\. El tamaño de la empresa/.test(h5) && new RegExp('versión ' + TAM_V.replace('.', '\\.')).test(h5) && /ley N° 20\.416/.test(h5) && /Ajuste por tamaño = 1 \+ 0,15/.test(h5) && /data-a="50"/.test(h5), 'el método explica el ajuste por tamaño con su versión, la ley 20.416 y la fórmula');
+  ok(new RegExp('Su sesión: empresa mediana').test(h5) && new RegExp('con ambos ajustes \\(el oficial\\): ' + x5.g + '%').test(h5) && new RegExp('con ajuste sectorial: ' + x5.gs + '%').test(h5), 'la sesión muestra los puntajes con rubro y con ambos ajustes (los reales)');
+  ok(/El tamaño declarado \(micro\) no lleva ajuste/.test(h5m) && /no tiene tamaño declarado/.test(h5v), 'micro o sin tamaño: el texto dice que no hay ajuste');
+  ok(/aproxima con el número de empleados/.test(h5) && /las ventas anuales/.test(h5), 'el texto aclara que el tamaño se aproxima con empleados y la ley usa ventas');
+  ok(Object.keys(TAM).every((k) => h5.includes(TAM[k].e)) && /Peso aplicado/.test(h5) && /Ajuste por tamaño<\/th>/.test(h5), 'la tabla de cálculo tiene la columna de ajuste por tamaño y el método lista todas las categorías');
+  const filas = sb.metDatos(e5).filas;
+  ok(filas.every((f) => Math.abs(f.w - f.d.w * f.ms * f.mt) < 1e-9 && f.m === x5.m[f.d.id]), 'la tabla usa el peso base × ajuste sectorial × ajuste por tamaño reales');
+  ok(Math.abs(filas.reduce((t2, f) => t2 + f.ap, 0) - x5.g) <= 0.5, 'los aportes siguen sumando el puntaje global con los dos ajustes');
+  const n5 = sb.secNota(e5);
+  ok(/Incluye la ponderación sectorial de «Salud \/ Clínicas» \(v1\.0\) y el ajuste por tamaño \(v1\.0\)/.test(n5) && new RegExp('Sin ajuste: ' + x5.gb + '%').test(n5) && /Incluye el ajuste por tamaño \(v1\.0\)\./.test(sb.secNota(armar({ sector: 'otro', 'tamaño': '201+' }, mixto))) && sb.secNota(armar({ sector: 'otro', 'tamaño': '1-10' }, mixto)) === '', 'el encabezado avisa de los ajustes que aplican (rubro, tamaño o ambos) y no dice nada si no hay ninguno');
+  ok(!/'1-10'/.test(codigo.slice(codigo.indexOf('class E2'), codigo.indexOf('class E2') + 4500)), 'el motor no tiene rangos de empleados escritos a mano: usa la tabla TAM');
+
+  // ── escala de madurez única: la del Assessment y el Informe Ejecutivo (0 a 4, meta nivel 3) ──
+  const e0 = new E2();
+  ok([[0, 'Inexistente', 'crítico'], [30, 'Reactivo', 'alto'], [50, 'Parcial', 'medio'], [70, 'Gestionado', 'bajo'], [90, 'Optimizado', 'mínimo']].every(([p, nm, ri], i) => { const l = e0.ml(p); return l.n === i && l.nm === nm && l.ri === ri; }), 'los niveles son Inexistente, Reactivo, Parcial, Gestionado y Optimizado (0 a 4), con riesgo crítico, alto, medio, bajo y mínimo');
+  ok(!/Sin protección'|'En desarrollo'/.test(codigo.replace(/"id":"[A-Z]+-\d+[a-z]?".*/g, '')), 'los nombres antiguos de los niveles ya no se usan fuera de las preguntas');
+  ok(/Índice \$\{fnum\(sc\.g\/25\)\} de 4,0 · riesgo \$\{mt\.ri\} · meta: nivel 3 \(Gestionado\)/.test(codigo), 'los resultados muestran el índice de 0 a 4, el riesgo y la meta (nivel 3)');
+  const h6 = h5;
+  ok(/misma escala del Assessment y del Informe Ejecutivo/.test(h6) && /puntaje global ÷ 25/.test(h6) && ['Inexistente', 'Reactivo', 'Parcial', 'Gestionado', 'Optimizado'].every((n) => h6.includes(n)) && /riesgo crítico/.test(h6) && /riesgo mínimo/.test(h6), 'el método explica la escala (niveles, riesgo e índice de 0 a 4)');
+  ok(new RegExp('en su sesión, ' + (x5.g / 25).toFixed(1).replace('.', ',') + ' de 4,0').test(h6), 'el índice de 0 a 4 de la sesión es el puntaje ÷ 25');
+  ok(/Exposición<\/th>/.test(h6) && Object.keys(SEC_BN).every((b) => !por(b).length || h6.includes(SEC_BN[b])) && /clasificación de exposición que usa AlignData/.test(h6) && /régimen propio/.test(h6), 'la tabla de rubros muestra la banda de exposición y aclara su origen y el régimen propio de los órganos públicos');
 }
 
 console.log('\n' + (fallos ? '✗ ' + fallos + ' problema(s)' : '✓ Todas las verificaciones pasaron'));

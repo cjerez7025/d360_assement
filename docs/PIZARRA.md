@@ -14,9 +14,9 @@ El consultor y los integrantes del cliente escriben **comentarios** (con texto e
   - **Consultor:** su cuenta de Google (verificada por las reglas).
   - **Cliente:** al abrir el enlace de la reunión escribe su **nombre** (y cargo, opcional). Queda guardado en su navegador y se puede cambiar («cambiar», junto al cuadro de texto). Es un nombre declarado, no verificado.
 - **Borrar:** solo el consultor (botón «Eliminar», con confirmación). Los comentarios no se editan.
-- **Después de la reunión:** todo queda en la sesión. Al **publicar** los resultados, la pizarra viaja con ellos y el cliente la ve en la pestaña **Notas**, solo lectura, con el autor de cada comentario. «Actualizar resultados publicados» sube los comentarios nuevos; «Revocar enlace» los retira.
+- **Después de la reunión:** todo queda en la sesión. Al **publicar** los resultados, la pizarra viaja con ellos y el cliente la ve en la pestaña **Pizarra**, solo lectura, con el autor de cada comentario. «Actualizar resultados publicados» sube los comentarios nuevos; «Revocar enlace» los retira.
 
-Las **notas del consultor** (el cuadro «Notas de la reunión» de cada pregunta, que va al informe) siguen existiendo aparte: son la nota oficial del consultor; la pizarra es la conversación de todos.
+La pizarra **reemplaza** al antiguo cuadro «Notas de la reunión» de cada pregunta: ya no hay dos lugares para anotar. Las notas que existían en sesiones anteriores se pasan solas a la pizarra de su pregunta la primera vez que el consultor abre la sesión (mismo autor, fecha de la sesión, sin duplicarse) y se borran del campo antiguo; si un enlace ya publicado todavía las trae, salen en la pestaña **Pizarra** bajo «Notas anteriores».
 
 ## Dónde vive cada dato
 
