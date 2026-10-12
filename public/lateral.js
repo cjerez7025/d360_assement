@@ -39,6 +39,7 @@
       { id: 'hoja', ic: 'route', t: 'Hoja de ruta', fn: () => irRes('t8'), act: () => pantalla() === 's3' && tabActual() === 't8', off: () => !respondidas(), badge: () => { try { const n = respondidas() ? ruta(en).items.length : 0; return n || ''; } catch (e) { return ''; } } },
       { id: 'evo', ic: 'trending-up', t: 'Evolución', fn: () => irRes('t9'), act: () => pantalla() === 's3' && tabActual() === 't9', off: () => !respondidas(), badge: () => ((en.rv || []).length || '') },
       { id: 'pz', ic: 'messages-square', t: 'Pizarra', fn: () => pzDlg(), act: () => false, badge: () => { const c = document.querySelector('#bpz .pz-cnt'); return c && !c.hidden ? c.textContent.trim() : ''; } },
+      { id: 'srv', ic: 'handshake', t: 'Servicio contratado', fn: () => srvDlg(), act: () => false, badge: () => { try { return (window.srvSol || []).length || ''; } catch (e) { return ''; } } },
       { id: 'viv', ic: 'video', t: () => (en.viv ? 'Reunión en vivo' : 'Invitar al cliente'), fn: () => vivoDlg(), act: () => false, punto: () => { if (!en.viv) return ''; const t = (($('bviv-t') || {}).textContent || ''); return /conectad/i.test(t) && !/esperando/i.test(t) ? 'on' : 'espera'; } }
     ] },
     { sec: 'Entregables', si: enSesion, items: [
@@ -98,7 +99,7 @@
     if (!v) { cerrarCajon(); return; }
     if (!montado) montar();
     const u = usuario() || {}, nom = u.nombre || u.email || 'Consultor';
-    const clave = JSON.stringify([nom, u.foto, u.email, pantalla(), tabActual(), enSesion(), respondidas(), (typeof en !== 'undefined' && en.viv) ? 1 : 0, (typeof en !== 'undefined' && (en.rv || []).length), ($('bviv-t') || {}).textContent, (document.querySelector('#bpz .pz-cnt') || {}).textContent, (typeof en !== 'undefined' && en.p && en.p.nombre)]);
+    const clave = JSON.stringify([nom, u.foto, u.email, pantalla(), tabActual(), enSesion(), respondidas(), (typeof en !== 'undefined' && en.viv) ? 1 : 0, (typeof en !== 'undefined' && (en.rv || []).length), ($('bviv-t') || {}).textContent, (document.querySelector('#bpz .pz-cnt') || {}).textContent, (typeof en !== 'undefined' && en.p && en.p.nombre), (window.srvSol || []).length]);
     if (clave === previo) return;
     previo = clave;
     $('sb-un').textContent = nom; $('sb-um').textContent = u.email || '';

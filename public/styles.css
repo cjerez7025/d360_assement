@@ -1264,3 +1264,38 @@ body.con-sb .uout{display:none}
   .theme-btn{width:40px;height:40px}
   .ugrp{gap:4px}
 }
+
+/* ── servicio contratado ── */
+.sc-srv{display:flex;align-items:center;gap:6px;margin:-2px 0 2px;font-size:var(--fs-sm);font-weight:600;color:var(--brand-ink)}
+.sc-srv svg{width:15px;height:15px}
+.srv-now{margin:10px 0 4px;padding:10px 14px;border-radius:var(--rs);background:color-mix(in srgb,var(--brand) 12%,var(--glass-bg-2));border:1px solid color-mix(in srgb,var(--brand-ink) 25%,transparent)}
+.srv-lista{list-style:none;margin:16px 0 8px;padding:0;display:grid;gap:12px}
+.srv-c{padding:16px 18px;border-radius:var(--rm);background:var(--glass-bg-2);border:1px solid var(--glass-bd);box-shadow:var(--glass-sh)}
+.srv-activo,.srv-incluido,.srv-entregado{border-color:color-mix(in srgb,var(--brand-ink) 40%,transparent)}
+.srv-requiere{opacity:.78}
+.srv-cab{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 12px}
+.srv-cab h4{font-size:var(--fs-lg)}
+.srv-tag{margin:2px 0 8px;color:var(--muted);font-size:var(--fs-sm)}
+.srv-incl{margin:0 0 8px;padding-left:18px;display:grid;gap:3px;font-size:var(--fs-base);color:var(--text-2)}
+.srv-pill{display:inline-block;padding:2px 10px;border-radius:999px;font-size:var(--fs-xs);font-weight:700;background:var(--sunk);color:var(--text-2);white-space:nowrap}
+.srv-pill-incluido,.srv-pill-activo,.srv-pill-entregado{background:var(--lv4-soft);color:var(--lv4-ink)}
+.srv-pill-aceptado,.srv-pill-propuesta{background:var(--lv2-soft);color:var(--lv2-ink)}
+.srv-btn{margin-top:6px}
+.srv-ok{display:flex;align-items:center;gap:8px;margin-top:8px;color:var(--lv4-ink);font-weight:600}
+.srv-ok svg{width:18px;height:18px}
+.srv-sol{margin:12px 0;padding:12px 16px;border-radius:var(--rm);background:var(--lv2-soft);color:var(--lv2-ink)}
+.srv-sol h4{margin-bottom:6px}.srv-sol ul{margin:0;padding-left:18px;display:grid;gap:4px}
+dialog.dlg-srv{max-width:640px}
+.srv-ay,.srv-pub{margin:0 0 12px;font-size:var(--fs-sm);color:var(--text-2)}
+.srv-fila{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.srv-hitos{margin:12px 0;padding:12px 14px;border:1px solid var(--border);border-radius:var(--rm);display:grid;gap:10px}
+.srv-hitos legend{padding:0 6px;font-weight:700}
+.srv-hito{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 12px}
+.srv-hito label{flex:1 1 280px;display:flex;gap:8px;align-items:flex-start}
+.srv-hito input[type=date]{min-height:40px;padding:6px 10px;border-radius:var(--rs);border:1.5px solid var(--field);background:var(--glass-bg)}
+.srv-hito input[type=date]:disabled{opacity:.45}
+@media print{#t10{display:none!important}}
+
+/* el botón principal sigue siendo de degradado aunque también sea un «.be» de vidrio */
+.be.be-p{background:var(--btn-grad);border-color:transparent;color:#04201B;box-shadow:0 10px 26px rgba(0,184,148,.32),inset 0 1px 0 rgba(255,255,255,.4)}
+.be.be-p:hover{filter:brightness(1.06)}

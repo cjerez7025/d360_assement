@@ -78,7 +78,7 @@ export async function leer(id) {
 let pend = null, tmr = null;
 export function guardar(en) {
   const r = en.res();
-  pend = { sid: en.sid, datos: { respuestas: { ...en.a }, notas: { ...en.n }, revisiones: [...(en.rv || [])], avance: r.avance, hechas: r.hechas, total: r.total, puntaje: r.puntaje, nivel: r.nivel, estado: r.completa ? 'completa' : 'en_curso' } };
+  pend = { sid: en.sid, datos: { respuestas: { ...en.a }, notas: { ...en.n }, revisiones: [...(en.rv || [])], servicio: en.srv || null, avance: r.avance, hechas: r.hechas, total: r.total, puntaje: r.puntaje, nivel: r.nivel, estado: r.completa ? 'completa' : 'en_curso' } };
   clearTimeout(tmr); tmr = setTimeout(vaciar, 700);
   aviso('guardando');
 }
@@ -240,3 +240,13 @@ export async function pzPublicar(tk, entradas, sid) {
   for (const x of publicadas) if (!ids.has(x.id)) { await borrarPartes('comp', tk, x); await F.deleteDoc(F.doc(db, ...rutaComp(tk), x.id)); }
 }
 export const pzBorrarCompartido = (tk) => borrarTodoPz(rutaComp(tk));
+
+// ── servicio: el cliente pide avanzar (no activa nada) y el consultor recibe la solicitud ──
+const idSol = () => Array.from(crypto.getRandomValues(new Uint8Array(20)), (b) => 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'[b % 62]).join('');
+export async function solicitar(tk, d) {
+  await F.setDoc(F.doc(db, 'compartidos', tk, 'solicitudes', idSol()), { paquete: d.paquete, nombre: d.nombre, ...(d.cargo ? { cargo: d.cargo } : {}), creadoEn: F.serverTimestamp() });
+}
+export function solicitudesEscuchar(tk, cb) {
+  return F.onSnapshot(F.collection(db, 'compartidos', tk, 'solicitudes'),
+    (s) => cb(s.docs.map((x) => { const v = x.data(); return { id: x.id, paquete: v.paquete, nombre: v.nombre, cargo: v.cargo || '', creadoEn: v.creadoEn && v.creadoEn.toMillis ? v.creadoEn.toMillis() : 0 }; }).sort((a, b) => b.creadoEn - a.creadoEn)), () => cb([]));
+}

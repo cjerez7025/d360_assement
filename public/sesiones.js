@@ -41,6 +41,8 @@
   if (PRUEBA) { $('pbanner').hidden = false; document.body.classList.add('prueba'); }
   if (CFG.prueba && !PRUEBA) { $('btn-prueba').hidden = false; $('hint-prueba').hidden = false; $('btn-prueba').onclick = () => { try { localStorage.setItem('d360prueba', '1'); } catch (e) { /* sin almacenamiento */ } location.reload(); }; }
   solo('se'); $('se-t').textContent = 'Cargando…'; // evita mostrar la portada antigua mientras se decide la vista
+  // el consultor conoce el enlace publicado de la sesión abierta (para recibir las solicitudes del cliente)
+  window.srvCtx = () => ({ N, tk: act && act.compartido && act.compartido.token });
   async function arrancar() {
     document.body.classList.add('nube');
     // en localhost se evita el caché de módulos; en producción lo resuelve la cabecera Cache-Control de firebase.json
@@ -58,6 +60,7 @@
   // ── cliente: resultados en modo lectura ──
   async function cliente(tk) {
     modo = 'cliente'; document.body.classList.add('cliente'); N.iniciar({ persistente: false });
+    window.srvCtx = () => ({ N, tk }); // para pedir avanzar de servicio desde la pestaña «Servicio»
     const invalido = () => msg('Enlace no disponible', 'Este enlace no existe o fue desactivado por quien lo compartió. Pida a su consultor de AlignData que le envíe uno nuevo.');
     if (!/^[A-Za-z0-9_-]{32}$/.test(tk)) return invalido();
     msg('Cargando sus resultados…', '');
@@ -120,6 +123,7 @@
     const niv = s.puntaje != null ? en.ml(s.puntaje).nm : null;
     return `<article class="sc ${k} nv${nivelDe(s)}" data-id="${s.id}"><div class="sc-top"><h3>${esc(p.nombre || 'Sin nombre')}</h3><span class="pill">${t}</span></div>
 <p class="sc-meta">${esc(lbl('f2', p.sector))} · ${esc(lbl('f3', p['tamaño']))}${p.contacto ? ' · Contacto: ' + esc(p.contacto) : ''}</p>
+${s.servicio && srvEtiqueta(s.servicio) ? '<p class="sc-srv"><i data-lucide="handshake"></i> ' + esc(srvEtiqueta(s.servicio)) + '</p>' : ''}
 <div class="mtr" role="img" aria-label="Avance ${av}%"><i style="width:${av}%"></i></div>
 <div class="sc-stats"><span>${s.hechas || 0} de ${s.total || '—'} respondidas</span><span>${s.puntaje != null ? '<span class="sc-lv"><b>' + s.puntaje + '%</b> ' + esc(niv) + '</span>' : 'Sin puntaje aún'}</span></div>
 <p class="sc-foot">Actualizada ${rel(ms(s.actualizadoEn))}${s.actualizadoPor ? ' por ' + esc(s.actualizadoPor) : ''}</p>

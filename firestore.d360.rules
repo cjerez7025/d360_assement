@@ -85,6 +85,16 @@ service cloud.firestore {
         && (d.texto.size() > 0 || ('imgs' in d && d.imgs.size() > 0) || ('adjuntos' in d && d.adjuntos.size() > 0));
     }
 
+    // Servicio contratado que ve el cliente en su enlace: solo el paquete y su estado.
+    function servicioPub(d) {
+      return !('servicio' in d)
+        || (d.servicio is map
+            && d.servicio.keys().hasOnly(['paquete', 'estado'])
+            && d.servicio.keys().hasAll(['paquete', 'estado'])
+            && d.servicio.paquete in ['inicia', 'evalua', 'combo', 'acompana', 'implementa']
+            && d.servicio.estado in ['propuesta', 'aceptada', 'activa', 'entregada']);
+    }
+
     // Sesiones de diagnóstico (respuestas, notas de la reunión, datos del cliente): solo consultores.
     match /sesiones/{id} {
       allow read, write: if esConsultor();
@@ -110,11 +120,26 @@ service cloud.firestore {
       allow list: if false;
       allow create, update: if esConsultor()
         && token.size() == 32
-        && request.resource.data.keys().hasOnly(['perfil', 'respuestas', 'notas', 'revisiones', 'consultor', 'publicadoEn', 'version'])
+        && request.resource.data.keys().hasOnly(['perfil', 'respuestas', 'notas', 'revisiones', 'servicio', 'consultor', 'publicadoEn', 'version'])
         && consultorOk(request.resource.data)
+        && servicioPub(request.resource.data)
         && (!('revisiones' in request.resource.data)
             || (request.resource.data.revisiones is list && request.resource.data.revisiones.size() <= 24));
       allow delete: if esConsultor();
+
+      // Solicitudes del cliente para avanzar de servicio («Quiero avanzar»): no activan nada, solo avisan al consultor.
+      // Las crea quien tiene el enlace (mientras exista) con su nombre y la hora del servidor; solo el consultor las lee y las borra.
+      match /solicitudes/{sid} {
+        allow create: if esIdPz(sid)
+          && exists(/databases/$(database)/documents/compartidos/$(token))
+          && request.resource.data.keys().hasOnly(['paquete', 'nombre', 'cargo', 'creadoEn'])
+          && request.resource.data.keys().hasAll(['paquete', 'nombre', 'creadoEn'])
+          && request.resource.data.paquete in ['evalua', 'acompana', 'implementa']
+          && request.resource.data.nombre is string && request.resource.data.nombre.size() >= 1 && request.resource.data.nombre.size() <= 60
+          && (!('cargo' in request.resource.data) || (request.resource.data.cargo is string && request.resource.data.cargo.size() <= 60))
+          && request.resource.data.creadoEn == request.time;
+        allow get, list, delete: if esConsultor();
+      }
 
       // Copia publicada de la pizarra: el cliente la ve en sus resultados. Se lee conociendo el token del enlace
       // (la ruta lo incluye, así que no se puede leer la de otra sesión); solo los consultores escriben.

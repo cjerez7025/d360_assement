@@ -37,7 +37,7 @@ export async function leer(id) { const s = leerTodo().sesiones[id]; return s ? {
 let tmr = null, pend = null;
 export function guardar(en) {
   const r = en.res();
-  pend = { sid: en.sid, datos: { respuestas: { ...en.a }, notas: { ...en.n }, revisiones: [...(en.rv || [])], avance: r.avance, hechas: r.hechas, total: r.total, puntaje: r.puntaje, nivel: r.nivel, estado: r.completa ? 'completa' : 'en_curso' } };
+  pend = { sid: en.sid, datos: { respuestas: { ...en.a }, notas: { ...en.n }, revisiones: [...(en.rv || [])], servicio: en.srv || null, avance: r.avance, hechas: r.hechas, total: r.total, puntaje: r.puntaje, nivel: r.nivel, estado: r.completa ? 'completa' : 'en_curso' } };
   aviso('guardando'); clearTimeout(tmr); tmr = setTimeout(vaciar, 500);
 }
 function vaciar() {
@@ -142,3 +142,17 @@ export async function pzPublicar(tk, entradas, sid) {
   guardarTodo(d);
 }
 export async function pzBorrarCompartido(tk) { const d = leerTodo(), p = pzD(d); Object.values(p.comp[tk] || {}).forEach((e) => quitarPartes(p, 'comp', tk, e)); delete p.comp[tk]; guardarTodo(d); }
+
+// ── servicio: el cliente pide avanzar (no activa nada) y el consultor recibe la solicitud ──
+export async function solicitar(tk, d) {
+  const x = leerTodo(); if (!x.compartidos[tk]) throw new Error('enlace cerrado');
+  const id = 's' + Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+  x.compartidos[tk].solicitudes = { ...(x.compartidos[tk].solicitudes || {}), [id]: { paquete: d.paquete, nombre: d.nombre, cargo: d.cargo || '', creadoEn: Date.now() } };
+  guardarTodo(x);
+}
+export function solicitudesEscuchar(tk, cb) {
+  let ultimo = null;
+  const emitir = () => { const s = ((leerTodo().compartidos[tk] || {}).solicitudes) || {}, l = Object.entries(s).map(([id, v]) => ({ id, ...v })).sort((a, b) => b.creadoEn - a.creadoEn), t = JSON.stringify(l); if (t !== ultimo) { ultimo = t; cb(l); } };
+  oyentes.add(emitir); emitir();
+  return () => oyentes.delete(emitir);
+}

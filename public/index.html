@@ -266,6 +266,16 @@
   </div>
 </dialog>
 
+<dialog class="dlg dlg-srv" id="dlg-srv" aria-labelledby="srv-dlg-t">
+  <div class="dlg-in">
+    <div class="dlg-h">
+      <h2 id="srv-dlg-t"><i data-lucide="handshake"></i> Servicio contratado</h2>
+      <button type="button" class="dlg-x" onclick="document.getElementById('dlg-srv').close()" aria-label="Cerrar">×</button>
+    </div>
+    <div id="srv-slot"></div>
+  </div>
+</dialog>
+
 <dialog class="dlg dlg-met" id="dlg-met" aria-label="Metodología: cómo se calcula el resultado">
   <div class="dlg-in">
     <div class="dlg-h">
@@ -345,6 +355,7 @@
 <script src="firebase-config.js"></script>
 <script src="app.js"></script>
 <script src="ruta.js"></script>
+<script src="servicio.js"></script>
 <script src="pizarra.js"></script>
 <script src="sesiones.js"></script>
 <script src="vivo.js"></script>

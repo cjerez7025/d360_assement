@@ -11,9 +11,9 @@ import path from 'node:path';
 const PROYECTO = 'aligndata-arcop';
 const reglas = fs.readFileSync(new URL('../firestore.d360.rules', import.meta.url), 'utf8');
 const copia = reglas
-  .replace('request.resource.data.creadoEn == request.time', 'true')
+  .replaceAll('request.resource.data.creadoEn == request.time', 'true')
   .replace('p.venceEn > request.time', 'true')
-  .replace('request.resource.data.t == request.time', 'true');
+  .replaceAll('request.resource.data.t == request.time', 'true');
 if (copia === reglas) { console.error('No se encontraron las comparaciones de hora a sustituir: revise este script.'); process.exit(2); }
 
 // ── token de la sesión de la CLI de Firebase ──
@@ -72,6 +72,33 @@ c('presencia: el consultor las lee', 'ALLOW', 'get', PRES, { auth: consultor, ex
 c('presencia: el consultor las lista', 'ALLOW', 'list', PRES, { auth: consultor });
 c('presencia: el consultor las borra', 'ALLOW', 'delete', PRES, { auth: consultor });
 c('presencia: el cliente no las borra', 'DENY', 'delete', PRES, { mock: vigente });
+const SOL = `/compartidos/${CT}/solicitudes/${ID}`, T0 = '2026-10-11T12:00:00Z';
+const existeCompartido = { function: 'exists', args: [{ anyValue: {} }], result: { value: true } };
+const noExisteCompartido = { function: 'exists', args: [{ anyValue: {} }], result: { value: false } };
+c('solicitud: el cliente pide avanzar a Evalúa', 'ALLOW', 'create', SOL, { data: { paquete: 'evalua', nombre: 'Marcela Soto', cargo: 'Gerente de TI', creadoEn: T0 }, mock: existeCompartido });
+c('solicitud: sin cargo también vale', 'ALLOW', 'create', SOL, { data: { paquete: 'acompana', nombre: 'Marcela', creadoEn: T0 }, mock: existeCompartido });
+c('solicitud: no se puede pedir el Inicia ni el Combo', 'DENY', 'create', SOL, { data: { paquete: 'inicia', nombre: 'Marcela', creadoEn: T0 }, mock: existeCompartido });
+c('solicitud: un paquete inventado no vale', 'DENY', 'create', SOL, { data: { paquete: 'gratis', nombre: 'Marcela', creadoEn: T0 }, mock: existeCompartido });
+c('solicitud: sin que el enlace exista no vale', 'DENY', 'create', SOL, { data: { paquete: 'evalua', nombre: 'Marcela', creadoEn: T0 }, mock: noExisteCompartido });
+c('solicitud: sin nombre no vale', 'DENY', 'create', SOL, { data: { paquete: 'evalua', creadoEn: T0 }, mock: existeCompartido });
+c('solicitud: nombre de más de 60 caracteres no vale', 'DENY', 'create', SOL, { data: { paquete: 'evalua', nombre: 'x'.repeat(61), creadoEn: T0 }, mock: existeCompartido });
+c('solicitud: cargo de más de 60 caracteres no vale', 'DENY', 'create', SOL, { data: { paquete: 'evalua', nombre: 'M', cargo: 'x'.repeat(61), creadoEn: T0 }, mock: existeCompartido });
+c('solicitud: campo no permitido no vale', 'DENY', 'create', SOL, { data: { paquete: 'evalua', nombre: 'M', creadoEn: T0, email: 'a@b.c' }, mock: existeCompartido });
+c('solicitud: código inválido no vale', 'DENY', 'create', `/compartidos/${CT}/solicitudes/x`, { data: { paquete: 'evalua', nombre: 'M', creadoEn: T0 }, mock: existeCompartido });
+c('solicitud: el cliente no puede leerlas', 'DENY', 'get', SOL, { existente: { nombre: 'M' } });
+c('solicitud: el cliente no puede listarlas', 'DENY', 'list', SOL);
+c('solicitud: el cliente no puede borrarlas', 'DENY', 'delete', SOL);
+c('solicitud: el consultor las lee', 'ALLOW', 'get', SOL, { auth: consultor, existente: { nombre: 'M' } });
+c('solicitud: el consultor las lista', 'ALLOW', 'list', SOL, { auth: consultor });
+c('solicitud: el consultor las borra', 'ALLOW', 'delete', SOL, { auth: consultor });
+c('solicitud: otra cuenta no las lee', 'DENY', 'get', SOL, { auth: otro, existente: { nombre: 'M' } });
+const SRVP = (srv) => ({ perfil: {}, respuestas: {}, servicio: srv, publicadoEn: T0, version: 'd360v3' });
+c('resultados: se publica el servicio con paquete y estado', 'ALLOW', 'create', `/compartidos/${CT}`, { auth: consultor, data: SRVP({ paquete: 'evalua', estado: 'activa' }) });
+c('resultados: el servicio no admite el contrato ni los hitos', 'DENY', 'create', `/compartidos/${CT}`, { auth: consultor, data: SRVP({ paquete: 'evalua', estado: 'activa', ref: { n: 'x' } }) });
+c('resultados: un paquete inventado no vale', 'DENY', 'create', `/compartidos/${CT}`, { auth: consultor, data: SRVP({ paquete: 'gratis', estado: 'activa' }) });
+c('resultados: un estado inventado no vale', 'DENY', 'create', `/compartidos/${CT}`, { auth: consultor, data: SRVP({ paquete: 'evalua', estado: 'pagado' }) });
+c('resultados: el servicio incompleto no vale', 'DENY', 'create', `/compartidos/${CT}`, { auth: consultor, data: SRVP({ paquete: 'evalua' }) });
+c('sesión: el consultor guarda el servicio contratado', 'ALLOW', 'update', `/sesiones/${SID}`, { auth: consultor, data: { servicio: { paquete: 'evalua', estado: 'aceptada', ref: { n: 'Propuesta 14', u: 'https://drive.google.com/x' }, hitos: { anticipo: 1790000000000 } } }, existente: { perfil: {} } });
 const VIVO = `/en_vivo/${TK}/pizarra/${ID}`, SES = `/sesiones/${SID}/pizarra/${ID}`, COM = `/compartidos/${CT}/pizarra/${ID}`;
 
 // pizarra en vivo · cliente (sin cuenta)

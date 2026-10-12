@@ -5,7 +5,7 @@ import vm from 'node:vm';
 
 const file = process.argv[2] || 'public/app.js';
 const code = fs.readFileSync(file, 'utf8');
-const codigoRuta = fs.readFileSync(path.join(path.dirname(file), 'ruta.js'), 'utf8'); // hoja de ruta, evolución y documentos (se carga después de app.js)
+const codigoRuta = ['ruta.js', 'servicio.js'].map((f) => fs.readFileSync(path.join(path.dirname(file), f), 'utf8')).join('\n'); // hoja de ruta, evolución, servicio y documentos (se cargan después de app.js)
 
 // stubs mínimos del navegador
 const el = () => ({ textContent: '', innerHTML: '', value: '', style: {}, classList: { add() {}, remove() {}, toggle() {} }, addEventListener() {}, setAttribute() {}, getContext: () => ({}) });
@@ -21,8 +21,8 @@ const sandbox = {
 };
 sandbox.globalThis = sandbox;
 vm.createContext(sandbox);
-vm.runInContext(code + '\n' + codigoRuta + '\n;globalThis.__t={EF,EF_N,EF_T,OLAS,RT_V,RT_ALTO,EVO_TIPOS,D,Q,A,CL,E2,en,SEC,SEC_F,SEC_DIM,SEC_N,SEC_J,SEC_K,SEC_V,SEC_B,SEC_BN,TAM,TAM_K,TAM_V,TAM_DIM};', sandbox);
-const { EF, EF_N, EF_T, OLAS, RT_V, RT_ALTO, EVO_TIPOS, D, Q, A, CL, E2, en, SEC, SEC_F, SEC_DIM, SEC_N, SEC_J, SEC_K, SEC_V, SEC_B, SEC_BN, TAM, TAM_K, TAM_V, TAM_DIM } = sandbox.__t;
+vm.runInContext(code + '\n' + codigoRuta + '\n;globalThis.__t={SRV_P,SRV_E,SRV_ORD,SRV_V,SRV_SOLICITABLES,SRV_URL,SRV_ACT,EF,EF_N,EF_T,OLAS,RT_V,RT_ALTO,EVO_TIPOS,D,Q,A,CL,E2,en,SEC,SEC_F,SEC_DIM,SEC_N,SEC_J,SEC_K,SEC_V,SEC_B,SEC_BN,TAM,TAM_K,TAM_V,TAM_DIM};', sandbox);
+const { SRV_P, SRV_E, SRV_ORD, SRV_V, SRV_SOLICITABLES, SRV_URL, SRV_ACT, EF, EF_N, EF_T, OLAS, RT_V, RT_ALTO, EVO_TIPOS, D, Q, A, CL, E2, en, SEC, SEC_F, SEC_DIM, SEC_N, SEC_J, SEC_K, SEC_V, SEC_B, SEC_BN, TAM, TAM_K, TAM_V, TAM_DIM } = sandbox.__t;
 
 let fallos = 0;
 const ok = (c, m) => { if (!c) { fallos++; console.log('  ✗ ' + m); } };
@@ -260,7 +260,7 @@ seccion('10. Sesiones guardadas (consultor y cliente)');
   ok((reglas.match(/if true/g) || []).length === 3 && /allow get: if true/.test(reglas) && /match \/pizarra\/\{eid\} \{\s+allow get, list: if true;/.test(reglas) && /match \/partes\/\{pid\} \{\s+allow get: if true;\s+allow list: if false;/.test(reglas), 'las únicas lecturas públicas son get de un resultado compartido, su pizarra publicada y el contenido de sus documentos (todo bajo el mismo token)');
   ok(/match \/sesiones\/\{id\}\s*\{\s*allow read, write: if esConsultor\(\);/.test(reglas), 'las sesiones solo las ven los consultores');
   ok(/email_verified == true/.test(reglas) && /request\.auth\.token\.email in \[/.test(reglas), 'los consultores se validan por correo verificado en una lista');
-  ok(/hasOnly\(\['perfil', 'respuestas', 'notas', 'revisiones', 'consultor', 'publicadoEn', 'version'\]\)/.test(reglas) && /token\.size\(\) == 32/.test(reglas), 'lo compartido solo admite esos campos (incluye quién lo preparó) y un token de 32 caracteres');
+  ok(/hasOnly\(\['perfil', 'respuestas', 'notas', 'revisiones', 'servicio', 'consultor', 'publicadoEn', 'version'\]\)/.test(reglas) && /token\.size\(\) == 32/.test(reglas), 'lo compartido solo admite esos campos (incluye quién lo preparó) y un token de 32 caracteres');
   ok(/match \/\{document=\*\*\}\s*\{\s*allow read, write: if false;/.test(reglas), 'todo lo demás debe estar denegado');
   ok(Array.isArray(fbj.firestore) && fbj.firestore.length === 1 && fbj.firestore[0].database === 'd360', 'solo debe publicarse la base d360 (nunca la (default) del portal)');
   const cfgTxt = leer('public/firebase-config.js');
@@ -778,7 +778,7 @@ seccion('20. Hoja de ruta por oleadas, evolución en el tiempo, informe ejecutiv
   const eC = rev(); eC.rev('Diagnóstico inicial', 1790000000000);
   const pb = eC.pub(); ok(Object.keys(pb).sort().join() === 'perfil,respuestas,revisiones' && pb.revisiones.length === 1 && Object.keys(pb.revisiones[0]).sort().join() === 'a,e,f,g,id,n,p', 'lo publicado lleva las revisiones (solo respuestas, perfil, nombre, fecha y puntaje)');
   ok(Object.keys(rev().pub()).sort().join() === 'perfil,respuestas', 'sin revisiones, lo publicado no cambia');
-  ok(JSON.stringify(pb).length < 20000 && /'revisiones', 'consultor'/.test(reglas) && /revisiones\.size\(\) <= 24/.test(reglas), 'las revisiones publicadas son pequeñas y las reglas las permiten (hasta 24)');
+  ok(JSON.stringify(pb).length < 20000 && /'revisiones', 'servicio', 'consultor'/.test(reglas) && /revisiones\.size\(\) <= 24/.test(reglas), 'las revisiones publicadas son pequeñas y las reglas las permiten (hasta 24)');
   const eCl = new E2(); eCl.cargar(JSON.parse(JSON.stringify(pb))); ok(eCl.rv.length === 1 && eCl.rv[0].e === 'Diagnóstico inicial', 'el cliente carga las revisiones publicadas');
 
   // evolución: puntos recalculados con el modelo vigente
@@ -944,14 +944,14 @@ seccion('24. Tour guiado para el consultor y para el cliente');
   const raiz16 = path.resolve(path.dirname(file), '..');
   const leer16 = (f) => fs.readFileSync(path.join(raiz16, f), 'utf8').replace(/\r\n/g, '\n');
   const tj = leer16('public/tour.js'), ih = leer16('public/index.html'), cs = leer16('public/styles.css'), lj = leer16('public/lateral.js');
-  const fuentes = ['app.js', 'ruta.js', 'pizarra.js', 'sesiones.js', 'vivo.js', 'lateral.js'].map((f) => leer16('public/' + f)).join('\n') + ih;
+  const fuentes = ['app.js', 'ruta.js', 'servicio.js', 'pizarra.js', 'sesiones.js', 'vivo.js', 'lateral.js'].map((f) => leer16('public/' + f)).join('\n') + ih;
   // los recorridos: se cargan en un contexto aparte para revisar su contenido real
   const m = tj.match(/const R = \{([\s\S]*?)\n  \};\n\n  \/\/ ── estado y elementos/);
   ok(!!m, 'el archivo define los recorridos');
   const R = vm.runInNewContext('(function(){ const menu = () => null, q = () => null; return {' + m[1] + '\n }; })()');
   const nombres = Object.keys(R);
   ok(['panel', 'sesion', 'resultados', 'invitado', 'cliente'].every((k) => nombres.includes(k)) && nombres.length === 5, 'hay cinco recorridos: panel, sesión y resultados del consultor, y reunión en vivo y resultados del cliente');
-  ok(nombres.every((k) => R[k].nombre && R[k].pasos.length >= 6 && R[k].pasos.length <= 7 && R[k].pasos.every((p) => p.t && p.x && p.t.length <= 40 && p.x.length >= 40 && p.x.length <= 260)), 'cada recorrido tiene 6 o 7 pasos, con un título corto y una explicación breve');
+  ok(nombres.every((k) => R[k].nombre && R[k].pasos.length >= 6 && R[k].pasos.length <= 8 && R[k].pasos.every((p) => p.t && p.x && p.t.length <= 40 && p.x.length >= 40 && p.x.length <= 260)), 'cada recorrido tiene entre 6 y 8 pasos, con un título corto y una explicación breve');
   ok(nombres.every((k) => R[k].pasos.filter((p) => !p.sel).length <= 2), 'solo la bienvenida y el cierre pueden no apuntar a un elemento');
   // los elementos a los que apuntan existen en la aplicación
   const sels = [...tj.matchAll(/q\('([^']+)'\)|menu\('([^']+)'\)/g)].map((x) => x[1] || x[2]);
@@ -1031,6 +1031,7 @@ seccion('26. Rediseño de vidrio en toda la aplicación');
   ok(/dialog\.dlg::backdrop\{background:rgba\(5,10,24,\.5\);-webkit-backdrop-filter:blur\(8px\)/.test(r), 'detrás de un diálogo, la pantalla se desenfoca');
   // el PDF no cambia
   ok(/@media print\{\s*:root\{--glass-bg:#fff;--glass-bg-2:#fff;--glass-bd:#D9E1DF;--glass-sh:none;--glass-blur:none\}\s*body\{background:#fff!important\}/.test(r), 'al imprimir, el vidrio y el fondo se anulan: el PDF sigue en blanco');
+  ok(/\.be\.be-p\{background:var\(--btn-grad\);border-color:transparent;color:#04201B/.test(cs.slice(cs.indexOf('Rediseño: el lenguaje de vidrio'))), 'un botón principal (.be.be-p) conserva el degradado: el estilo de vidrio de .be no lo pisa');
   // contraste del texto sobre el botón de degradado: el texto es casi negro sobre verdes claros
   const lum = (h) => { const c = [1, 3, 5].map((k) => parseInt(h.slice(k, k + 2), 16) / 255).map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4)); return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]; };
   const cr = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
@@ -1039,6 +1040,106 @@ seccion('26. Rediseño de vidrio en toda la aplicación');
   ok(/<div class="topbar-ctx" id="tb-ctx" aria-live="polite"><small id="tb-ctx-s"><\/small><strong id="tb-ctx-t"><\/strong><\/div>/.test(ih) && /body\.con-sb \.topbar-ctx\{display:flex\}/.test(r), 'con el menú lateral, la barra superior muestra dónde está el consultor');
   ok(/pa === 'sd' \? \['Panel del consultor', 'Sesiones de diagnóstico'\]/.test(lj) && /pa === 's2' \? \['Sesión · ' \+ emp, 'Preguntas'\]/.test(lj) && /pa === 's3' \? \['Sesión · ' \+ emp, 'Resultados'\]/.test(lj), 'el contexto cambia con la pantalla (panel, nueva sesión, preguntas y resultados)');
   ok(/@media\(max-width:520px\)\{\s*\.topbar\{gap:8px[^}]*\}\s*\.topbar-badge\{display:none\}/.test(r) && /body\.con-sb \.uout\{display:none\}/.test(r), 'en el celular la barra superior muestra solo lo imprescindible');
+}
+
+seccion('27. Servicio contratado: paquetes, estados, hitos y solicitudes del cliente');
+{
+  const raiz19 = path.resolve(path.dirname(file), '..');
+  const leer19 = (f) => fs.readFileSync(path.join(raiz19, f), 'utf8').replace(/\r\n/g, '\n');
+  const sj = leer19('public/servicio.js'), aj = leer19('public/app.js'), ih = leer19('public/index.html'), ss = leer19('public/sesiones.js'), lj = leer19('public/lateral.js'), ng = leer19('public/nube.js'), np = leer19('public/nube-prueba.js'), rg = leer19('firestore.d360.rules'), cs = leer19('public/styles.css');
+  const sb = sandbox;
+
+  // ── catálogo: coincide con la oferta del sitio ──
+  ok(SRV_ORD.join() === 'inicia,evalua,acompana,implementa' && Object.keys(SRV_P).sort().join() === 'acompana,combo,evalua,implementa,inicia', 'hay cinco paquetes: Inicia, Evalúa, Combo, Acompaña e Implementa');
+  ok(SRV_P.inicia.n === 'D360° Inicia' && SRV_P.evalua.n === 'D360° Evalúa' && SRV_P.acompana.n === 'D360° Acompaña' && SRV_P.implementa.n === 'D360° Implementa' && /Combo D360° Inicia \+ Evalúa/.test(SRV_P.combo.n), 'los nombres son los del sitio');
+  ok(Object.values(SRV_P).every((p) => p.n && p.tag && p.nivel >= 1 && p.nivel <= 4 && p.incl.length >= 2 && p.hitos.length >= 2 && p.hitos.every((h) => h.length === 2 && h[1].length > 15)), 'cada paquete tiene su descripción, su nivel y sus hitos');
+  ok(SRV_P.inicia.nivel === 1 && SRV_P.evalua.nivel === 2 && SRV_P.combo.nivel === 2 && SRV_P.acompana.nivel === 3 && SRV_P.implementa.nivel === 4, 'los niveles van de 1 (Inicia) a 4 (Implementa); el Combo equivale a Evalúa');
+  ok(/Plan de adecuación a 3 a 12 meses/.test(SRV_P.inicia.incl.join(' ')) && /Inventario de sistemas y tratamientos/.test(SRV_P.evalua.incl.join(' ')) && /Revisión de contratos con terceros/.test(SRV_P.evalua.incl.join(' ')) && /Requiere D360° Evalúa aprobado/.test(SRV_P.implementa.incl.join(' ')), 'el Inicia incluye el plan de adecuación (como dice el sitio) y el Evalúa agrega inventario y contratos con terceros; el Implementa requiere un Evalúa aprobado');
+  ok(!/\bUF\b|\$\s?\d|CLP/.test(sj), 'la aplicación no muestra precios (viven en el sitio)');
+  ok(SRV_SOLICITABLES.join() === 'evalua,acompana,implementa', 'el cliente solo puede pedir Evalúa, Acompaña o Implementa');
+  ok(Object.keys(SRV_E).join() === 'propuesta,aceptada,activa,entregada' && SRV_ACT.join() === 'activa,entregada', 'los estados son propuesta, aceptada, activa y entregada; solo activa y entregada cuentan como contratado');
+
+  // ── lo que viene de la base de datos nunca se usa tal cual ──
+  const L = sb.srvLimpio;
+  ok(L(null) === null && L({}) === null && L({ paquete: 'gratis' }) === null && L('x') === null && L([]) === null, 'un servicio vacío o con un paquete inventado se descarta');
+  const bueno = L({ paquete: 'evalua', estado: 'activa', ref: { n: 'x'.repeat(200), u: 'https://drive.google.com/file/d/abc' }, hitos: { anticipo: 1790000000000, inventario: 1790100000000, inexistente: 5, informe: 'no' }, por: 'y'.repeat(200), en: 1790000000000 });
+  ok(bueno.paquete === 'evalua' && bueno.estado === 'activa' && bueno.ref.n.length === 80 && bueno.ref.u === 'https://drive.google.com/file/d/abc' && bueno.por.length === 80 && Object.keys(bueno.hitos).sort().join() === 'anticipo,inventario', 'se limitan los largos y solo se conservan los hitos válidos del paquete, con fecha numérica');
+  ok(L({ paquete: 'inicia', estado: 'pagado' }).estado === 'propuesta' && L({ paquete: 'inicia' }).estado === 'propuesta', 'un estado desconocido queda como propuesta');
+  ok(['javascript:alert(1)', 'http://drive.google.com/x', 'https://a b.cl', 'data:text/html,x', 'https://', "https://x.cl/\"onclick=\"1", 'ftp://x.cl/a'].every((u) => L({ paquete: 'inicia', ref: { u } }).ref.u === ''), 'solo se acepta un enlace https sin espacios ni comillas (nada de javascript:, http: ni data:)');
+  ok(L({ paquete: 'inicia', hitos: { anticipo: -5, kickoff: 0, dashboard: NaN } }).hitos && Object.keys(L({ paquete: 'inicia', hitos: { anticipo: -5, kickoff: 0, dashboard: NaN } }).hitos).length === 0, 'una fecha de hito inválida se descarta');
+  const pubS = sb.srvPublico(bueno);
+  ok(JSON.stringify(pubS) === '{"paquete":"evalua","estado":"activa"}' && sb.srvPublico(null) === null && sb.srvPublico({ paquete: 'x' }) === null, 'al cliente solo viaja el paquete y el estado (nunca el contrato, los hitos ni quién lo registró)');
+
+  // ── qué tiene el cliente en cada caso ──
+  const S = (paquete, estado) => ({ paquete, estado, ref: { n: '', u: '' }, hitos: {}, por: '', en: 0 });
+  const inc = (x) => [...sb.srvIncluidos(x)].sort().join();
+  ok(inc(null) === 'inicia' && inc(S('inicia', 'activa')) === 'inicia' && inc(S('evalua', 'propuesta')) === 'inicia' && inc(S('evalua', 'aceptada')) === 'inicia', 'sin contratar, en propuesta o solo aceptado, el cliente tiene el Inicia (esta evaluación)');
+  ok(inc(S('evalua', 'activa')) === 'evalua,inicia' && inc(S('combo', 'activa')) === 'evalua,inicia' && inc(S('evalua', 'entregada')) === 'evalua,inicia', 'con un Evalúa o un Combo activo tiene Inicia y Evalúa');
+  ok(inc(S('acompana', 'activa')) === 'acompana,evalua,inicia' && inc(S('implementa', 'activa')) === 'evalua,implementa,inicia', 'Acompaña e Implementa suponen un Evalúa aprobado');
+  ok(sb.srvNivel(null) === 1 && sb.srvNivel(S('evalua', 'activa')) === 2 && sb.srvNivel(S('combo', 'activa')) === 2 && sb.srvNivel(S('acompana', 'activa')) === 3 && sb.srvNivel(S('implementa', 'activa')) === 4 && sb.srvNivel(S('implementa', 'propuesta')) === 1, 'el nivel activo va de 1 a 4 y una propuesta no sube el nivel');
+  const E = (x, p) => sb.srvEstadoDe(x, p);
+  ok(E(null, 'inicia') === 'incluido' && E(null, 'evalua') === 'disponible' && E(null, 'acompana') === 'requiere' && E(null, 'implementa') === 'requiere', 'sin contratar: Inicia incluido, Evalúa disponible, y Acompaña e Implementa requieren Evalúa');
+  ok(E(S('evalua', 'propuesta'), 'evalua') === 'propuesta' && E(S('evalua', 'aceptada'), 'evalua') === 'aceptado' && E(S('evalua', 'activa'), 'evalua') === 'activo' && E(S('evalua', 'entregada'), 'evalua') === 'entregado' && E(S('combo', 'propuesta'), 'evalua') === 'propuesta', 'el estado del Evalúa sigue el estado registrado (también con el Combo)');
+  ok(E(S('evalua', 'activa'), 'acompana') === 'disponible' && E(S('evalua', 'activa'), 'implementa') === 'disponible' && E(S('acompana', 'activa'), 'acompana') === 'activo', 'con el Evalúa activo, Acompaña e Implementa pasan a estar disponibles');
+
+  // ── días hábiles ──
+  const dh = sb.diasHabilesDespues, f = (y, m, d) => new Date(y, m - 1, d, 9).getTime(), dia = (ms) => new Date(ms).getDay();
+  ok(new Date(dh(f(2026, 11, 20), 1)).getDate() === 23 && dia(dh(f(2026, 11, 20), 1)) === 1, 'un viernes más un día hábil es el lunes');
+  ok(new Date(dh(f(2026, 11, 18), 5)).getDate() === 25 && dia(dh(f(2026, 11, 18), 5)) === 3, 'un miércoles más 5 días hábiles es el miércoles siguiente');
+  ok(new Date(dh(f(2026, 11, 21), 1)).getDate() === 23 && new Date(dh(f(2026, 11, 22), 1)).getDate() === 23, 'desde un sábado o un domingo, el primer día hábil es el lunes');
+  ok([1, 2, 3, 4, 5, 8, 12].every((n) => { const x = dia(dh(f(2026, 11, 17), n)); return x !== 0 && x !== 6; }), 'el resultado nunca cae en fin de semana');
+  const ent = f(2026, 11, 17), V = (srv, ahora) => sb.srvVentana(srv, ahora);
+  const sv = { ...S('inicia', 'activa'), hitos: { informe: ent } };
+  const v0 = V(sv, f(2026, 11, 18));
+  ok(v0 && v0.restan === 4 && !v0.vencida && new Date(v0.limite).getDate() === 24, 'entregado el martes 17, el plazo vence el martes 24 y al día siguiente quedan 4 días hábiles');
+  ok(V(sv, f(2026, 11, 24)).restan === 0 && !V(sv, f(2026, 11, 24)).vencida && V(sv, f(2026, 11, 25)).vencida, 'el último día el plazo vence hoy; al día siguiente está vencido');
+  ok(V(null, ent) === null && V(S('inicia', 'activa'), ent) === null && V({ ...S('evalua', 'activa'), hitos: { informe: ent } }, ent) === null && V({ ...S('combo', 'activa'), hitos: { informe: ent } }, ent) === null, 'la cuenta regresiva solo existe para un Inicia con el informe entregado');
+
+  // ── el motor ──
+  const e1 = new E2(); e1.cargar({ perfil: {}, respuestas: {}, servicio: { paquete: 'evalua', estado: 'aceptada', ref: { n: 'P-14', u: 'javascript:alert(1)' }, hitos: { anticipo: 1790000000000 } } });
+  ok(e1.srv && e1.srv.paquete === 'evalua' && e1.srv.ref.u === '' && e1.srv.hitos.anticipo === 1790000000000, 'al cargar una sesión se normaliza el servicio (un enlace peligroso se descarta)');
+  ok(Object.keys(e1.pub()).sort().join() === 'perfil,respuestas,servicio' && JSON.stringify(e1.pub().servicio) === '{"paquete":"evalua","estado":"aceptada"}', 'lo publicado lleva solo el paquete y el estado');
+  ok(Object.keys(new E2().pub()).sort().join() === 'perfil,respuestas' && new E2().srv === null, 'sin servicio registrado, lo publicado no cambia');
+  const e2 = new E2(); e2.srv = bueno; e2.rs(); ok(e2.srv === null, 'reiniciar el motor limpia el servicio');
+  const e3 = new E2(); e3.cargar(JSON.parse(JSON.stringify(e1.pub()))); ok(e3.srv && e3.srv.paquete === 'evalua' && e3.srv.estado === 'aceptada', 'el cliente carga el servicio publicado');
+
+  // ── pantalla: pestaña «Servicio» ──
+  const gid = sb.document.getElementById; sb.document.getElementById = () => ({ ...el(), options: [] });
+  sb.window.srvSol = [{ id: 'a', paquete: 'evalua', nombre: 'Marcela <b>Soto</b>', cargo: 'TI', creadoEn: 1790000000000 }];
+  const hc = sb.srvPanelHtml(new E2(), 'cliente'), ha = sb.srvPanelHtml(new E2(), 'auditor');
+  const ev = new E2(); ev.srv = S('evalua', 'activa'); const hev = sb.srvPanelHtml(ev, 'cliente'), hea = sb.srvPanelHtml(ev, 'auditor');
+  sb.window.srvEnviadas = ['evalua']; const henv = sb.srvPanelHtml(new E2(), 'cliente'); sb.window.srvEnviadas = [];
+  sb.document.getElementById = gid;
+  ok(/D360° Inicia<\/strong> es el punto de partida/.test(hc) && /Nivel activo: <strong>1 de 4<\/strong>/.test(hc) && SRV_ORD.every((p) => hc.includes(SRV_P[p].n)), 'el cliente ve que el Inicia es el punto de partida, su nivel (1 de 4) y los cuatro servicios');
+  ok((hc.match(/srvQuiero\('evalua'\)/g) || []).length === 1 && !/srvQuiero\('acompana'\)/.test(hc) && !/srvQuiero\('implementa'\)/.test(hc) && (hc.match(/Requiere D360° Evalúa/g) || []).length >= 2, 'sin Evalúa, el cliente solo puede pedir Evalúa; Acompaña e Implementa dicen que requieren Evalúa y no tienen botón');
+  ok(/srvQuiero\('acompana'\)/.test(hev) && /srvQuiero\('implementa'\)/.test(hev) && !/srvQuiero\('evalua'\)/.test(hev) && /Nivel activo: <strong>2 de 4<\/strong>/.test(hev) && /Servicio registrado: <strong>D360° Evalúa<\/strong> · Activa/.test(hev), 'con el Evalúa activo, el cliente puede pedir Acompaña o Implementa, y ya no Evalúa');
+  ok(/Solicitud enviada\. Su consultor se pondrá en contacto/.test(henv) && !/srvQuiero\('evalua'\)/.test(henv), 'después de pedir avanzar, el botón se reemplaza por la confirmación');
+  ok(!/srvQuiero/.test(ha) && /srvDlg\(\)/.test(ha) && /Gestionar el servicio contratado/.test(ha) && /actualizar los resultados publicados/.test(ha), 'el consultor ve el botón para gestionar el servicio, sin los botones del cliente, y que el cliente lo ve al actualizar lo publicado');
+  ok(/Solicitudes del cliente/.test(ha) && /Marcela &lt;b&gt;Soto&lt;\/b&gt;/.test(ha) && !/<b>Soto<\/b>/.test(ha) && /pidió avanzar con <strong>D360° Evalúa<\/strong>/.test(ha) && !/Solicitudes del cliente/.test(hc), 'el consultor ve las solicitudes del cliente (con el nombre escapado) y el cliente no');
+  ok(/Los contenidos son los de la oferta de AlignData\. El detalle, los plazos y las condiciones constan en el contrato/.test(hc), 'el texto aclara que el contrato prevalece');
+
+  // ── pantalla: ventana del consultor ──
+  ok(/function srvHitosHtml\(p, hs\)/.test(sj) && sb.srvHitosHtml('combo', { anticipo: 1790000000000 }).split('<input type="checkbox"').length - 1 === SRV_P.combo.hitos.length && /srv-h-anticipo" checked/.test(sb.srvHitosHtml('combo', { anticipo: 1790000000000 })) && sb.srvHitosHtml('', {}) === '', 'el consultor ve un hito por cada tramo del paquete, marcando los cumplidos');
+  const vh = sb.srvVentanaHtml({ ...S('inicia', 'activa'), hitos: { informe: Date.now() - 86400000 } });
+  ok(/Descuento del Combo/.test(vh) && /5 días hábiles desde la entrega del informe del Inicia/.test(vh) && /no considera feriados/.test(vh) && sb.srvVentanaHtml(S('evalua', 'activa')) === '', 'la ventana del descuento del Combo se muestra solo para el Inicia con el informe entregado, y avisa que no considera feriados');
+  const slot = { innerHTML: '' }; sb.document.getElementById = (i) => (i === 'srv-slot' ? slot : el()); const prev = en.srv; en.srv = L({ paquete: 'evalua', estado: 'propuesta', ref: { n: '<img src=x onerror=1>' } });
+  sb.srvRender(); en.srv = prev; sb.document.getElementById = gid;
+  ok(/no activa nada por sí solo/.test(slot.innerHTML) && !/<img src=x/.test(slot.innerHTML) && /&lt;img src=x/.test(slot.innerHTML) && SRV_ORD.concat(['combo']).every((p) => slot.innerHTML.includes(SRV_P[p].n)) && /type="url"/.test(slot.innerHTML) && /actualice los resultados publicados/.test(slot.innerHTML), 'el formulario aclara que adjuntar un contrato no activa nada, escapa lo que se escribe y ofrece todos los paquetes');
+  ok(/El enlace debe empezar con https:\/\//.test(sj) && /en\.sv\(\); srvRender\(\)/.test(sj) && /if \(typeof en === 'undefined' \|\| en\.ro \|\| !en\.sid\) return;/.test(sj) && /por: us \? \(us\.nombre \|\| us\.email \|\| ''\) : ''/.test(sj), 'guardar valida el enlace, queda constancia de quién registró y solo se puede en una sesión propia y editable');
+
+  // ── conexión con el resto ──
+  ok(/<dialog class="dlg dlg-srv" id="dlg-srv" aria-labelledby="srv-dlg-t">/.test(ih) && /<script src="ruta\.js"><\/script>\s*<script src="servicio\.js"><\/script>/.test(ih), 'la página tiene el diálogo del servicio y carga servicio.js después de ruta.js');
+  ok(/\['t10','handshake','Servicio',''\]/.test(aj) && /id="t10"/.test(aj) && /srvPanelHtml\(en,modo\)/.test(aj) && /modo==='auditor'\|\|modo==='cliente'/.test(aj), 'los resultados tienen la pestaña «Servicio» para el consultor y para el cliente');
+  ok(/@media print\{#t10\{display:none!important\}\}/.test(cs), 'la pestaña no sale en el PDF');
+  ok(/srvEtiqueta\(s\.servicio\)/.test(ss) && /window\.srvCtx = \(\) => \(\{ N, tk \}\)/.test(ss) && /window\.srvCtx = \(\) => \(\{ N, tk: act && act\.compartido && act\.compartido\.token \}\)/.test(ss), 'cada sesión del panel muestra su servicio y el cliente y el consultor conocen su enlace para las solicitudes');
+  ok(/id: 'srv', ic: 'handshake', t: 'Servicio contratado', fn: \(\) => srvDlg\(\)/.test(lj) && /window\.srvSol \|\| \[\]\)\.length/.test(lj), 'el menú lateral tiene «Servicio contratado», con el número de solicitudes pendientes');
+  ok(/servicio: en\.srv \|\| null/.test(ng) && /servicio: en\.srv \|\| null/.test(np) && ['solicitar', 'solicitudesEscuchar'].every((fn) => new RegExp('export (async )?function ' + fn + '[(]').test(ng) && new RegExp('export (async )?function ' + fn + '[(]').test(np)), 'el guardado incluye el servicio y la capa de datos (nube y prueba) tiene las solicitudes');
+  ok(/function servicioPub\(d\)/.test(rg) && /match \/solicitudes\/\{sid\}/.test(rg) && /paquete in \['evalua', 'acompana', 'implementa'\]/.test(rg) && /allow get, list, delete: if esConsultor\(\);/.test(rg.slice(rg.indexOf('match /solicitudes/'))), 'las reglas permiten publicar solo el paquete y el estado, y que el cliente cree (nunca lea) solicitudes de Evalúa, Acompaña o Implementa');
+  ok(/srvLimpio\(d\.servicio\)/.test(aj) && /srvPublico\(this\.srv\)/.test(aj), 'el motor normaliza el servicio al cargar y publica solo lo permitido');
+  // los nombres de clase nuevos no chocan con los de antes
+  const bloque = cs.slice(cs.indexOf('/* ── servicio contratado ── */')), antes = cs.slice(0, cs.indexOf('/* ── servicio contratado ── */'));
+  const nuevas = [...new Set([...bloque.matchAll(/\.(srv-[\w-]+|sc-srv)/g)].map((m) => m[1]))];
+  ok(nuevas.length > 15 && nuevas.every((c2) => !new RegExp('\\.' + c2.replace(/-/g, '\\-') + '(?![\\w-])').test(antes)), 'ninguno de los ' + nuevas.length + ' nombres de clase nuevos ya existía');
 }
 
 console.log('\n' + (fallos ? '✗ ' + fallos + ' problema(s)' : '✓ Todas las verificaciones pasaron'));
