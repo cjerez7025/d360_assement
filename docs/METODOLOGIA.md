@@ -2,6 +2,10 @@
 
 La explicación vive en la app, con los **números reales de cada sesión**: pestaña **Método** de los resultados (la ven el consultor y el cliente) y botón **Cómo se calcula** en la pantalla de preguntas (solo el consultor; el cliente en la reunión en vivo no ve niveles ni puntajes). Se genera con `metHtml()` y `metDatos()` de `public/app.js` a partir de los mismos datos y funciones del motor; la sección 16 de `npm run verificar` comprueba que el texto coincide con el cálculo.
 
+## Modelo: 9 dimensiones y 49 preguntas
+
+Desde el 2026-10-12 el modelo tiene **9 dimensiones** y **49 preguntas** (41 base y 8 de profundización). Se agregó **Cultura y Formación** para alinearse con el Assessment D360° y con el plan del piloto: reúne la capacitación (`GOB-03`, que pasó de Gobernanza pero **conserva su código** para no perder respuestas guardadas) y cuatro preguntas nuevas: inducción al ingresar (`CUL-01`), conocimiento de las reglas de uso y del aviso de incidentes (`CUL-02`), reglas internas en contratos o reglamento interno con sanciones y denuncia (`CUL-03`) y recordatorios periódicos con canal de reporte (`CUL-04`). Base legal: arts. 14 bis, 14 sexies y 49 (el modelo de prevención es voluntario; las preguntas lo dicen y ninguna genera alerta crítica). Peso de la dimensión: 1,0. En la ponderación sectorial pesa más donde hay más datos y más sensibles (`SEC_DIM.cultura`). **Las preguntas nuevas necesitan revisión legal** (Ale Yevilaf / Matías Lama). Una sesión guardada antes del cambio conserva sus respuestas y queda con las preguntas nuevas pendientes; el puntaje solo considera lo respondido dentro de cada dimensión.
+
 ## Qué dice
 
 1. **Cada respuesta vale de 0 a 3**; cada pregunta tiene un **peso** (0,8 a 1,3).

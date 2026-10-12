@@ -460,9 +460,9 @@ seccion('14. Pizarra compartida (comentarios con autor e imágenes)');
   ok(/pzMontar\('pz-slot',q\.id\)/.test(aj3) && /pzMontar\('pz-slot', q\.id\)/.test(vj3) && /id="pz-slot"/.test(aj3) && /id="pz-slot"/.test(vj3), 'la pregunta del consultor y la del cliente deben montar la pizarra');
   ok(/typeof en !== 'undefined' && en\.viv/.test(pj) && !/window\.en\b/.test(pj), '`en` no es propiedad de window: debe usarse typeof en');
   ok(/d\.length <= 200000/.test(pj) && /image\/jpeg/.test(pj), 'las imágenes se reducen a JPEG de hasta 200.000 caracteres antes de enviarse');
-  ok(/PZ\.sincronizarVivo\(\)[\s\S]{0,80}pzVivoLimpiar[\s\S]{0,80}vivoCerrar/.test(ss3), 'al terminar la reunión se copia a la sesión lo que escribieron los clientes antes de borrar la pizarra en vivo');
+  ok(/PZ\.sincronizarVivo\(\)[\s\S]{0,80}pzVivoLimpiar[\s\S]{0,200}vivoCerrar/.test(ss3), 'al terminar la reunión se copia a la sesión lo que escribieron los clientes antes de borrar la pizarra en vivo');
   ok(/pzPublicar\(tk, PZ\.entries, act\.id\)/.test(ss3) && /pzBorrarCompartido/.test(ss3) && /pzLeerCompartido\(tk\)/.test(ss3), 'publicar sube la pizarra, revocar la retira y el cliente la lee en sus resultados');
-  ok(/PZ\.cliente\(N, tk\);/.test(vj3) && /PZ\.pedirPersona\(\)\.then\(barra\)/.test(vj3) && /onsubmit|f\.onsubmit/.test(pj) && /oncancel/.test(pj), 'el cliente debe escribir su nombre antes de comentar');
+  ok(/PZ\.cliente\(N, tk\);/.test(vj3) && /PZ\.pedirPersona\(\)\.then\(\(\) => \{ barra\(\); quien\(\); latir\(\); \}\)/.test(vj3) && /onsubmit|f\.onsubmit/.test(pj) && /oncancel/.test(pj), 'el cliente debe escribir su nombre antes de comentar');
   ok(!/innerHTML\s*=[^;]*\be\.(texto|autor|cargo)\b/.test(pj), 'pizarra.js no debe insertar texto de un comentario sin escapar');
   ok(/@media print\{[^}]*\.pz-slot/.test(leer6('public/styles.css')), 'en el PDF no deben salir el formulario ni los botones de la pizarra');
 }
@@ -485,7 +485,7 @@ seccion('15. Usuario conectado en la barra superior (foto de Google, nombre y ro
   ok(/photoURL/.test(nb), 'nube.js debe entregar la foto de la cuenta de Google');
   ok(/usuarioBarra\(\{ yo: \{ nombre: user\.nombre \|\| user\.email, foto: user\.foto, rol: 'Consultor'/.test(ss4) && /usuarioBarra\(null\)/.test(ss4), 'el consultor ve su foto, nombre, rol y correo en la barra');
   ok(/consultor: yoConsultor\(\)/.test(ss4) && /avFoto\(user\.foto\)/.test(ss4), 'la reunión en vivo y los resultados publicados llevan el nombre y la foto de quien los conduce');
-  ok(/conduce = d\.consultor/.test(vj4) && /usuarioBarra\(\{ con:/.test(vj4) && /etq: 'Conduce'/.test(vj4) && /pzPersonaCambio = barra/.test(vj4), 'el cliente ve en la barra quién conduce la reunión y su propio nombre');
+  ok(/conduce = d\.consultor/.test(vj4) && /usuarioBarra\(\{ con:/.test(vj4) && /etq: 'Conduce'/.test(vj4) && /pzPersonaCambio = \(\) => \{ barra\(\); quien\(\)/.test(vj4), 'el cliente ve en la barra quién conduce la reunión y su propio nombre');
   ok(/etq: 'Preparado por'/.test(ss4), 'en los resultados el cliente ve quién los preparó');
   ok(/function fotoOk\(f\)[\s\S]{0,200}googleusercontent/.test(rv) && /function consultorOk/.test(rv) && /d\.rol == 'consultor' && fotoOk\(d\.foto\)/.test(rv), 'las reglas solo admiten fotos de googleusercontent.com y solo en comentarios del consultor');
   ok(/foto: avFoto\(u\.foto\) \|\| undefined/.test(pj), 'los comentarios del consultor llevan su foto (validada)');
@@ -851,6 +851,58 @@ seccion('20. Hoja de ruta por oleadas, evolución en el tiempo, informe ejecutiv
   ok(/<script src="app\.js"><\/script>\s*<script src="ruta\.js"><\/script>/.test(ih) && /<div id="doc" aria-hidden="true"><\/div>\s*<script src="theme\.js">/.test(ih), 'ruta.js se carga después de app.js y el contenedor de documentos es hijo directo de <body>');
   ok(/body\.imp-doc>\*\{display:none!important\}/.test(css) && /body\.imp-doc>#doc\{display:block!important\}/.test(css) && /#doc\{display:none\}/.test(css), 'al imprimir un documento solo se ve el documento; en pantalla está oculto');
   ok(/\.dc-fir/.test(css) && /\.dc h2/.test(css), 'el documento tiene sus estilos de impresión');
+}
+
+seccion('21. Novena dimensión: Cultura y Formación');
+{
+  const raiz13 = path.resolve(path.dirname(file), '..');
+  const leer13 = (f) => fs.readFileSync(path.join(raiz13, f), 'utf8').replace(/\r\n/g, '\n');
+  const ih = leer13('public/index.html'), sb = sandbox;
+  const cul = Q.filter((q) => q.dm === 'cultura');
+  ok(D.length === 9 && D[8].id === 'cultura' && D[8].n === 'Cultura y Formación' && D[8].ic === 'graduation-cap' && D.every((d) => d.w >= 1 && d.w <= 1.2), 'hay nueve dimensiones y la novena es Cultura y Formación, con peso dentro del rango del modelo');
+  ok(cul.map((q) => q.id).sort().join() === 'CUL-01,CUL-02,CUL-03,CUL-04,GOB-03' && cul.every((q) => !q.iS) && cul.length === 5, 'Cultura tiene 5 preguntas base: la capacitación (GOB-03, que conserva su código para no perder respuestas guardadas) y 4 nuevas');
+  ok(Q.length === 49 && Q.filter((q) => !q.iS).length === 41 && Q.filter((q) => q.iS).length === 8, 'quedan 49 preguntas (45 + 4 nuevas): 41 base y las 8 de profundización de antes');
+  ok(cul.every((q) => q.op.length === 4 && q.ex.length === 4 && q.ev && q.cx && q.s && q.ar && q.w >= 0.8 && q.w <= 1.3 && Array.isArray(q.fl)), 'cada pregunta de Cultura tiene cuatro respuestas, cuatro ejemplos, cómo comprobarlo, contexto legal y peso válido');
+  ok(cul.every((q) => /Art/.test(q.ar) && (q.id === 'GOB-03' || /buena práctica|14 sexies/.test(q.ar))) && cul.every((q) => /no exige|voluntari|exige/.test(q.cx)), 'las preguntas nuevas dicen si la ley lo exige o es buena práctica (el modelo de prevención es voluntario)');
+  ok(cul.every((q) => !q.fl.length) && Q.find((q) => q.id === 'GOB-03').dm === 'cultura', 'ninguna pregunta de Cultura genera alerta crítica (la ley no exige capacitar)');
+  ok(Array.isArray(A.cultura.ac) && A.cultura.ac.length >= 4 && A.cultura.ac.every((a) => a.t && a.p && a.r) && A.cultura.e && !A.gobernanza.ac.some((a) => /capacitación periódica/.test(a.t)) && A.gobernanza.ac.length >= 4, 'Cultura tiene su plan de acción y la acción de capacitación salió de Gobernanza');
+  ok(CL.some((c2) => c2.qs.includes('CUL-01') && c2.qs.includes('CUL-02') && c2.qs.includes('GOB-03')) && CL.some((c2) => c2.qs.includes('CUL-03') && c2.qs.includes('CUL-04') && /voluntario/.test(c2.ob)), 'las preguntas de Cultura alimentan el semáforo de obligaciones (el modelo de prevención se marca como voluntario)');
+  ok(SEC_DIM.cultura && SEC_DIM.cultura.length > 0 && EF['CUL-01'] && EF['CUL-04'], 'Cultura entra en la ponderación sectorial y en la hoja de ruta');
+  // el puntaje
+  const arm = (f) => { const e = new E2(); e.p = {}; Q.filter((q) => !q.iS).forEach((q, i) => { e.a[q.id] = f(q, i); }); return e; };
+  ok(arm(() => 3).sc().g === 100 && arm(() => 0).sc().g === 0 && arm((q) => (q.dm === 'cultura' ? 0 : 3)).sc().g < 100 && arm((q) => (q.dm === 'cultura' ? 0 : 3)).sc().d.cultura === 0, 'todo en 3 vale 100; sin Cultura el puntaje baja y la dimensión vale 0');
+  const antes = new E2(); antes.cargar({ perfil: {}, respuestas: Object.fromEntries(Q.filter((q) => !q.iS && q.dm !== 'cultura').map((q) => [q.id, 3]).concat([['GOB-03', 3]])) });
+  ok(antes.a['GOB-03'] === 3 && antes.sc().d.cultura === 100 && antes.sc().d.gobernanza === 100 && antes.nx().dm === 'cultura' && antes.pg().d < antes.pg().t, 'una sesión guardada conserva su respuesta de capacitación (ahora en Cultura) y queda pendiente lo nuevo');
+  ok(new RegExp('en ' + D.length + ' dimensiones').test(ih) && /<strong>9<\/strong> dimensiones/.test(ih) && !/\b8 dimensiones/.test(ih), 'la portada dice nueve dimensiones');
+  ok(/\$\{D\.length\} dimensione/.test(leer13('public/app.js')) && !/las 8 dimensiones/.test(leer13('public/app.js')), 'el texto de resultados cuenta las dimensiones en vez de decir 8');
+}
+
+seccion('22. Presencia: quién está conectado en la reunión en vivo');
+{
+  const raiz14 = path.resolve(path.dirname(file), '..');
+  const leer14 = (f) => fs.readFileSync(path.join(raiz14, f), 'utf8').replace(/\r\n/g, '\n');
+  const vj = leer14('public/vivo.js'), sj = leer14('public/sesiones.js'), ng = leer14('public/nube.js'), np = leer14('public/nube-prueba.js'), rg = leer14('firestore.d360.rules'), cs = leer14('public/styles.css'), pj = leer14('public/pizarra.js');
+  // cliente
+  ok(/id="vh-quien"/.test(vj) && /Participa como <strong>/.test(vj) && /vivoCambiarNombre/.test(vj), 'el cliente ve en su pantalla una línea «Participa como <su nombre>» con la opción de cambiarlo (en el celular el nombre de la barra superior no cabe)');
+  ok(/Escriba su nombre para participar/.test(vj), 'si aún no escribió su nombre, la línea se lo pide');
+  ok(/quien\(\); lucide\.createIcons\(\)/.test(vj) && /esc\(p\.n\)/.test(vj) && /esc\(p\.c\)/.test(vj), 'la línea se actualiza con cada cambio de pregunta y el nombre y el cargo se escapan');
+  ok(/const pid = Array\.from\(crypto\.getRandomValues\(new Uint8Array\(20\)\)/.test(vj) && !/localStorage\.setItem\([^)]*pid/.test(vj), 'cada dispositivo usa un código al azar de 20 letras o números que no se guarda en el equipo');
+  ok(/const latir = \(\) => \{ N\.vivoLatido\(tk\); if \(N\.vivoPresente && PZ\.persona && PZ\.persona\.n\) N\.vivoPresente\(tk, pid, PZ\.persona\); \}/.test(vj) && /hb = setInterval\(latir, 25000\)/.test(vj) && /visibilitychange', \(\) => \{ if \(!document\.hidden\) latir\(\)/.test(vj), 'el dispositivo avisa su nombre al entrar, cada 25 segundos y al volver a la pestaña');
+  ok(/vivoCambiarNombre = \(\) => PZ\.pedirPersona\(true\)\.then\(\(\) => \{ barra\(\); quien\(\); latir\(\); \}\)/.test(vj), 'al cambiar el nombre, se actualiza la pantalla y se avisa al consultor');
+  // datos
+  const exp = (src) => ['vivoPresente', 'vivoPresentes', 'vivoPresentesLimpiar'].every((f) => new RegExp('export (async )?function ' + f + '\\b').test(src));
+  ok(exp(ng) && exp(np), 'la capa de datos (nube y modo de prueba) tiene las tres funciones de presencia');
+  ok(/collection\(db, 'en_vivo', tk, 'presentes'\)/.test(ng) && /\{ n: persona\.n, \.\.\.\(persona\.c \? \{ c: persona\.c \} : \{\}\), t: F\.serverTimestamp\(\) \}/.test(ng), 'en la nube cada presencia guarda solo nombre, cargo y la hora del servidor');
+  // consultor
+  ok(/presentes\.filter\(\(p\) => p\.n && Date\.now\(\) - \(\+p\.t \|\| 0\) < 70000\)/.test(sj) && /new Map\(.*p\.n\.toLowerCase\(\) \+ '\|' \+ \(p\.c \|\| ''\)\.toLowerCase\(\)/.test(sj), 'el consultor considera conectado a quien avisó en los últimos 70 segundos (el aviso es cada 25) y cuenta una sola vez a la misma persona aunque recargue o use dos dispositivos');
+  ok(/pr\.length === 1 \? 'Conectado: ' \+ pr\[0\]\.n\.split\(' '\)\[0\]/.test(sj) && /pr\.length \+ ' conectados'/.test(sj) && /'Cliente conectado'/.test(sj) && /'En vivo · esperando al cliente'/.test(sj), 'el botón dice «Conectado: <nombre>», «N conectados», «Cliente conectado» (sin nombre aún) o «esperando al cliente»');
+  ok(/class="dv-pres"/.test(sj) && /esc\(p\.n\)/.test(sj) && /Hay ' \+ pr\.length \+ ' personas conectadas/.test(sj), 'el diálogo lista a las personas conectadas, con el nombre escapado');
+  ok(/N\.vivoPresentes\(en\.viv\.token/.test(sj) && /vivoPresentesLimpiar\(en\.viv\.token\)/.test(sj) && /if \(presOff\) \{ presOff\(\); presOff = null; \} presentes = \[\];\s*PZ\.vivo\(null\)/.test(sj), 'el consultor escucha las presencias mientras dura la reunión y las borra al terminarla');
+  // reglas
+  ok(/match \/presentes\/\{pid\}/.test(rg) && /allow get, list: if esConsultor\(\);/.test(rg.slice(rg.indexOf('match /presentes/'))) && /request\.resource\.data\.t == request\.time/.test(rg) && /hasOnly\(\['n', 'c', 't'\]\)/.test(rg), 'las reglas permiten a un cliente escribir solo su presencia (nombre, cargo y hora del servidor) y solo el consultor las lee');
+  ok(/function enlaceVigente\(\)/.test(rg) && rg.indexOf('function enlaceVigente()') < rg.indexOf('match /presentes/') && (rg.match(/function enlaceVigente\(\)/g) || []).length === 1, 'enlaceVigente está definida una sola vez, a nivel de en_vivo, y la usan la pizarra y las presencias');
+  // error del nombre: el atributo hidden debe ocultar siempre
+  ok(/\[hidden\]\{display:none!important\}/.test(cs) && /er\.hidden = true/.test(pj), 'un elemento con hidden nunca se muestra (el aviso «Escriba su nombre» aparecía antes de escribir)');
 }
 
 console.log('\n' + (fallos ? '✗ ' + fallos + ' problema(s)' : '✓ Todas las verificaciones pasaron'));

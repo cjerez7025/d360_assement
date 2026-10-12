@@ -253,10 +253,14 @@ ${parcial}<div class="dlg-act"><a class="be" href="${esc(url)}" target="_blank" 
 
   // ── reunión en vivo (el cliente sigue la pregunta desde su propio dispositivo y propone respuestas) ──
   const enlaceVivo = (tk) => location.origin + location.pathname + '?v=' + tk + (PRUEBA ? '&prueba=1' : MOCK ? '&mock=1' : '');
+  // personas del cliente conectadas ahora (cada dispositivo avisa cada ~25 s)
+  let presentes = [], presOff = null;
+  // una misma persona que recarga la página (código nuevo) o entra desde dos dispositivos se cuenta una sola vez
+  const presentesActivos = () => [...new Map(presentes.filter((p) => p.n && Date.now() - (+p.t || 0) < 70000).map((p) => [p.n.toLowerCase() + '|' + (p.c || '').toLowerCase(), p])).values()].sort((a, b) => a.n.localeCompare(b.n));
   function vivoBtn() {
     const t = $('bviv-t'), b = $('bviv'); if (!t) return;
-    const conectado = !!(en.viv && en.clienteVisto && Date.now() - en.clienteVisto < 60000);
-    t.textContent = !en.viv ? 'Invitar al cliente' : conectado ? 'Cliente conectado' : 'En vivo · esperando al cliente';
+    const pr = presentesActivos(), conectado = !!(en.viv && (pr.length || (en.clienteVisto && Date.now() - en.clienteVisto < 60000)));
+    t.textContent = !en.viv ? 'Invitar al cliente' : pr.length === 1 ? 'Conectado: ' + pr[0].n.split(' ')[0] : pr.length > 1 ? pr.length + ' conectados' : conectado ? 'Cliente conectado' : 'En vivo · esperando al cliente';
     b.classList.toggle('en-vivo', !!en.viv); b.classList.toggle('conectado', conectado);
   }
   setInterval(vivoBtn, 15000);
@@ -264,6 +268,8 @@ ${parcial}<div class="dlg-act"><a class="be" href="${esc(url)}" target="_blank" 
     if (vivoOff) { vivoOff(); vivoOff = null; }
     en.prop = {}; en.clienteVisto = null; vivoBtn();
     PZ.vivo(en.viv ? en.viv.token : null);
+    if (presOff) { presOff(); presOff = null; } presentes = [];
+    if (en.viv && N.vivoPresentes) presOff = N.vivoPresentes(en.viv.token, (l) => { presentes = l; vivoBtn(); if ($('dlg-vivo').open) vivoRender(); });
     if (!en.viv || !N.vivoEscuchar) return;
     vivoOff = N.vivoEscuchar(en.viv.token, (d) => {
       if (!d) { en.viv = null; en.prop = {}; en.clienteVisto = null; }
@@ -277,8 +283,8 @@ ${parcial}<div class="dlg-act"><a class="be" href="${esc(url)}" target="_blank" 
 <ul class="dv-l"><li>Verá <strong>la misma pregunta</strong> que usted, con sus ejemplos.</li><li>Podrá <strong>escribir comentarios y subir imágenes</strong> en la pizarra, con su nombre; usted y todos los participantes los ven al instante.</li><li>Podrá <strong>proponer una respuesta</strong>: usted la ve en su pantalla y decide cuál queda registrada.</li><li><strong>No</strong> ve el nivel ni los puntajes mientras responde.</li><li>El enlace vence en 12 horas y usted puede cerrarlo cuando quiera.</li></ul>
 <div class="dlg-act"><button class="be be-p" id="dv-go" onclick="vivoCrear()"><i data-lucide="link"></i>Crear enlace en vivo</button></div>`;
     } else {
-      const url = enlaceVivo(en.viv.token), on = !!(en.clienteVisto && Date.now() - en.clienteVisto < 60000), n = Object.keys(en.prop).length;
-      $('dv-body').innerHTML = `<p class="${on ? 'dlg-ok' : 'dlg-warn'}" role="status"><i data-lucide="${on ? 'circle-check' : 'clock'}"></i>${on ? 'El cliente está conectado.' : 'Esperando que el cliente abra el enlace.'}${n ? ' Ha propuesto respuesta en ' + n + (n === 1 ? ' pregunta.' : ' preguntas.') : ''}</p>
+      const url = enlaceVivo(en.viv.token), pr = presentesActivos(), on = !!(pr.length || (en.clienteVisto && Date.now() - en.clienteVisto < 60000)), n = Object.keys(en.prop).length;
+      $('dv-body').innerHTML = `<p class="${on ? 'dlg-ok' : 'dlg-warn'}" role="status"><i data-lucide="${on ? 'circle-check' : 'clock'}"></i>${on ? (pr.length > 1 ? 'Hay ' + pr.length + ' personas conectadas.' : 'El cliente está conectado.') : 'Esperando que el cliente abra el enlace.'}${n ? ' Ha propuesto respuesta en ' + n + (n === 1 ? ' pregunta.' : ' preguntas.') : ''}</p>${pr.length ? '<ul class="dv-pres" aria-label="Personas conectadas">' + pr.map((p) => '<li><strong>' + esc(p.n) + '</strong>' + (p.c ? ' · ' + esc(p.c) : '') + '</li>').join('') + '</ul>' : ''}
 <label for="dv-url" class="dlg-l">Enlace para el cliente (envíelo por el chat de la videollamada)</label>
 <div class="dlg-url"><input id="dv-url" readonly value="${esc(url)}" onfocus="this.select()"><button class="be be-p" onclick="vivoCopiar()"><i data-lucide="copy"></i>Copiar</button></div><p class="dlg-ok" id="dv-cp" role="status"></p>
 <p class="dv-n">Vence el ${fchd(new Date(en.viv.venceEn))} a las ${new Date(en.viv.venceEn).toTimeString().slice(0, 5)}. Al terminarla, el enlace deja de funcionar.</p>
@@ -299,8 +305,9 @@ ${parcial}<div class="dlg-act"><a class="be" href="${esc(url)}" target="_blank" 
   window.vivoCopiar = async () => { const i = $('dv-url'), ok = $('dv-cp'); try { await navigator.clipboard.writeText(i.value); ok.textContent = 'Enlace copiado.'; } catch (e) { i.select(); ok.textContent = 'Seleccionado: use Ctrl+C para copiarlo.'; } };
   window.vivoTerminar = async () => {
     if (!confirmaVivo) { confirmaVivo = true; vivoRender(); return; }
-    try { await PZ.sincronizarVivo(); await N.pzVivoLimpiar(en.viv.token); await N.vivoCerrar(en.sid, en.viv.token); } catch (e) { $('dv-body').insertAdjacentHTML('afterbegin', '<p class="dlg-warn" role="alert">No se pudo cerrar (' + esc(e.code || e.message) + ').</p>'); return; }
+    try { await PZ.sincronizarVivo(); await N.pzVivoLimpiar(en.viv.token); if (N.vivoPresentesLimpiar) await N.vivoPresentesLimpiar(en.viv.token); await N.vivoCerrar(en.sid, en.viv.token); } catch (e) { $('dv-body').insertAdjacentHTML('afterbegin', '<p class="dlg-warn" role="alert">No se pudo cerrar (' + esc(e.code || e.message) + ').</p>'); return; }
     if (vivoOff) { vivoOff(); vivoOff = null; }
+    if (presOff) { presOff(); presOff = null; } presentes = [];
     PZ.vivo(null); en.viv = null; en.prop = {}; en.clienteVisto = null; confirmaVivo = false; propUI(); vivoBtn(); vivoRender();
   };
   $('dlg-vivo').addEventListener('click', (e) => { if (e.target === $('dlg-vivo')) $('dlg-vivo').close(); });

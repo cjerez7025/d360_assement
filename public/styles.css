@@ -659,7 +659,7 @@ a.be{text-decoration:none}
   .rs .lead{break-after:avoid}
   .rs .lead{margin-bottom:12px}
   .rw{max-width:240px}
-  .dg{grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
+  .dg{grid-template-columns:repeat(5,1fr);gap:8px;margin-top:10px}
   .dimc{padding:8px 10px}
   .br{padding:8px 0}
   .pc2{padding:14px 16px;margin-bottom:10px}
@@ -1036,3 +1036,11 @@ dialog.dlg-met[open]{display:flex}
   .dc-p{margin-top:18pt;padding-top:6pt;border-top:.5pt solid #D9E1DF;font-size:8.5pt;color:#556560}
   .evo-svg{display:none}
 }
+
+/* un elemento con el atributo hidden nunca se muestra, aunque su clase le dé display */
+[hidden]{display:none!important}
+.vh-quien{margin-top:10px;font-size:var(--fs-sm);color:var(--text-2);overflow-wrap:anywhere}
+.vh-quien svg{width:16px;height:16px;vertical-align:-3px;margin-right:4px}
+.vh-cambiar{border:0;background:none;color:var(--brand-ink);text-decoration:underline;cursor:pointer;font:inherit;padding:2px}
+.dv-pres{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:4px}
+.dv-pres li{padding:6px 10px;border-radius:var(--r-sm,8px);background:var(--sunk)}

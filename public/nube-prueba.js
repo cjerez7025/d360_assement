@@ -82,6 +82,14 @@ export async function vivoProponer(tk, qid, v) {
   d.vivo[tk].propuestas = { ...d.vivo[tk].propuestas, [qid]: v }; d.vivo[tk].clienteVisto = Date.now(); guardarTodo(d);
 }
 export async function vivoLatido(tk) { const d = leerTodo(); if (d.vivo[tk]) { d.vivo[tk].clienteVisto = Date.now(); guardarTodo(d); } }
+export async function vivoPresente(tk, pid, persona) { const d = leerTodo(); if (!d.vivo[tk]) return; d.vivo[tk].presentes = { ...(d.vivo[tk].presentes || {}), [pid]: { n: persona.n, c: persona.c || '', t: Date.now() } }; guardarTodo(d); }
+export function vivoPresentes(tk, cb) {
+  let ultimo = null;
+  const emitir = () => { const p = (leerTodo().vivo[tk] || {}).presentes || {}, lst = Object.entries(p).map(([id, x]) => ({ id, ...x })), txt = JSON.stringify(lst); if (txt !== ultimo) { ultimo = txt; cb(lst); } };
+  oyentes.add(emitir); emitir();
+  return () => oyentes.delete(emitir);
+}
+export async function vivoPresentesLimpiar(tk) { const d = leerTodo(); if (d.vivo[tk]) { d.vivo[tk].presentes = {}; guardarTodo(d); } }
 export async function vivoCerrar(sid, tk) { const d = leerTodo(); delete d.vivo[tk]; if (d.sesiones[sid]) d.sesiones[sid].vivo = null; guardarTodo(d); }
 
 // ── pizarra compartida (simulada): misma interfaz que nube.js; ses = registro de la sesión, vivo = reunión, comp = publicada ──

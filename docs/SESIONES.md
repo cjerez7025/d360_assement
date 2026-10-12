@@ -76,6 +76,10 @@ El enlace vence a las 12 horas y el consultor lo cierra con «Terminar la reuni�
 
 En el modo de prueba la reunión en vivo se puede probar abriendo el enlace en **otra pestaña del mismo navegador** (los datos se sincronizan entre pestañas).
 
+### Quién está conectado (presencia)
+
+Cada dispositivo del cliente que abre el enlace en vivo escribe su nombre y la hora del servidor (cada ~25 s) en `en_vivo/{token}/presentes/{código al azar}`; el consultor las lista y el botón dice «Conectado: Marcela», «2 conectados» o, si aún no escribieron su nombre, «Cliente conectado». Se considera conectado a quien avisó en los últimos 70 s, y la misma persona se cuenta una vez aunque recargue o use dos dispositivos. En el celular, el cliente ve una línea «Participa como …» (los nombres de la barra superior no caben en pantallas angostas) con la opción de cambiarlo. Las reglas solo dejan al cliente escribir su propia presencia (nombre ≤ 60, cargo ≤ 60, hora del servidor); solo el consultor las lee y las borra, y se borran al terminar la reunión. **Al publicar este cambio hay que desplegar primero `firestore:d360`.**
+
 ## Archivos
 
 | Archivo | Rol |

@@ -14,7 +14,8 @@ const EF = {
   'SEG-01': 3, 'SEG-02': 2, 'SEG-02b': 1, 'SEG-03': 2, 'SEG-04': 2, 'SEG-05': 3,
   'TER-01': 2, 'TER-01b': 2, 'TER-02': 2, 'TER-03': 1, 'TER-04': 2,
   'SEN-01': 2, 'SEN-01b': 2, 'SEN-02': 2, 'SEN-03': 3, 'SEN-04': 2, 'SEN-05': 2,
-  'RIE-01': 3, 'RIE-01b': 1, 'RIE-02': 1, 'RIE-03': 3
+  'RIE-01': 3, 'RIE-01b': 1, 'RIE-02': 1, 'RIE-03': 3,
+  'CUL-01': 1, 'CUL-02': 2, 'CUL-03': 2, 'CUL-04': 1
 };
 const EF_N = { 1: 'Bajo', 2: 'Medio', 3: 'Alto' };
 const EF_T = { 1: 'días', 2: 'semanas', 3: 'meses' };

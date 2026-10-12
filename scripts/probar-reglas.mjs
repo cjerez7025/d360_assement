@@ -12,7 +12,8 @@ const PROYECTO = 'aligndata-arcop';
 const reglas = fs.readFileSync(new URL('../firestore.d360.rules', import.meta.url), 'utf8');
 const copia = reglas
   .replace('request.resource.data.creadoEn == request.time', 'true')
-  .replace('p.venceEn > request.time', 'true');
+  .replace('p.venceEn > request.time', 'true')
+  .replace('request.resource.data.t == request.time', 'true');
 if (copia === reglas) { console.error('No se encontraron las comparaciones de hora a sustituir: revise este script.'); process.exit(2); }
 
 // ── token de la sesión de la CLI de Firebase ──
@@ -54,6 +55,23 @@ const c = (nombre, esperado, metodo, ruta, { auth, data, existente, mock } = {})
     ...(mock ? { functionMocks: [mock] } : {})
   }
 });
+const PRES = `/en_vivo/${TK}/presentes/${ID}`;
+c('presencia: un dispositivo del cliente avisa su nombre', 'ALLOW', 'create', PRES, { data: { n: 'Carlos Jerez', c: 'Gerente', t: '2026-10-11T12:00:00Z' }, mock: vigente });
+c('presencia: sin cargo también vale', 'ALLOW', 'update', PRES, { data: { n: 'Carlos', t: '2026-10-11T12:00:00Z' }, mock: vigente, existente: { n: 'Carlos' } });
+c('presencia: con el enlace vencido no', 'DENY', 'create', PRES, { data: { n: 'Carlos', t: '2026-10-11T12:00:00Z' }, mock: vencido });
+c('presencia: sin nombre no', 'DENY', 'create', PRES, { data: { t: '2026-10-11T12:00:00Z' }, mock: vigente });
+c('presencia: nombre vacío no', 'DENY', 'create', PRES, { data: { n: '', t: '2026-10-11T12:00:00Z' }, mock: vigente });
+c('presencia: nombre de más de 60 caracteres no', 'DENY', 'create', PRES, { data: { n: 'x'.repeat(61), t: '2026-10-11T12:00:00Z' }, mock: vigente });
+c('presencia: cargo de más de 60 caracteres no', 'DENY', 'create', PRES, { data: { n: 'Carlos', c: 'x'.repeat(61), t: '2026-10-11T12:00:00Z' }, mock: vigente });
+c('presencia: campo no permitido no', 'DENY', 'create', PRES, { data: { n: 'Carlos', t: '2026-10-11T12:00:00Z', email: 'a@b.c' }, mock: vigente });
+c('presencia: nombre que no es texto no', 'DENY', 'create', PRES, { data: { n: 5, t: '2026-10-11T12:00:00Z' }, mock: vigente });
+c('presencia: código inválido no', 'DENY', 'create', `/en_vivo/${TK}/presentes/x`, { data: { n: 'Carlos', t: '2026-10-11T12:00:00Z' }, mock: vigente });
+c('presencia: el cliente no puede leerlas', 'DENY', 'get', PRES, { existente: { n: 'Carlos' }, mock: vigente });
+c('presencia: el cliente no puede listarlas', 'DENY', 'list', PRES, { mock: vigente });
+c('presencia: el consultor las lee', 'ALLOW', 'get', PRES, { auth: consultor, existente: { n: 'Carlos' } });
+c('presencia: el consultor las lista', 'ALLOW', 'list', PRES, { auth: consultor });
+c('presencia: el consultor las borra', 'ALLOW', 'delete', PRES, { auth: consultor });
+c('presencia: el cliente no las borra', 'DENY', 'delete', PRES, { mock: vigente });
 const VIVO = `/en_vivo/${TK}/pizarra/${ID}`, SES = `/sesiones/${SID}/pizarra/${ID}`, COM = `/compartidos/${CT}/pizarra/${ID}`;
 
 // pizarra en vivo · cliente (sin cuenta)

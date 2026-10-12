@@ -151,19 +151,34 @@ service cloud.firestore {
           'propuestas', 'clienteVisto', 'activo', 'creadoEn', 'actualizadoEn', 'venceEn'])
           && consultorOk(request.resource.data);
       }
+      // El enlace sigue vigente (activo y sin vencer); lo usan la pizarra y las presencias.
+      function enlaceVigente() {
+        let p = get(/databases/$(database)/documents/en_vivo/$(token)).data;
+        return p.activo == true && p.venceEn > request.time;
+      }
       allow get: if esConsultor() || vigente(resource.data);
       allow list: if false;
       allow create: if esConsultor() && token.size() == 32 && camposConsultor();
       allow update: if (esConsultor() && camposConsultor()) || (vigente(resource.data) && soloCliente());
       allow delete: if esConsultor();
 
+      // Presencia: cada dispositivo del cliente avisa su nombre y la hora (cada ~25 s) en presentes/{código al azar}.
+      // El cliente solo puede escribir su propia presencia con la hora del servidor; solo el consultor las lista y las borra.
+      match /presentes/{pid} {
+        allow get, list: if esConsultor();
+        allow create, update: if esIdPz(pid)
+          && enlaceVigente()
+          && request.resource.data.keys().hasOnly(['n', 'c', 't'])
+          && request.resource.data.keys().hasAll(['n', 't'])
+          && request.resource.data.n is string && request.resource.data.n.size() >= 1 && request.resource.data.n.size() <= 60
+          && (!('c' in request.resource.data) || (request.resource.data.c is string && request.resource.data.c.size() <= 60))
+          && request.resource.data.t == request.time;
+        allow delete: if esConsultor();
+      }
+
       // Pizarra en vivo: mientras el enlace está vigente, cualquiera con el token ve los comentarios y puede AGREGAR
       // los suyos (con su nombre). No puede editar ni borrar; el consultor puede borrar cualquiera.
       match /pizarra/{eid} {
-        function enlaceVigente() {
-          let p = get(/databases/$(database)/documents/en_vivo/$(token)).data;
-          return p.activo == true && p.venceEn > request.time;
-        }
         allow get, list: if esConsultor() || enlaceVigente();
         allow create: if esIdPz(eid)
           && comentarioPz(request.resource.data)

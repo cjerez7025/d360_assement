@@ -143,6 +143,19 @@ export async function vivoProponer(tk, qid, v) {
 export async function vivoLatido(tk) {
   try { await F.updateDoc(vivoRef(tk), 'clienteVisto', F.serverTimestamp()); } catch (e) { /* enlace cerrado */ }
 }
+// Presencia: cada dispositivo del cliente que entra escribe en en_vivo/{token}/presentes/{pid} su nombre y la hora (cada ~25 s);
+// el consultor los lista para saber quién está conectado. Se borran al terminar la reunión.
+export async function vivoPresente(tk, pid, persona) {
+  try { await F.setDoc(F.doc(db, 'en_vivo', tk, 'presentes', pid), { n: persona.n, ...(persona.c ? { c: persona.c } : {}), t: F.serverTimestamp() }); } catch (e) { /* enlace cerrado */ }
+}
+export function vivoPresentes(tk, cb) {
+  return F.onSnapshot(F.collection(db, 'en_vivo', tk, 'presentes'),
+    (s) => cb(s.docs.map((d) => { const x = d.data(); return { id: d.id, n: x.n, c: x.c || '', t: x.t && x.t.toMillis ? x.t.toMillis() : 0 }; })), () => cb([]));
+}
+export async function vivoPresentesLimpiar(tk) {
+  const s = await F.getDocs(F.collection(db, 'en_vivo', tk, 'presentes'));
+  await Promise.all(s.docs.map((d) => F.deleteDoc(d.ref)));
+}
 export async function vivoCerrar(sid, tk) {
   await F.deleteDoc(vivoRef(tk));
   if (sid) await F.updateDoc(F.doc(db, 'sesiones', sid), { vivo: F.deleteField() });
