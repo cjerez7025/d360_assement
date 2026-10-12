@@ -1047,18 +1047,18 @@ dialog.dlg-met[open]{display:flex}
 
 /* ── menú lateral del consultor: panel de vidrio flotante, con versión solo de íconos ── */
 :root{--sb-w:268px;--sb-mini:76px}
-.sb{position:fixed;z-index:120;top:calc(12px + env(safe-area-inset-top,0px));bottom:12px;left:12px;width:var(--sb-w);display:flex;flex-direction:column;padding:16px 12px 12px;border-radius:26px;overflow:hidden;color:#EAF2F0;
+.lat-menu{position:fixed;z-index:120;top:calc(12px + env(safe-area-inset-top,0px));bottom:12px;left:12px;width:var(--sb-w);display:flex;flex-direction:column;padding:16px 12px 12px;border-radius:26px;overflow:hidden;color:#EAF2F0;
   background:linear-gradient(165deg,rgba(22,37,70,.93),rgba(8,14,30,.9));
   -webkit-backdrop-filter:blur(22px) saturate(160%);backdrop-filter:blur(22px) saturate(160%);
   border:1px solid rgba(255,255,255,.16);box-shadow:0 28px 64px rgba(4,9,22,.45),inset 0 1px 0 rgba(255,255,255,.2),inset 0 0 0 1px rgba(255,255,255,.03);
   transition:width .28s cubic-bezier(.3,.8,.3,1),transform .28s cubic-bezier(.3,.8,.3,1)}
-.sb[hidden]{display:none}
+.lat-menu[hidden]{display:none}
 /* franja diagonal de luz, como en el diseño de referencia */
 .sb-glow{position:absolute;inset:0;pointer-events:none;z-index:0;
   background:radial-gradient(120% 55% at 0% 0%,rgba(34,211,238,.26),transparent 62%),
     linear-gradient(118deg,transparent 38%,rgba(255,255,255,.055) 38.3%,rgba(34,211,238,.1) 58%,transparent 58.4%),
     radial-gradient(90% 40% at 100% 100%,rgba(0,184,148,.2),transparent 70%)}
-.sb>*:not(.sb-glow){position:relative;z-index:1}
+.lat-menu>*:not(.sb-glow){position:relative;z-index:1}
 .sb-top{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:44px;padding:0 4px}
 .sb-marca{display:flex;align-items:center;gap:10px;min-width:0}
 .sb-marca svg{flex:none}
@@ -1084,7 +1084,7 @@ dialog.dlg-met[open]{display:flex}
 .sb-grupo[hidden]{display:none}
 .sb-grupo .sb-hr:first-child{margin-top:6px}
 .sb-sec{margin:4px 10px 4px;font-size:.7rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#8FA3A0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.sb ul{list-style:none;margin:0;padding:0;display:grid;gap:2px}
+.lat-menu ul{list-style:none;margin:0;padding:0;display:grid;gap:2px}
 .sb-it{position:relative;width:100%;display:flex;align-items:center;gap:14px;min-height:40px;padding:0 12px;border:0;border-radius:12px;background:transparent;color:#DCE7E5;font:500 .95rem/1.2 var(--f-body,'Plus Jakarta Sans',system-ui,sans-serif);text-align:left;cursor:pointer;transition:background .15s,color .15s}
 .sb-it svg{width:22px;height:22px;flex:none;stroke-width:1.7}
 .sb-it:hover{background:rgba(255,255,255,.08);color:#fff}
@@ -1102,7 +1102,7 @@ dialog.dlg-met[open]{display:flex}
 .sb-salir:hover{background:rgba(248,113,113,.16);color:#FECACA}
 /* versión solo de íconos (solo en escritorio; el cajón de pantallas angostas siempre se muestra completo) */
 @media(min-width:1100px){
-  body.sb-mini .sb{width:var(--sb-mini);padding-inline:10px}
+  body.sb-mini .lat-menu{width:var(--sb-mini);padding-inline:10px}
   body.sb-mini .sb-nombre,body.sb-mini .sb-t,body.sb-mini .sb-sec,body.sb-mini .sb-cuenta-t,body.sb-mini .sb-chev,body.sb-mini .sb-cuenta-m{display:none}
   body.sb-mini .sb-top{flex-direction:column;gap:10px;padding:0}
   body.sb-mini .sb-it{justify-content:center;padding:0}
@@ -1127,12 +1127,12 @@ dialog.dlg-met[open]{display:flex}
 .sb-vel{position:fixed;inset:0;z-index:115;background:rgba(5,10,24,.55);-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px)}
 .sb-vel[hidden]{display:none}
 @media(max-width:1099px){
-  .sb{transform:translateX(calc(-100% - 24px));width:min(300px,calc(100vw - 32px));visibility:hidden}
-  body.sb-abierto .sb{transform:none;visibility:visible}
+  .lat-menu{transform:translateX(calc(-100% - 24px));width:min(300px,calc(100vw - 32px));visibility:hidden}
+  body.sb-abierto .lat-menu{transform:none;visibility:visible}
   .sb-colapsar{display:none}
 }
-@media(prefers-reduced-motion:reduce){.sb,body.con-sb{transition:none}}
-@media print{.sb,.sb-vel,.sb-burger{display:none!important}body.con-sb{padding-left:0!important}}
+@media(prefers-reduced-motion:reduce){.lat-menu,body.con-sb{transition:none}}
+@media print{.lat-menu,.sb-vel,.sb-burger{display:none!important}body.con-sb{padding-left:0!important}}
 
 /* ── tour guiado ── */
 .tour-btn{flex:none;display:inline-flex;align-items:center;gap:7px;height:36px;padding:0 12px;border-radius:10px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);color:#fff;font:600 .85rem/1 var(--f-body,system-ui,sans-serif);cursor:pointer;transition:background .15s}
@@ -1168,3 +1168,99 @@ dialog.dlg-met[open]{display:flex}
 .tr-b:focus-visible,.tr-saltar:focus-visible{outline:3px solid #3DDBB8;outline-offset:2px}
 @media(prefers-reduced-motion:reduce){.tr-foco,.tr-pt i{transition:none}}
 @media print{.tr,.tour-btn{display:none!important}}
+
+/* ── barra superior de vidrio flotante (mismo estilo que el menú lateral) ── */
+.topbar{top:calc(10px + env(safe-area-inset-top,0px));margin:10px 12px 0;height:62px;padding:0 14px 0 18px;isolation:isolate;border-radius:22px;
+  border:1px solid rgba(255,255,255,.16);
+  background:linear-gradient(165deg,rgba(22,37,70,.93),rgba(8,14,30,.9));
+  -webkit-backdrop-filter:blur(22px) saturate(160%);backdrop-filter:blur(22px) saturate(160%);
+  box-shadow:0 18px 44px rgba(4,9,22,.38),inset 0 1px 0 rgba(255,255,255,.2),inset 0 0 0 1px rgba(255,255,255,.03)}
+/* franja diagonal de luz, igual que el menú lateral */
+.topbar::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:-1;
+  background:radial-gradient(120% 140% at 0% 0%,rgba(34,211,238,.22),transparent 58%),
+    linear-gradient(118deg,transparent 40%,rgba(255,255,255,.05) 40.3%,rgba(34,211,238,.09) 60%,transparent 60.4%),
+    radial-gradient(70% 140% at 100% 100%,rgba(0,184,148,.18),transparent 70%)}
+/* el color del nivel actual, como una línea de luz en el borde inferior */
+.topbar::after{content:"";position:absolute;left:22px;right:22px;bottom:0;height:3px;border-radius:3px 3px 0 0;pointer-events:none;background:var(--nv-h,rgba(255,255,255,.14));box-shadow:0 0 14px var(--nv-h,transparent);transition:background-color .9s var(--ease),box-shadow .9s var(--ease)}
+.topbar-badge{background:rgba(61,219,184,.12);border-color:rgba(61,219,184,.4)}
+.theme-btn,.tour-btn{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.16)}
+.theme-btn:hover,.tour-btn:hover{background:rgba(255,255,255,.14)}
+.nvbar{top:calc(82px + env(safe-area-inset-top,0px))}
+@media(min-width:1100px){body.con-sb .topbar{margin-left:0}}
+@media(max-width:640px){.topbar{margin:8px 8px 0;top:calc(8px + env(safe-area-inset-top,0px));border-radius:18px;padding:0 10px 0 12px}.nvbar{top:calc(78px + env(safe-area-inset-top,0px))}}
+
+/* ════════════════════════════════════════════════════════════
+   Rediseño: el lenguaje de vidrio del menú lateral en toda la aplicación
+   · Fondo: malla de degradados (verde azulado, azul y cian) con una franja de luz.
+   · Superficies: paneles translúcidos con desenfoque, borde claro y reflejo superior.
+   · Botón principal: degradado verde azulado con brillo. Botones secundarios: vidrio.
+   · Todo sale de tokens (--glass-*, --fondo-*), definidos para los temas claro y oscuro.
+   ════════════════════════════════════════════════════════════ */
+:root{
+  --r:26px;--rm:18px;--rs:12px;
+  --glass-bg:rgba(255,255,255,.7);--glass-bg-2:rgba(255,255,255,.52);--glass-bd:rgba(255,255,255,.85);
+  --glass-sh:0 18px 46px rgba(14,40,60,.1),inset 0 1px 0 rgba(255,255,255,.95);
+  --glass-blur:blur(18px) saturate(150%);
+  --fondo-base:#E7F1F0;--fondo-a:rgba(0,184,148,.22);--fondo-b:rgba(59,130,246,.17);--fondo-c:rgba(34,211,238,.16);--fondo-luz:rgba(255,255,255,.34);
+  --btn-grad:linear-gradient(135deg,#27DDB8,#00A98A);
+}
+@media(prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --glass-bg:rgba(18,30,54,.66);--glass-bg-2:rgba(18,30,54,.46);--glass-bd:rgba(255,255,255,.11);
+    --glass-sh:0 22px 50px rgba(0,0,0,.42),inset 0 1px 0 rgba(255,255,255,.09);
+    --fondo-base:#080E1A;--fondo-a:rgba(34,211,238,.13);--fondo-b:rgba(59,130,246,.21);--fondo-c:rgba(0,184,148,.14);--fondo-luz:rgba(255,255,255,.035);
+  }
+}
+:root[data-theme="dark"]{
+  --glass-bg:rgba(18,30,54,.66);--glass-bg-2:rgba(18,30,54,.46);--glass-bd:rgba(255,255,255,.11);
+  --glass-sh:0 22px 50px rgba(0,0,0,.42),inset 0 1px 0 rgba(255,255,255,.09);
+  --fondo-base:#080E1A;--fondo-a:rgba(34,211,238,.13);--fondo-b:rgba(59,130,246,.21);--fondo-c:rgba(0,184,148,.14);--fondo-luz:rgba(255,255,255,.035);
+}
+body{background-color:var(--fondo-base);background-attachment:fixed;
+  background-image:radial-gradient(60% 50% at 6% 0%,var(--fondo-a),transparent 70%),radial-gradient(55% 50% at 100% 6%,var(--fondo-b),transparent 70%),radial-gradient(60% 55% at 86% 100%,var(--fondo-c),transparent 70%),linear-gradient(118deg,transparent 38%,var(--fondo-luz) 38.2%,rgba(34,211,238,.05) 56%,transparent 56.2%)}
+/* el color del nivel tiñe el fondo solo un poco, para que el vidrio siga leyéndose */
+body.nv0,body.nv1,body.nv2,body.nv3,body.nv4{background-color:color-mix(in srgb,var(--nv-soft) 26%,var(--fondo-base))}
+/* paneles grandes */
+.ob-card,.qc,.rs,.tb,.idxp,dialog.dlg{background:var(--glass-bg);border:1px solid var(--glass-bd);box-shadow:var(--glass-sh);-webkit-backdrop-filter:var(--glass-blur);backdrop-filter:var(--glass-blur)}
+dialog.dlg{background:color-mix(in srgb,var(--surface) 90%,transparent)}
+dialog.dlg::backdrop{background:rgba(5,10,24,.5);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+/* paneles que van dentro de otros: sin segundo desenfoque */
+.dimc,.nt,.pz,.rt-r,.rt-i,.met-caja,.opt,.sc-vacio{background:var(--glass-bg-2);border-color:var(--glass-bd)}
+.rt-i{border-left-color:var(--nv-mark,var(--border))}
+.dimc,.nt,.rt-r,.rt-i{box-shadow:var(--glass-sh)}
+/* paneles con color de nivel */
+.pp,.sc{background:color-mix(in srgb,var(--nv-soft) 40%,var(--glass-bg));-webkit-backdrop-filter:var(--glass-blur);backdrop-filter:var(--glass-blur);box-shadow:inset 5px 0 0 var(--nv-mark),var(--glass-sh)}
+.nvbar{background:color-mix(in srgb,var(--nv-soft) 62%,var(--glass-bg));-webkit-backdrop-filter:var(--glass-blur);backdrop-filter:var(--glass-blur)}
+/* campos de formulario */
+.fg input,.fg select,.notas textarea,.pz-x{background:var(--glass-bg)}
+/* botones */
+.btn-go,.be-p{background:var(--btn-grad);border-color:transparent;color:#04201B;box-shadow:0 10px 26px rgba(0,184,148,.32),inset 0 1px 0 rgba(255,255,255,.4);transition:filter .2s,transform .2s,box-shadow .2s}
+.btn-go:hover,.be-p:hover{filter:brightness(1.06);box-shadow:0 14px 30px rgba(0,184,148,.4),inset 0 1px 0 rgba(255,255,255,.45)}
+.be{background:var(--glass-bg);border:1.5px solid color-mix(in srgb,var(--text) 16%,transparent);-webkit-backdrop-filter:var(--glass-blur);backdrop-filter:var(--glass-blur)}
+.lb-btn{background:color-mix(in srgb,var(--brand) 12%,var(--glass-bg));-webkit-backdrop-filter:var(--glass-blur);backdrop-filter:var(--glass-blur)}
+/* pestañas */
+.tbtn.active{background:var(--btn-grad);color:#04201B;box-shadow:0 6px 18px rgba(0,184,148,.3),inset 0 1px 0 rgba(255,255,255,.4)}
+.tbtn.active .tcnt{background:rgba(4,32,27,.16);color:#04201B}
+/* superficies oscuras de la marca: mismo borde y reflejo que el menú */
+.hero,.rh{border:1px solid rgba(255,255,255,.16);box-shadow:0 28px 64px rgba(4,9,22,.4),inset 0 1px 0 rgba(255,255,255,.2)}
+@media print{
+  :root{--glass-bg:#fff;--glass-bg-2:#fff;--glass-bd:#D9E1DF;--glass-sh:none;--glass-blur:none}
+  body{background:#fff!important}
+}
+
+/* contexto de la pantalla en la barra superior (cuando el menú lateral ocupa el lugar de la marca) */
+.topbar-ctx{display:none;flex-direction:column;min-width:0;line-height:1.2;color:var(--on-navy)}
+.topbar-ctx small{font-size:.7rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--on-navy-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.topbar-ctx strong{font:700 1.15rem/1.2 var(--font-d);letter-spacing:-.01em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media(min-width:1100px){body.con-sb .topbar-ctx{display:flex}}
+
+/* barra superior en celular: lo imprescindible (el menú ya trae «Cerrar sesión» y la marca no necesita su etiqueta) */
+body.con-sb .uout{display:none}
+@media(max-width:520px){
+  .topbar{gap:8px;padding:0 8px 0 10px}
+  .topbar-badge{display:none}
+  .topbar-right{gap:6px}
+  .topbar-right .cd{display:none}
+  .theme-btn{width:40px;height:40px}
+  .ugrp{gap:4px}
+}

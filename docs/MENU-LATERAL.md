@@ -24,3 +24,11 @@ La cuenta (foto, nombre, correo) está arriba; al pulsarla se despliega el corre
 `public/lateral.js` no tiene lógica propia: cada opción llama a funciones que ya existían (`dash`, `nueva`, `rq`, `sr`, `tix`, `pzDlg`, `vivoDlg`, `metDlg`, `cmp`, `imprimirDoc`, `pdf`, `salir`). Se actualiza en cada cambio de pantalla (`ss()` lo avisa) y cada 1,5 s para las insignias. Estilos al final de `styles.css` (`.sb-*`); marcas en `index.html` (`#sb`, `#sb-vel`, `#sb-burger`). Pruebas: sección 23 de `npm run verificar`.
 
 Para agregar una opción: una línea en `MENU` dentro de `lateral.js` (id, ícono de Lucide, texto, función, cuándo está activa, y opcionalmente insignia o punto).
+
+## Barra superior
+
+Tiene el mismo estilo de vidrio que el menú: panel flotante con bordes redondeados, franja diagonal de luz y desenfoque. El color del nivel actual (rojo a verde) se ve como una línea de luz en su borde inferior, y la barra flotante del nivel queda justo debajo. Con el menú lateral abierto en escritorio, la barra se alinea con el contenido.
+
+## Cuidado con los nombres de clase
+
+El menú usa la clase `lat-menu` (y `sb-*` para sus partes). **No usar `.sb` suelta:** ya la usan las acciones del plan de acción (`<div class="sb">` con `.st` y `.sm`), y una primera versión del menú la reutilizó, con lo que el texto del plan aparecía dentro del panel lateral y el PDF perdía esas acciones. La sección 25 de `npm run verificar` lo impide.

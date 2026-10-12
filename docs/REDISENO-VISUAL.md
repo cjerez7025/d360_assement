@@ -58,3 +58,9 @@ npm run verificar
 La sección 9 es nueva: calcula el contraste WCAG directamente desde los tokens de `styles.css` (tema claro, oscuro y superficie navy) y falla si alguien baja un color por debajo del mínimo. También revisa que existan el tema oscuro, `prefers-reduced-motion`, el foco visible, los radios, los roles de pestañas, las etiquetas del formulario, que no se use `alert()` y que el PDF fuerce el tema claro.
 
 Revisado además a mano en el navegador (escritorio y 375 px de ancho, tema claro y oscuro) y generando el PDF con Chrome.
+
+## Rediseño de vidrio (12-oct-2026)
+
+Toda la aplicación adopta el lenguaje del menú lateral: **fondo** de malla de degradados (verde azulado, azul y cian) con una franja de luz; **paneles de vidrio** (translúcidos, con desenfoque, borde claro y reflejo superior) para tarjetas, preguntas, secciones de resultados, pestañas, diálogos, panel de nivel y sesiones; **botón principal** y pestaña activa con degradado verde azulado; botones secundarios de vidrio; esquinas más redondeadas (`--r:26px`); barra superior de vidrio con el color del nivel como línea de luz y, con el menú abierto, el contexto de la pantalla.
+
+Todo sale de tokens al final de `styles.css` (`--glass-bg`, `--glass-bg-2`, `--glass-bd`, `--glass-sh`, `--glass-blur`, `--fondo-*`, `--btn-grad`), definidos para el tema claro, el oscuro por preferencia del sistema y el oscuro elegido a mano. Para cambiar la intensidad del vidrio basta ajustar esos tokens. Al imprimir se anulan (el PDF sigue en blanco) y el texto de los botones con degradado cumple el contraste (prueba en la sección 26 de `npm run verificar`).

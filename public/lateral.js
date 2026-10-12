@@ -102,6 +102,10 @@
     if (clave === previo) return;
     previo = clave;
     $('sb-un').textContent = nom; $('sb-um').textContent = u.email || '';
+    // dónde está el consultor, en la barra superior
+    const emp = (typeof en !== 'undefined' && en.p && en.p.nombre) || '', pa = pantalla();
+    const cx = pa === 'sd' ? ['Panel del consultor', 'Sesiones de diagnóstico'] : pa === 's1' ? ['Nueva sesión', 'Datos de la empresa'] : pa === 's2' ? ['Sesión · ' + emp, 'Preguntas'] : pa === 's3' ? ['Sesión · ' + emp, 'Resultados'] : ['', ''];
+    if ($('tb-ctx-s')) { $('tb-ctx-s').textContent = cx[0]; $('tb-ctx-t').textContent = cx[1]; }
     $('sb-av').innerHTML = (window.avatarHtml ? avatarHtml(nom, u.foto) : '');
     const ses = enSesion();
     sb.querySelectorAll('.sb-grupo').forEach((g, i) => {

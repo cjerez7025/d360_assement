@@ -912,7 +912,7 @@ seccion('23. Menú lateral del consultor');
   const lj = leer15('public/lateral.js'), ih = leer15('public/index.html'), cs = leer15('public/styles.css'), aj = leer15('public/app.js');
   const todo = ['app.js', 'ruta.js', 'pizarra.js', 'sesiones.js', 'vivo.js'].map((f) => leer15('public/' + f)).join('\n');
   // estructura
-  ok(/<aside class="sb" id="sb" aria-label="Menú del consultor" hidden><\/aside>/.test(ih) && /<div class="sb-vel" id="sb-vel" hidden><\/div>/.test(ih) && /<button type="button" class="sb-burger" id="sb-burger" aria-label="Abrir el menú" aria-expanded="false" aria-controls="sb" hidden>/.test(ih), 'la página tiene el menú lateral, su fondo y el botón que lo abre en pantallas angostas, ocultos hasta que haya una cuenta de consultor');
+  ok(/<aside class="lat-menu" id="sb" aria-label="Menú del consultor" hidden><\/aside>/.test(ih) && /<div class="sb-vel" id="sb-vel" hidden><\/div>/.test(ih) && /<button type="button" class="sb-burger" id="sb-burger" aria-label="Abrir el menú" aria-expanded="false" aria-controls="sb" hidden>/.test(ih), 'la página tiene el menú lateral, su fondo y el botón que lo abre en pantallas angostas, ocultos hasta que haya una cuenta de consultor');
   ok(/<script src="sesiones\.js"><\/script>[\s\S]*<script src="lateral\.js"><\/script>\s*<script src="tour\.js"><\/script>\s*<\/body>/.test(ih), 'lateral.js se carga al final, después de la lógica que usa');
   ok(/if\(window\.sbActualizar\)setTimeout\(window\.sbActualizar,0\);/.test(aj), 'cada cambio de pantalla actualiza el menú');
   // cada opción llama a una función que existe
@@ -933,10 +933,10 @@ seccion('23. Menú lateral del consultor');
   ok(/aria-expanded/.test(lj) && /aria-pressed/.test(lj) && /e\.key === 'Escape'/.test(lj) && /bu\.focus\(\)/.test(lj), 'los botones del menú informan su estado y Escape cierra el cajón devolviendo el foco');
   ok(/try \{ m = localStorage\.getItem\(LS\); \} catch/.test(lj) && /try \{ localStorage\.setItem\(LS, v \? 'mini' : 'full'\); \} catch/.test(lj), 'recordar si el menú está contraído no falla sin almacenamiento');
   // estilos
-  ok(/\.sb\{position:fixed;[^}]*backdrop-filter:blur\(22px\) saturate\(160%\)/.test(cs) && /\.sb-hr\{[^}]*linear-gradient\(90deg,transparent/.test(cs) && /\.sb-glow\{/.test(cs), 'el menú es un panel de vidrio flotante con franja de luz y líneas divisorias que se desvanecen');
-  ok(/@media\(min-width:1100px\)\{\s*body\.con-sb\{padding-left:calc\(var\(--sb-w\) \+ 28px\)/.test(cs) && /@media\(max-width:1099px\)\{\s*\.sb\{transform:translateX\(/.test(cs), 'en escritorio el contenido deja lugar al menú; en pantallas angostas es un cajón');
-  ok(/@media\(min-width:1100px\)\{\s*body\.sb-mini \.sb\{width:var\(--sb-mini\)/.test(cs) && !/@media\(max-width:1099px\)[^@]*sb-mini[^@]*display:revert/.test(cs), 'la versión de solo íconos existe solo en escritorio: el cajón siempre muestra los nombres');
-  ok(/\.sb-it:focus-visible[^{]*\{outline/.test(cs) && /prefers-reduced-motion:reduce\)\{\.sb,body\.con-sb\{transition:none\}/.test(cs) && /@media print\{\.sb,\.sb-vel,\.sb-burger\{display:none!important\}body\.con-sb\{padding-left:0!important\}\}/.test(cs), 'el foco es visible, respeta «reducir movimiento» y el menú no sale en el PDF');
+  ok(/\.lat-menu\{position:fixed;[^}]*backdrop-filter:blur\(22px\) saturate\(160%\)/.test(cs) && /\.sb-hr\{[^}]*linear-gradient\(90deg,transparent/.test(cs) && /\.sb-glow\{/.test(cs), 'el menú es un panel de vidrio flotante con franja de luz y líneas divisorias que se desvanecen');
+  ok(/@media\(min-width:1100px\)\{\s*body\.con-sb\{padding-left:calc\(var\(--sb-w\) \+ 28px\)/.test(cs) && /@media\(max-width:1099px\)\{\s*\.lat-menu\{transform:translateX\(/.test(cs), 'en escritorio el contenido deja lugar al menú; en pantallas angostas es un cajón');
+  ok(/@media\(min-width:1100px\)\{\s*body\.sb-mini \.lat-menu\{width:var\(--sb-mini\)/.test(cs) && !/@media\(max-width:1099px\)[^@]*sb-mini[^@]*display:revert/.test(cs), 'la versión de solo íconos existe solo en escritorio: el cajón siempre muestra los nombres');
+  ok(/\.sb-it:focus-visible[^{]*\{outline/.test(cs) && /prefers-reduced-motion:reduce\)\{\.lat-menu,body\.con-sb\{transition:none\}/.test(cs) && /@media print\{\.lat-menu,\.sb-vel,\.sb-burger\{display:none!important\}body\.con-sb\{padding-left:0!important\}\}/.test(cs), 'el foco es visible, respeta «reducir movimiento» y el menú no sale en el PDF');
 }
 
 seccion('24. Tour guiado para el consultor y para el cliente');
@@ -983,6 +983,62 @@ seccion('24. Tour guiado para el consultor y para el cliente');
   ok(/behavior: RM\(\) \? 'auto' : 'smooth'/.test(tj) && /prefers-reduced-motion:reduce\)\{\.tr-foco,\.tr-pt i\{transition:none\}\}/.test(cs), 'respeta «reducir movimiento»');
   ok(/@media print\{\.tr,\.tour-btn\{display:none!important\}\}/.test(cs) && /\.tr\{position:fixed;inset:0;z-index:300\}/.test(cs) && /\.tr-card\.tr-hoja\{/.test(cs), 'no sale en los PDF, queda sobre el menú y en el celular la tarjeta es una hoja inferior');
   ok(!/https?:\/\//.test(tj) && !/import\(/.test(tj), 'no carga nada externo');
+}
+
+seccion('25. Menú lateral y barra superior: estilos sin choques con el resto de la aplicación');
+{
+  const raiz17 = path.resolve(path.dirname(file), '..');
+  const leer17 = (f) => fs.readFileSync(path.join(raiz17, f), 'utf8').replace(/\r\n/g, '\n');
+  const cs = leer17('public/styles.css'), ih = leer17('public/index.html'), aj = leer17('public/app.js');
+  const iM = cs.indexOf('/* ── menú lateral del consultor');
+  ok(iM > 0, 'el bloque del menú lateral existe');
+  // la clase «sb» ya la usan las acciones del plan: el menú no puede definir reglas para ese nombre
+  const antes = cs.slice(0, iM), despues = cs.slice(iM);
+  ok(/class="sb"/.test(aj) && /\.sb\{flex:1\}/.test(antes), 'las acciones del plan de acción ya usan la clase «sb»');
+  ok(!/(^|[^\w-])\.sb([^\w-]|$)/.test(despues), 'los estilos nuevos (menú, tour, barra superior) no definen reglas para la clase «sb»');
+  // ningún nombre de clase del menú o del tour se usa ya en el resto de la aplicación
+  const nuevas = [...new Set([...despues.matchAll(/\.((?:sb|tr|lat|tour)-[\w-]+)/g)].map((m) => m[1]))];
+  ok(nuevas.length > 30 && nuevas.every((c2) => !new RegExp('\.' + c2.replace(/-/g, '\-') + '(?![\w-])').test(antes)), 'ninguno de los ' + nuevas.length + ' nombres de clase del menú y del tour ya estaba definido en la aplicación');
+  ok(/<aside class="lat-menu" id="sb"/.test(ih) && !/<aside class="sb"/.test(ih), 'el menú usa la clase «lat-menu»');
+  // el PDF no oculta nada del informe
+  const pr = [...despues.matchAll(/@media print\{([^}]*)\}/g)].map((m) => m[1]).join(' ');
+  ok(!/(^|[,\s])\.sb[,{\s]/.test(pr), 'las reglas de impresión del menú no ocultan las acciones del plan');
+  // barra superior de vidrio
+  ok(/\.topbar\{top:calc\(10px \+ env\(safe-area-inset-top,0px\)\);margin:10px 12px 0;[^}]*border-radius:22px;/.test(despues) && /\.topbar[^{]*\{[^}]*backdrop-filter:blur\(22px\) saturate\(160%\)/.test(despues) && /\.topbar::before\{content:"";position:absolute;inset:0;border-radius:inherit;[^}]*z-index:-1/.test(despues), 'la barra superior es un panel de vidrio flotante con franja de luz, igual que el menú lateral');
+  ok(/\.topbar::after\{[^}]*background:var\(--nv-h,/.test(despues) && /\.nvbar\{top:calc\(82px/.test(despues), 'el color del nivel se ve como una línea de luz en el borde inferior y la barra flotante del nivel queda debajo');
+  ok(/body\.con-sb \.topbar\{margin-left:0\}/.test(despues) && /@media\(max-width:640px\)\{\.topbar\{margin:8px 8px 0/.test(despues), 'la barra superior se alinea con el contenido junto al menú y se ajusta en el celular');
+}
+
+seccion('26. Rediseño de vidrio en toda la aplicación');
+{
+  const raiz18 = path.resolve(path.dirname(file), '..');
+  const leer18 = (f) => fs.readFileSync(path.join(raiz18, f), 'utf8').replace(/\r\n/g, '\n');
+  const cs = leer18('public/styles.css'), ih = leer18('public/index.html'), lj = leer18('public/lateral.js');
+  const i = cs.indexOf('Rediseño: el lenguaje de vidrio'), r = cs.slice(i);
+  ok(i > 0, 'el bloque del rediseño existe, al final de los estilos (así sobrescribe lo anterior)');
+  // tokens para los tres contextos de tema
+  const toks = ['--glass-bg', '--glass-bg-2', '--glass-bd', '--glass-sh', '--fondo-base', '--fondo-a', '--fondo-b', '--fondo-c', '--fondo-luz'];
+  const claro = r.slice(0, r.indexOf('@media(prefers-color-scheme:dark)')), osc = r.slice(r.indexOf('@media(prefers-color-scheme:dark)'), r.indexOf(':root[data-theme="dark"]')), forz = r.slice(r.indexOf(':root[data-theme="dark"]'), r.indexOf('body{background-color'));
+  ok(toks.every((k) => claro.includes(k + ':')) && toks.every((k) => osc.includes(k + ':')) && toks.every((k) => forz.includes(k + ':')), 'los tokens del vidrio y del fondo están definidos para el tema claro, el oscuro por preferencia del sistema y el oscuro elegido a mano');
+  ok(/:root:not\(\[data-theme="light"\]\)/.test(osc), 'el tema oscuro por preferencia del sistema respeta la elección de tema claro');
+  ok(/--r:26px;--rm:18px;--rs:12px;/.test(claro), 'las esquinas son más redondeadas, como en el menú');
+  // fondo y paneles
+  ok(/body\{background-color:var\(--fondo-base\);background-attachment:fixed;\s*background-image:radial-gradient\([^;]*linear-gradient\(118deg/.test(r), 'el fondo es una malla de degradados con una franja de luz, igual que el menú');
+  ok(/body\.nv0,body\.nv1,body\.nv2,body\.nv3,body\.nv4\{background-color:color-mix\(in srgb,var\(--nv-soft\) 26%,var\(--fondo-base\)\)\}/.test(r), 'el color del nivel tiñe el fondo solo un poco');
+  ok(/\.ob-card,\.qc,\.rs,\.tb,\.idxp,dialog\.dlg\{background:var\(--glass-bg\);border:1px solid var\(--glass-bd\);box-shadow:var\(--glass-sh\);-webkit-backdrop-filter:var\(--glass-blur\);backdrop-filter:var\(--glass-blur\)\}/.test(r), 'los paneles grandes (tarjetas, preguntas, secciones de resultados, pestañas, diálogos) son de vidrio');
+  ok(/\.pp,\.sc\{background:color-mix\(in srgb,var\(--nv-soft\) 40%,var\(--glass-bg\)\)/.test(r) && /\.nvbar\{background:color-mix\(in srgb,var\(--nv-soft\) 62%,var\(--glass-bg\)\)/.test(r), 'el panel de nivel, las sesiones y la barra del nivel son de vidrio teñido con el color del nivel');
+  ok(/\.btn-go,\.be-p\{background:var\(--btn-grad\)/.test(r) && /--btn-grad:linear-gradient\(135deg,#27DDB8,#00A98A\)/.test(r) && /\.tbtn\.active\{background:var\(--btn-grad\)/.test(r), 'el botón principal y la pestaña activa usan el degradado verde azulado');
+  ok(/dialog\.dlg::backdrop\{background:rgba\(5,10,24,\.5\);-webkit-backdrop-filter:blur\(8px\)/.test(r), 'detrás de un diálogo, la pantalla se desenfoca');
+  // el PDF no cambia
+  ok(/@media print\{\s*:root\{--glass-bg:#fff;--glass-bg-2:#fff;--glass-bd:#D9E1DF;--glass-sh:none;--glass-blur:none\}\s*body\{background:#fff!important\}/.test(r), 'al imprimir, el vidrio y el fondo se anulan: el PDF sigue en blanco');
+  // contraste del texto sobre el botón de degradado: el texto es casi negro sobre verdes claros
+  const lum = (h) => { const c = [1, 3, 5].map((k) => parseInt(h.slice(k, k + 2), 16) / 255).map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4)); return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]; };
+  const cr = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
+  ok(cr('#04201B', '#27DDB8') >= 7 && cr('#04201B', '#00A98A') >= 4.5, 'el texto de los botones con degradado cumple el contraste (' + cr('#04201B', '#27DDB8').toFixed(1) + ':1 y ' + cr('#04201B', '#00A98A').toFixed(1) + ':1)');
+  // barra superior: contexto y celular
+  ok(/<div class="topbar-ctx" id="tb-ctx" aria-live="polite"><small id="tb-ctx-s"><\/small><strong id="tb-ctx-t"><\/strong><\/div>/.test(ih) && /body\.con-sb \.topbar-ctx\{display:flex\}/.test(r), 'con el menú lateral, la barra superior muestra dónde está el consultor');
+  ok(/pa === 'sd' \? \['Panel del consultor', 'Sesiones de diagnóstico'\]/.test(lj) && /pa === 's2' \? \['Sesión · ' \+ emp, 'Preguntas'\]/.test(lj) && /pa === 's3' \? \['Sesión · ' \+ emp, 'Resultados'\]/.test(lj), 'el contexto cambia con la pantalla (panel, nueva sesión, preguntas y resultados)');
+  ok(/@media\(max-width:520px\)\{\s*\.topbar\{gap:8px[^}]*\}\s*\.topbar-badge\{display:none\}/.test(r) && /body\.con-sb \.uout\{display:none\}/.test(r), 'en el celular la barra superior muestra solo lo imprescindible');
 }
 
 console.log('\n' + (fallos ? '✗ ' + fallos + ' problema(s)' : '✓ Todas las verificaciones pasaron'));
