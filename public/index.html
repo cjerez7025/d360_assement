@@ -28,6 +28,7 @@
 
 <!-- ── TOPBAR ── -->
 <header class="topbar">
+  <button type="button" class="sb-burger" id="sb-burger" aria-label="Abrir el menú" aria-expanded="false" aria-controls="sb" hidden><i data-lucide="menu"></i></button>
 
   <div class="topbar-logo">
     <svg class="li" width="40" height="40" viewBox="0 0 300 300" aria-hidden="true">
@@ -51,12 +52,17 @@
     </div>
     <div class="saveind" id="saveind" data-s="guardado" hidden role="status" aria-live="polite"><span class="sd-dot" aria-hidden="true"></span><span id="saveind-t">Guardado</span></div>
     <div class="uchip" id="uchip" hidden role="group" aria-label="Personas conectadas"><div class="ugrp" id="upers"></div><button type="button" class="uout" id="uout" onclick="salir()">Salir</button></div>
+    <button type="button" class="tour-btn" id="tour-btn" hidden aria-label="Ver el tour de esta pantalla"><i data-lucide="compass"></i><span>Tour</span></button>
     <button type="button" class="theme-btn" id="theme-btn" aria-label="Cambiar tema de color">
       <svg class="i-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
       <svg class="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2m-7.07-2.93 1.41-1.41m11.32-11.32 1.41-1.41M2 12h2m16 0h2M6.34 6.34 4.93 4.93m14.14 14.14-1.41-1.41"/></svg>
     </button>
   </div>
 </header>
+
+<!-- Menú lateral del consultor (lo arma lateral.js) -->
+<aside class="sb" id="sb" aria-label="Menú del consultor" hidden></aside>
+<div class="sb-vel" id="sb-vel" hidden></div>
 
 <!-- Barra flotante del nivel: aparece bajo el encabezado cuando el panel de nivel sale de la pantalla -->
 <div class="nvbar" id="nvbar" aria-hidden="true">
@@ -342,5 +348,7 @@
 <script src="sesiones.js"></script>
 <script src="vivo.js"></script>
 <script src="ley.js"></script>
+<script src="lateral.js"></script>
+<script src="tour.js"></script>
 </body>
 </html>

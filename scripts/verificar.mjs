@@ -905,5 +905,85 @@ seccion('22. Presencia: quién está conectado en la reunión en vivo');
   ok(/\[hidden\]\{display:none!important\}/.test(cs) && /er\.hidden = true/.test(pj), 'un elemento con hidden nunca se muestra (el aviso «Escriba su nombre» aparecía antes de escribir)');
 }
 
+seccion('23. Menú lateral del consultor');
+{
+  const raiz15 = path.resolve(path.dirname(file), '..');
+  const leer15 = (f) => fs.readFileSync(path.join(raiz15, f), 'utf8').replace(/\r\n/g, '\n');
+  const lj = leer15('public/lateral.js'), ih = leer15('public/index.html'), cs = leer15('public/styles.css'), aj = leer15('public/app.js');
+  const todo = ['app.js', 'ruta.js', 'pizarra.js', 'sesiones.js', 'vivo.js'].map((f) => leer15('public/' + f)).join('\n');
+  // estructura
+  ok(/<aside class="sb" id="sb" aria-label="Menú del consultor" hidden><\/aside>/.test(ih) && /<div class="sb-vel" id="sb-vel" hidden><\/div>/.test(ih) && /<button type="button" class="sb-burger" id="sb-burger" aria-label="Abrir el menú" aria-expanded="false" aria-controls="sb" hidden>/.test(ih), 'la página tiene el menú lateral, su fondo y el botón que lo abre en pantallas angostas, ocultos hasta que haya una cuenta de consultor');
+  ok(/<script src="sesiones\.js"><\/script>[\s\S]*<script src="lateral\.js"><\/script>\s*<script src="tour\.js"><\/script>\s*<\/body>/.test(ih), 'lateral.js se carga al final, después de la lógica que usa');
+  ok(/if\(window\.sbActualizar\)setTimeout\(window\.sbActualizar,0\);/.test(aj), 'cada cambio de pantalla actualiza el menú');
+  // cada opción llama a una función que existe
+  const llamadas = ['dash', 'nueva', 'edt', 'tix', 'rq', 'sr', 'ss', 'pzDlg', 'vivoDlg', 'metDlg', 'cmp', 'imprimirDoc', 'pdf', 'salir'];
+  ok(llamadas.every((f) => new RegExp('(function ' + f + '[(]|window[.]' + f + ' =)').test(todo)), 'todas las funciones que llama el menú existen (' + llamadas.join(', ') + ')');
+  ok(llamadas.every((f) => lj.includes(f + '(') || (f === 'salir' && lj.includes('window.salir'))), 'el menú usa cada una de esas funciones: no tiene lógica propia');
+  // quién lo ve
+  ok(/const visible = \(\) => !!usuario\(\) && !hayCliente\(\) && !\['s0', 'se', 'sv', ''\]\.includes\(pantalla\(\)\)/.test(lj) && /modo === 'cliente' \|\| modo === 'invitado'/.test(lj) && /window\.pzUsuario/.test(lj), 'solo se muestra con una cuenta de consultor, y no en el ingreso, los avisos ni la vista del cliente');
+  ok(/const enSesion = \(\) => typeof en !== 'undefined' && !!en\.sid && !en\.ro && typeof modo !== 'undefined' && modo === 'auditor'/.test(lj), 'las opciones de la sesión solo aparecen con una sesión abierta y editable');
+  // contenido
+  const ids = [...lj.matchAll(/\{ id: '(\w+)', ic: '([\w-]+)', t: /g)].map((m) => m[1]);
+  ok(['ses', 'new', 'preg', 'idx', 'res', 'hoja', 'evo', 'pz', 'viv', 'cmp', 'inf', 'act', 'pdf', 'met'].every((i) => ids.includes(i)) && new Set(ids).size === ids.length, 'el menú tiene Sesiones, Nueva sesión, Preguntas, Índice, Resultados, Hoja de ruta, Evolución, Pizarra, Reunión en vivo, Compartir, Informe ejecutivo, Acta, PDF y Cómo se calcula, sin repetir');
+  ok(/id="sb-tema"|id="sb-tema"/.test(lj) && /Cerrar sesión/.test(lj) && /sb-cuenta/.test(lj) && /Consultor/.test(lj) && /avatarHtml\(nom, u\.foto\)/.test(lj), 'tiene la cuenta (foto, nombre y correo), el cambio de tema y cerrar sesión');
+  ok(/off: \(\) => !respondidas\(\)/.test(lj) && /b\.disabled = off/.test(lj), 'Resultados, Hoja de ruta, Evolución y los documentos se desactivan mientras no haya respuestas');
+  ok(/badge: \(\) => \{ try \{ const p = en\.pg\(\); return p\.d \+ '\/' \+ p\.t;/.test(lj) && /ruta\(en\)\.items\.length/.test(lj) && /\(en\.rv \|\| \[\]\)\.length/.test(lj) && /#bpz \.pz-cnt/.test(lj) && /punto: \(\) =>/.test(lj), 'las insignias muestran el avance, las iniciativas, las revisiones, los comentarios de la pizarra y si el cliente está conectado');
+  // accesibilidad
+  ok(/<nav class="sb-nav" aria-label="Menú principal">/.test(lj) && /aria-labelledby="sb-sec-\$\{i\}"/.test(lj) && /setAttribute\('aria-current', 'page'\)/.test(lj) && /b\.title = t; b\.setAttribute\('aria-label', t\)/.test(lj), 'es una navegación con nombre, cada grupo tiene su título, la opción actual se marca con aria-current y cada botón tiene nombre aunque solo se vean íconos');
+  ok(/aria-expanded/.test(lj) && /aria-pressed/.test(lj) && /e\.key === 'Escape'/.test(lj) && /bu\.focus\(\)/.test(lj), 'los botones del menú informan su estado y Escape cierra el cajón devolviendo el foco');
+  ok(/try \{ m = localStorage\.getItem\(LS\); \} catch/.test(lj) && /try \{ localStorage\.setItem\(LS, v \? 'mini' : 'full'\); \} catch/.test(lj), 'recordar si el menú está contraído no falla sin almacenamiento');
+  // estilos
+  ok(/\.sb\{position:fixed;[^}]*backdrop-filter:blur\(22px\) saturate\(160%\)/.test(cs) && /\.sb-hr\{[^}]*linear-gradient\(90deg,transparent/.test(cs) && /\.sb-glow\{/.test(cs), 'el menú es un panel de vidrio flotante con franja de luz y líneas divisorias que se desvanecen');
+  ok(/@media\(min-width:1100px\)\{\s*body\.con-sb\{padding-left:calc\(var\(--sb-w\) \+ 28px\)/.test(cs) && /@media\(max-width:1099px\)\{\s*\.sb\{transform:translateX\(/.test(cs), 'en escritorio el contenido deja lugar al menú; en pantallas angostas es un cajón');
+  ok(/@media\(min-width:1100px\)\{\s*body\.sb-mini \.sb\{width:var\(--sb-mini\)/.test(cs) && !/@media\(max-width:1099px\)[^@]*sb-mini[^@]*display:revert/.test(cs), 'la versión de solo íconos existe solo en escritorio: el cajón siempre muestra los nombres');
+  ok(/\.sb-it:focus-visible[^{]*\{outline/.test(cs) && /prefers-reduced-motion:reduce\)\{\.sb,body\.con-sb\{transition:none\}/.test(cs) && /@media print\{\.sb,\.sb-vel,\.sb-burger\{display:none!important\}body\.con-sb\{padding-left:0!important\}\}/.test(cs), 'el foco es visible, respeta «reducir movimiento» y el menú no sale en el PDF');
+}
+
+seccion('24. Tour guiado para el consultor y para el cliente');
+{
+  const raiz16 = path.resolve(path.dirname(file), '..');
+  const leer16 = (f) => fs.readFileSync(path.join(raiz16, f), 'utf8').replace(/\r\n/g, '\n');
+  const tj = leer16('public/tour.js'), ih = leer16('public/index.html'), cs = leer16('public/styles.css'), lj = leer16('public/lateral.js');
+  const fuentes = ['app.js', 'ruta.js', 'pizarra.js', 'sesiones.js', 'vivo.js', 'lateral.js'].map((f) => leer16('public/' + f)).join('\n') + ih;
+  // los recorridos: se cargan en un contexto aparte para revisar su contenido real
+  const m = tj.match(/const R = \{([\s\S]*?)\n  \};\n\n  \/\/ ── estado y elementos/);
+  ok(!!m, 'el archivo define los recorridos');
+  const R = vm.runInNewContext('(function(){ const menu = () => null, q = () => null; return {' + m[1] + '\n }; })()');
+  const nombres = Object.keys(R);
+  ok(['panel', 'sesion', 'resultados', 'invitado', 'cliente'].every((k) => nombres.includes(k)) && nombres.length === 5, 'hay cinco recorridos: panel, sesión y resultados del consultor, y reunión en vivo y resultados del cliente');
+  ok(nombres.every((k) => R[k].nombre && R[k].pasos.length >= 6 && R[k].pasos.length <= 7 && R[k].pasos.every((p) => p.t && p.x && p.t.length <= 40 && p.x.length >= 40 && p.x.length <= 260)), 'cada recorrido tiene 6 o 7 pasos, con un título corto y una explicación breve');
+  ok(nombres.every((k) => R[k].pasos.filter((p) => !p.sel).length <= 2), 'solo la bienvenida y el cierre pueden no apuntar a un elemento');
+  // los elementos a los que apuntan existen en la aplicación
+  const sels = [...tj.matchAll(/q\('([^']+)'\)|menu\('([^']+)'\)/g)].map((x) => x[1] || x[2]);
+  const existe = (s) => s.split(/[\s>]+/).every((p) => {
+    const id = p.match(/#([\w-]+)/), cl = [...p.matchAll(/\.([\w-]+)/g)].map((x) => x[1]), at = p.match(/data-id="(\w+)"/);
+    return (!id || fuentes.includes(id[1])) && cl.every((c2) => fuentes.includes(c2)) && (!at || lj.includes("id: '" + at[1] + "'"));
+  });
+  ok(sels.length >= 20 && sels.every(existe), 'todos los elementos que resalta el tour existen en la aplicación (' + sels.length + ' selectores)');
+  // lo que dicen coincide con la aplicación
+  const todoTxt = JSON.stringify(R);
+  ok(/1 a 4 elige y Enter avanza/.test(todoTxt) && /hasta 5 MB/.test(todoTxt) && /Ctrl\+V/.test(todoTxt), 'el tour menciona los atajos y límites reales (teclas 1 a 4, Enter, Ctrl+V y 5 MB)');
+  ok(/no se muestran puntajes/.test(JSON.stringify(R.invitado)), 'el tour del invitado aclara que no verá puntajes durante la reunión (como ocurre en la aplicación)');
+  ok(/3, 6 y 12 meses/.test(JSON.stringify(R.resultados)) && /cuatro oleadas/.test(JSON.stringify(R.resultados)), 'el tour de resultados explica la evolución (3, 6 y 12 meses) y las cuatro oleadas de la hoja de ruta');
+  // quién ve cuál
+  ok(/if \(m === 'invitado'\) return s === 'sv' \? 'invitado' : ''/.test(tj) && /if \(m === 'cliente'\) return s === 's3' \? 'cliente' : ''/.test(tj) && /if \(!usuario\(\)\) return ''/.test(tj) && /s === 'sd' \? 'panel' : s === 's2' \? 'sesion' : s === 's3' \? 'resultados' : ''/.test(tj), 'cada pantalla tiene su recorrido: el invitado ve el de la reunión, el lector de resultados el suyo, y el consultor el del panel, la sesión o los resultados');
+  // arranque y repetición
+  ok(/const visto = \(c\) => \{ try \{ return localStorage\.getItem\(LS\(c\)\) === V; \} catch/.test(tj) && /const marcar = \(c\) => \{ try \{ localStorage\.setItem\(LS\(c\), V\); \} catch/.test(tj), 'recordar que ya lo vio no falla sin almacenamiento');
+  ok(/if \(!c \|\| activo \|\| visto\(c\)\) return;/.test(tj) && /document\.querySelector\('dialog\[open\]'\)\) return/.test(tj) && /\+\+estable >= 3/.test(tj), 'se muestra solo la primera vez, no mientras hay un diálogo abierto (por ejemplo, el del nombre) y cuando la pantalla ya está estable');
+  ok(/marcar\(activo\.ctx\); clearInterval\(seguir\)/.test(tj), 'terminar o saltar el recorrido lo marca como visto');
+  ok(/id="tour-btn"[^>]*hidden/.test(ih) && /b\.hidden = !\(R\[ctx\] && \(m === 'cliente' \|\| m === 'invitado'\)\)/.test(tj), 'el cliente y el invitado tienen un botón «Tour» en la barra superior para repetirlo');
+  ok(/id="sb-tour"/.test(lj) && /window\.tourIniciar\(null, true\)/.test(lj), 'el consultor lo repite desde «Tour de esta pantalla» en el menú lateral');
+  ok(/window\.tourIniciar = iniciar/.test(tj) && /iniciar\(ctx, manual\)/.test(tj), 'el recorrido se puede iniciar a mano');
+  // robustez
+  ok(/while \(i >= 0 && i < pasos\.length && pasos\[i\]\.sel && !objetivo\(pasos\[i\]\)\) i \+= dir/.test(tj), 'si un elemento no está en pantalla (por ejemplo, sin sesiones o con el menú oculto), el paso se salta');
+  ok(/const menu = \(s\) => \{ const el = q\(s\); return visible\(el\) \? el : q\('#sb-burger'\); \}/.test(tj), 'en pantallas angostas, los pasos del menú apuntan al botón que lo abre');
+  // accesibilidad
+  ok(/role="dialog" aria-modal="true" aria-labelledby="tr-t" aria-describedby="tr-x"/.test(tj) && /aria-live="polite"/.test(tj) && /aria-hidden="true"/.test(tj), 'la tarjeta es un diálogo con título y descripción, anuncia el paso y oculta el foco decorativo a los lectores de pantalla');
+  ok(/e\.key === 'Escape'/.test(tj) && /ArrowRight/.test(tj) && /ArrowLeft/.test(tj) && /e\.key === 'Tab'/.test(tj) && /previoFoco\.focus/.test(tj) && /\$\('tr-n'\)\.focus/.test(tj), 'se usa con el teclado: flechas, Escape, Tab dentro de la tarjeta, foco al abrir y al cerrar');
+  ok(/behavior: RM\(\) \? 'auto' : 'smooth'/.test(tj) && /prefers-reduced-motion:reduce\)\{\.tr-foco,\.tr-pt i\{transition:none\}\}/.test(cs), 'respeta «reducir movimiento»');
+  ok(/@media print\{\.tr,\.tour-btn\{display:none!important\}\}/.test(cs) && /\.tr\{position:fixed;inset:0;z-index:300\}/.test(cs) && /\.tr-card\.tr-hoja\{/.test(cs), 'no sale en los PDF, queda sobre el menú y en el celular la tarjeta es una hoja inferior');
+  ok(!/https?:\/\//.test(tj) && !/import\(/.test(tj), 'no carga nada externo');
+}
+
 console.log('\n' + (fallos ? '✗ ' + fallos + ' problema(s)' : '✓ Todas las verificaciones pasaron'));
 process.exit(fallos ? 1 : 0);
