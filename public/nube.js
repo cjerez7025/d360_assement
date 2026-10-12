@@ -78,7 +78,7 @@ export async function leer(id) {
 let pend = null, tmr = null;
 export function guardar(en) {
   const r = en.res();
-  pend = { sid: en.sid, datos: { respuestas: { ...en.a }, notas: { ...en.n }, avance: r.avance, hechas: r.hechas, total: r.total, puntaje: r.puntaje, nivel: r.nivel, estado: r.completa ? 'completa' : 'en_curso' } };
+  pend = { sid: en.sid, datos: { respuestas: { ...en.a }, notas: { ...en.n }, revisiones: [...(en.rv || [])], avance: r.avance, hechas: r.hechas, total: r.total, puntaje: r.puntaje, nivel: r.nivel, estado: r.completa ? 'completa' : 'en_curso' } };
   clearTimeout(tmr); tmr = setTimeout(vaciar, 700);
   aviso('guardando');
 }

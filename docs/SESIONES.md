@@ -32,6 +32,7 @@ Firebase Firestore, proyecto `aligndata-arcop`, **base nombrada `d360`** (regió
 sesiones/{id}          Solo consultores autorizados
   perfil               nombre, sector, tamaño, contacto, email
   respuestas           { "GOB-01": 3, ... }
+  revisiones           [ {id, e, f, a, p, g, n} ]  fotos de las respuestas por fecha (evolución; ver docs/RUTA-EVOLUCION-DOCUMENTOS.md)
   notas                (antiguo) se pasa a la pizarra al abrir la sesión
   estado, avance, hechas, total, puntaje, nivel     (resumen para el panel)
   compartido           { token, en } | null
@@ -40,6 +41,7 @@ sesiones/{id}          Solo consultores autorizados
 compartidos/{token}    Lectura por enlace; solo consultores escriben
   perfil               nombre, sector, tamaño         ← sin email ni contacto
   respuestas           solo las de preguntas visibles
+  revisiones           las revisiones guardadas (hasta 24), para mostrar la evolución
   publicadoEn, version
 
 en_vivo/{token}        Reunión en vivo (ver abajo)
@@ -53,7 +55,7 @@ en_vivo/{token}        Reunión en vivo (ver abajo)
 Las reglas están en [`firestore.d360.rules`](../firestore.d360.rules):
 
 - **Sesiones:** solo cuentas de Google con correo verificado que estén en la lista de la regla.
-- **Resultados compartidos:** se leen uno a uno con el token (24 bytes al azar = 192 bits, 32 caracteres); **no se pueden listar**. Solo admiten los campos `perfil`, `respuestas`, `publicadoEn` y `version`, así que nunca viajan notas ni datos de contacto.
+- **Resultados compartidos:** se leen uno a uno con el token (24 bytes al azar = 192 bits, 32 caracteres); **no se pueden listar**. Solo admiten los campos `perfil`, `respuestas`, `revisiones`, `publicadoEn` y `version`, así que nunca viajan notas ni datos de contacto.
 - Todo lo demás está denegado.
 - Las claves de `firebase-config.js` son identificadores públicos del cliente; **la protección son las reglas**, no esas claves.
 - El enlace del cliente no se indexa (`noindex`) ni se filtra por Referer (`no-referrer`). Quien tenga el enlace ve los resultados: se trata como un secreto y se puede revocar.
@@ -120,7 +122,7 @@ Agregar su correo a la lista `esConsultor()` en `firestore.d360.rules` y publica
 npx firebase-tools deploy --only firestore:d360 --project aligndata-arcop
 ```
 
-Hoy están autorizados `carlos.jerez@aligndata.cl` y `jerezcarlos70@gmail.com`.
+Hoy están autorizados `carlos.jerez@aligndata.cl`, `jerezcarlos70@gmail.com`, `patricio.oliva@aligndata.cl` y `ricardo.carmona@aligndata.cl`.
 
 ## Límites conocidos
 

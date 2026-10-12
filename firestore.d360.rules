@@ -13,7 +13,9 @@ service cloud.firestore {
         && request.auth.token.email_verified == true
         && request.auth.token.email in [
           'carlos.jerez@aligndata.cl',
-          'jerezcarlos70@gmail.com'
+          'jerezcarlos70@gmail.com',
+          'patricio.oliva@aligndata.cl',
+          'ricardo.carmona@aligndata.cl'
         ];
     }
 
@@ -100,15 +102,18 @@ service cloud.firestore {
 
     // Resultados publicados para el cliente.
     // Se leen de a uno conociendo el token (192 bits al azar, imposible de adivinar); NO se pueden listar.
-    // Contienen solo: nombre, sector, tamaño, respuestas y las notas de la reunión (el cliente las ve por decisión).
+    // Contienen solo: nombre, sector, tamaño, respuestas, las notas de la reunión (el cliente las ve por decisión) y las
+    // revisiones guardadas (foto de las respuestas de cada fecha, para mostrar la evolución; hasta 24).
     // Nunca el email ni el contacto del cliente.
     match /compartidos/{token} {
       allow get: if true;
       allow list: if false;
       allow create, update: if esConsultor()
         && token.size() == 32
-        && request.resource.data.keys().hasOnly(['perfil', 'respuestas', 'notas', 'consultor', 'publicadoEn', 'version'])
-        && consultorOk(request.resource.data);
+        && request.resource.data.keys().hasOnly(['perfil', 'respuestas', 'notas', 'revisiones', 'consultor', 'publicadoEn', 'version'])
+        && consultorOk(request.resource.data)
+        && (!('revisiones' in request.resource.data)
+            || (request.resource.data.revisiones is list && request.resource.data.revisiones.size() <= 24));
       allow delete: if esConsultor();
 
       // Copia publicada de la pizarra: el cliente la ve en sus resultados. Se lee conociendo el token del enlace

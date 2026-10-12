@@ -33,6 +33,8 @@ async function token() {
 const TK = 'A'.repeat(32), SID = 'sesionDePrueba01', ID = 'abcdefghijKLMNOPQR12', CT = 'T'.repeat(32);
 const BASE = '/databases/(default)/documents';
 const consultor = { uid: 'c1', token: { email: 'carlos.jerez@aligndata.cl', email_verified: true } };
+const patricio = { uid: 'p1', token: { email: 'patricio.oliva@aligndata.cl', email_verified: true } };
+const ricardo = { uid: 'r1', token: { email: 'ricardo.carmona@aligndata.cl', email_verified: true } };
 const otro = { uid: 'x1', token: { email: 'alguien@gmail.com', email_verified: true } };
 const noVerificado = { uid: 'c2', token: { email: 'carlos.jerez@aligndata.cl', email_verified: false } };
 const jpg = 'data:image/jpeg;base64,' + 'A'.repeat(1000);
@@ -94,6 +96,10 @@ c('consultor: lee aunque el enlace haya vencido', 'ALLOW', 'get', VIVO, { auth: 
 // registro permanente de la sesión
 c('sesión: el consultor lee', 'ALLOW', 'get', SES, { auth: consultor, existente: cli() });
 c('sesión: el consultor copia un comentario de cliente', 'ALLOW', 'create', SES, { auth: consultor, data: cli() });
+c('sesión: Patricio Oliva lee y escribe', 'ALLOW', 'create', SES, { auth: patricio, data: con() });
+c('sesión: Ricardo Carmona lee y escribe', 'ALLOW', 'get', SES, { auth: ricardo, existente: cli() });
+c('sesión: Patricio sin correo verificado no entra', 'DENY', 'get', SES, { auth: { ...patricio, token: { ...patricio.token, email_verified: false } }, existente: cli() });
+c('sesión: un correo parecido no entra', 'DENY', 'get', SES, { auth: { uid: 'z', token: { email: 'patricio.oliva@aligndata.com', email_verified: true } }, existente: cli() });
 c('sesión: sin cuenta no lee', 'DENY', 'get', SES, { existente: cli() });
 c('sesión: cuenta no autorizada no lee', 'DENY', 'get', SES, { auth: otro, existente: cli() });
 c('sesión: sin cuenta no escribe', 'DENY', 'create', SES, { data: cli() });
@@ -124,6 +130,15 @@ c('comentario del consultor con foto de otro sitio', 'DENY', 'create', VIVO, { a
 c('comentario de un cliente con foto (no permitido)', 'DENY', 'create', VIVO, { data: cli({ foto: FOTO }), mock: vigente });
 c('resultados: el consultor publica con su nombre y foto', 'ALLOW', 'create', `/compartidos/${CT}`, { auth: consultor, data: { perfil: {}, respuestas: {}, notas: {}, consultor: { nombre: 'Carlos Jerez', foto: FOTO }, publicadoEn: '2026-10-11T12:00:00Z', version: 'd360v3' } });
 c('resultados: foto de otro sitio', 'DENY', 'create', `/compartidos/${CT}`, { auth: consultor, data: { perfil: {}, respuestas: {}, notas: {}, consultor: { nombre: 'Carlos', foto: 'https://evil.example.com/p.png' }, publicadoEn: '2026-10-11T12:00:00Z', version: 'd360v3' } });
+const REV = { id: 'rabc12', e: 'Diagnóstico inicial', f: 1790000000000, a: { 'GOB-01': 2 }, p: { sector: 'salud', 'tamaño': '11-50' }, g: 40, n: 1 };
+const PUB = (extra = {}) => ({ perfil: {}, respuestas: {}, revisiones: [REV], publicadoEn: '2026-10-11T12:00:00Z', version: 'd360v3', ...extra });
+c('resultados: el consultor publica con revisiones guardadas', 'ALLOW', 'create', `/compartidos/${CT}`, { auth: consultor, data: PUB() });
+c('resultados: hasta 24 revisiones', 'ALLOW', 'create', `/compartidos/${CT}`, { auth: consultor, data: PUB({ revisiones: Array(24).fill(REV) }) });
+c('resultados: más de 24 revisiones', 'DENY', 'create', `/compartidos/${CT}`, { auth: consultor, data: PUB({ revisiones: Array(25).fill(REV) }) });
+c('resultados: revisiones que no son una lista', 'DENY', 'create', `/compartidos/${CT}`, { auth: consultor, data: PUB({ revisiones: 'x' }) });
+c('resultados: otra persona no puede publicar revisiones', 'DENY', 'create', `/compartidos/${CT}`, { auth: otro, data: PUB() });
+c('sesión: el consultor guarda las revisiones', 'ALLOW', 'update', `/sesiones/${SID}`, { auth: consultor, data: { revisiones: [REV] }, existente: { perfil: {} } });
+c('sesión: sin cuenta no se guardan revisiones', 'DENY', 'update', `/sesiones/${SID}`, { data: { revisiones: [REV] }, existente: { perfil: {} } });
 c('resultados: campo no permitido', 'DENY', 'create', `/compartidos/${CT}`, { auth: consultor, data: { perfil: {}, respuestas: {}, notas: {}, secreto: 1, publicadoEn: '2026-10-11T12:00:00Z', version: 'd360v3' } });
 // documentos adjuntos (PDF, Word, Excel…): metadatos en el comentario y contenido en partes
 const adj = (extra = {}) => ({ n: 'Inventario.xlsx', t: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', z: 120000, p: 1, ...extra });

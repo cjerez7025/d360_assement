@@ -5,6 +5,7 @@ import vm from 'node:vm';
 
 const file = process.argv[2] || 'public/app.js';
 const code = fs.readFileSync(file, 'utf8');
+const codigoRuta = fs.readFileSync(path.join(path.dirname(file), 'ruta.js'), 'utf8'); // hoja de ruta, evolución y documentos (se carga después de app.js)
 
 // stubs mínimos del navegador
 const el = () => ({ textContent: '', innerHTML: '', value: '', style: {}, classList: { add() {}, remove() {}, toggle() {} }, addEventListener() {}, setAttribute() {}, getContext: () => ({}) });
@@ -20,8 +21,8 @@ const sandbox = {
 };
 sandbox.globalThis = sandbox;
 vm.createContext(sandbox);
-vm.runInContext(code + '\n;globalThis.__t={D,Q,A,CL,E2,en,SEC,SEC_F,SEC_DIM,SEC_N,SEC_J,SEC_K,SEC_V,SEC_B,SEC_BN,TAM,TAM_K,TAM_V,TAM_DIM};', sandbox);
-const { D, Q, A, CL, E2, en, SEC, SEC_F, SEC_DIM, SEC_N, SEC_J, SEC_K, SEC_V, SEC_B, SEC_BN, TAM, TAM_K, TAM_V, TAM_DIM } = sandbox.__t;
+vm.runInContext(code + '\n' + codigoRuta + '\n;globalThis.__t={EF,EF_N,EF_T,OLAS,RT_V,RT_ALTO,EVO_TIPOS,D,Q,A,CL,E2,en,SEC,SEC_F,SEC_DIM,SEC_N,SEC_J,SEC_K,SEC_V,SEC_B,SEC_BN,TAM,TAM_K,TAM_V,TAM_DIM};', sandbox);
+const { EF, EF_N, EF_T, OLAS, RT_V, RT_ALTO, EVO_TIPOS, D, Q, A, CL, E2, en, SEC, SEC_F, SEC_DIM, SEC_N, SEC_J, SEC_K, SEC_V, SEC_B, SEC_BN, TAM, TAM_K, TAM_V, TAM_DIM } = sandbox.__t;
 
 let fallos = 0;
 const ok = (c, m) => { if (!c) { fallos++; console.log('  ✗ ' + m); } };
@@ -259,7 +260,7 @@ seccion('10. Sesiones guardadas (consultor y cliente)');
   ok((reglas.match(/if true/g) || []).length === 3 && /allow get: if true/.test(reglas) && /match \/pizarra\/\{eid\} \{\s+allow get, list: if true;/.test(reglas) && /match \/partes\/\{pid\} \{\s+allow get: if true;\s+allow list: if false;/.test(reglas), 'las únicas lecturas públicas son get de un resultado compartido, su pizarra publicada y el contenido de sus documentos (todo bajo el mismo token)');
   ok(/match \/sesiones\/\{id\}\s*\{\s*allow read, write: if esConsultor\(\);/.test(reglas), 'las sesiones solo las ven los consultores');
   ok(/email_verified == true/.test(reglas) && /request\.auth\.token\.email in \[/.test(reglas), 'los consultores se validan por correo verificado en una lista');
-  ok(/hasOnly\(\['perfil', 'respuestas', 'notas', 'consultor', 'publicadoEn', 'version'\]\)/.test(reglas) && /token\.size\(\) == 32/.test(reglas), 'lo compartido solo admite esos campos (incluye quién lo preparó) y un token de 32 caracteres');
+  ok(/hasOnly\(\['perfil', 'respuestas', 'notas', 'revisiones', 'consultor', 'publicadoEn', 'version'\]\)/.test(reglas) && /token\.size\(\) == 32/.test(reglas), 'lo compartido solo admite esos campos (incluye quién lo preparó) y un token de 32 caracteres');
   ok(/match \/\{document=\*\*\}\s*\{\s*allow read, write: if false;/.test(reglas), 'todo lo demás debe estar denegado');
   ok(Array.isArray(fbj.firestore) && fbj.firestore.length === 1 && fbj.firestore[0].database === 'd360', 'solo debe publicarse la base d360 (nunca la (default) del portal)');
   const cfgTxt = leer('public/firebase-config.js');
@@ -574,7 +575,7 @@ seccion('16. Metodología y ponderación sectorial: la explicación coincide con
   ok(/\$\{secNota\(en\)\}/.test(codigo), 'la nota del ajuste está en el encabezado de los resultados');
   ok(/\['t7','calculator','Método',''\]/.test(codigo) && /id="t7"/.test(codigo), 'la pestaña «Método» está en los resultados');
   ok(/id="dlg-met"/.test(ih) && /id="bmet"/.test(ih) && /function metDlg\(\)/.test(codigo), 'el consultor puede abrir la metodología desde la pregunta («Cómo se calcula»)');
-  ok(/@media print\{#t7,#bmet\{display:none!important\}\}/.test(cs), 'la metodología no sale en el PDF (no cambia su paginación)');
+  ok(/@media print\{#t7,#t8,#t9,#bmet\{display:none!important\}\}/.test(cs), 'la metodología no sale en el PDF (no cambia su paginación)');
 }
 
 seccion('17. Documentos adjuntos (PDF, Word, Excel…) y pegado');
@@ -704,6 +705,152 @@ seccion('19. Rubros de AlignData, tamaño de la empresa y escala de madurez úni
   ok(/misma escala del Assessment y del Informe Ejecutivo/.test(h6) && /puntaje global ÷ 25/.test(h6) && ['Inexistente', 'Reactivo', 'Parcial', 'Gestionado', 'Optimizado'].every((n) => h6.includes(n)) && /riesgo crítico/.test(h6) && /riesgo mínimo/.test(h6), 'el método explica la escala (niveles, riesgo e índice de 0 a 4)');
   ok(new RegExp('en su sesión, ' + (x5.g / 25).toFixed(1).replace('.', ',') + ' de 4,0').test(h6), 'el índice de 0 a 4 de la sesión es el puntaje ÷ 25');
   ok(/Exposición<\/th>/.test(h6) && Object.keys(SEC_BN).every((b) => !por(b).length || h6.includes(SEC_BN[b])) && /clasificación de exposición que usa AlignData/.test(h6) && /régimen propio/.test(h6), 'la tabla de rubros muestra la banda de exposición y aclara su origen y el régimen propio de los órganos públicos');
+}
+
+seccion('20. Hoja de ruta por oleadas, evolución en el tiempo, informe ejecutivo y acta');
+{
+  const raiz12 = path.resolve(path.dirname(file), '..');
+  const leer12 = (f) => fs.readFileSync(path.join(raiz12, f), 'utf8').replace(/\r\n/g, '\n');
+  const sb = sandbox, codigo = leer12('public/app.js'), ih = leer12('public/index.html'), css = leer12('public/styles.css'), reglas = leer12('firestore.d360.rules');
+  const armar = (perfil, f) => { const e = new E2(); e.p = perfil; Q.filter((q) => !q.iS).forEach((q, i) => { e.a[q.id] = f(q, i); }); return e; };
+  const mixto = (q, i) => (i * 7 + 1) % 4;
+  // responde también las preguntas de profundización que aparezcan
+  const completa = (perfil, f) => { const e = armar(perfil, f); for (let k = 0; k < 4; k++) for (const q of e.ga()) if (e.a[q.id] === undefined) e.a[q.id] = f(q, k + 3); return e; };
+  const raw = (e) => { const sc = e.sc(), sw = D.reduce((t2, d) => t2 + d.w * sc.m[d.id], 0); let g = 0; for (const d of D) { const qs = e.ga().filter((q) => q.dm === d.id && e.a[q.id] !== undefined), pw = qs.reduce((t2, q) => t2 + (q.w || 1), 0); if (pw) g += qs.reduce((t2, q) => t2 + e.a[q.id] * (q.w || 1), 0) / (3 * pw) * 100 * d.w * sc.m[d.id] / sw; } return g; };
+
+  // ── datos ──
+  ok(Q.every((q) => [1, 2, 3].includes(EF[q.id])) && Object.keys(EF).every((k) => Q.some((q) => q.id === k)), 'cada pregunta tiene un esfuerzo (1 bajo, 2 medio, 3 alto) y no hay preguntas inexistentes');
+  ok(OLAS.length === 4 && OLAS.every((o, i) => o.n === i + 1 && o.t && o.p && o.d) && /^\d+\.\d+$/.test(RT_V) && RT_ALTO > 0, 'hay cuatro oleadas con nombre, plazo y descripción, y la hoja de ruta tiene versión');
+  ok(Object.keys(EF_N).join() === '1,2,3' && Object.keys(EF_T).join() === '1,2,3', 'los esfuerzos tienen nombre y duración');
+
+  // ── el beneficio es el cálculo real del motor ──
+  const e1 = completa({ sector: 'salud', 'tamaño': '51-200' }, mixto), r1 = sb.ruta(e1);
+  ok(r1.sinResp === 0 && Math.abs(r1.actual - raw(e1)) < 1e-9 && Math.abs(r1.actual + r1.total - 100) < 1e-9, 'con todo respondido, el puntaje actual sin redondear más los beneficios de todas las brechas suma exactamente 100');
+  ok(r1.items.length === e1.ga().filter((q) => e1.a[q.id] < 3).length, 'hay una iniciativa por cada pregunta respondida con menos de 3');
+  // subir una pregunta (sin preguntas de profundización que dependan de ella) a 3 aumenta el puntaje en su beneficio
+  const sinHijos = r1.items.filter((i) => !i.q.cd && !Q.some((x) => x.cd && x.cd.sh === i.q.id)).slice(0, 6);
+  ok(sinHijos.length >= 4 && sinHijos.every((i) => { const x = completa({ sector: 'salud', 'tamaño': '51-200' }, mixto); x.a[i.q.id] = 3; return Math.abs(raw(x) - raw(e1) - i.gain) < 1e-9; }), 'el beneficio de cada iniciativa es lo que sube el puntaje al llevar esa pregunta a 3 (verificado recalculando el motor)');
+  // los pesos de rubro y tamaño cambian el beneficio en la dirección esperada
+  const g = (e, dm) => sb.ruta(e).items.filter((i) => i.dm.id === dm).reduce((t2, i) => t2 + i.gain, 0);
+  const flojo = (dim) => (q) => (q.dm === dim ? 0 : 3);
+  ok(g(completa({ sector: 'fintech' }, flojo('terceros')), 'terceros') > g(completa({ sector: 'otro' }, flojo('terceros')), 'terceros') && g(completa({ 'tamaño': '201+' }, flojo('seguridad')), 'seguridad') > g(completa({ 'tamaño': '1-10' }, flojo('seguridad')), 'seguridad'), 'una brecha vale más puntos donde el rubro o el tamaño pesan más (terceros en fintech; seguridad en una empresa grande)');
+
+  // ── reglas de las oleadas ──
+  const regla = (i) => (i.fl || (i.alto && i.ef < 3) ? 1 : i.alto ? 2 : i.ef === 1 ? 3 : 4);
+  ok(r1.items.every((i) => i.ola === regla(i) && i.fl === !!(i.q.fl && i.q.fl.includes(i.v)) && i.alto === (i.gain >= RT_ALTO)), 'cada iniciativa está en la oleada que dicen las reglas (alerta crítica o beneficio alto con esfuerzo bajo o medio: 1; alto con esfuerzo alto: 2; beneficio menor con esfuerzo bajo: 3; el resto: 4)');
+  ok(r1.items.every((x, k, a) => k === 0 || a[k - 1].ola <= x.ola) && r1.olas.every((o) => o.items.every((i) => i.ola === o.n)) && r1.olas.reduce((t2, o) => t2 + o.items.length, 0) === r1.items.length, 'las iniciativas quedan ordenadas por oleada y ninguna se repite ni se pierde');
+  ok(r1.olas.every((o, i, a) => (i === 0 || o.hasta >= a[i - 1].hasta) && o.hasta <= 100) && r1.olas[3].hasta === 100, 'el puntaje estimado al terminar cada oleada solo sube y termina en 100');
+  ok(r1.olas.every((o) => Math.abs(o.gain - o.items.reduce((t2, i) => t2 + i.gain, 0)) < 1e-9), 'el beneficio de cada oleada es la suma de sus iniciativas');
+  const rl = sb.ruta(armar({}, () => 3));
+  ok(rl.items.length === 0 && sb.rutaHtml(armar({}, () => 3)).includes('No hay brechas pendientes'), 'sin brechas no hay iniciativas y la pantalla lo dice');
+  ok(sb.rutaHtml(new E2()).includes('Aún no hay respuestas'), 'sin respuestas la pantalla lo dice');
+  // sin las preguntas de profundización contestadas, se avisa
+  const eP = armar({}, (q) => (q.id === 'GOB-01' ? 0 : 3)); ok(sb.ruta(eP).sinResp >= 1 && /sin responder/.test(sb.rutaHtml(eP)), 'las preguntas sin responder se avisan y no entran en la hoja de ruta');
+
+  // ── pantalla de la hoja de ruta ──
+  const gid = sb.document.getElementById; sb.document.getElementById = () => ({ ...el(), options: [] });
+  const hr = sb.rutaHtml(e1);
+  sb.document.getElementById = gid;
+  ok(r1.olas.filter((o) => o.items.length).every((o) => hr.includes('Ola ' + o.n + ' · ' + o.t)) && new RegExp('de <strong>' + e1.sc().g + '%</strong> a <strong>100%</strong>').test(hr), 'la pantalla muestra cada oleada con iniciativas y el puntaje de hoy y el final');
+  ok(r1.items.every((i) => hr.includes(i.q.id) && hr.includes('+' + (i.gain).toFixed(1).replace('.', ',') + ' pts')) && /Primer paso/.test(hr) && /Meta/.test(hr) && /Hoy/.test(hr), 'cada iniciativa muestra su pregunta, su beneficio en puntos, dónde está hoy, el primer paso y la meta');
+  ok(/data-a="14 ter"/.test(hr) || /class="ref"/.test(hr), 'las iniciativas citan el artículo de la ley (abre el texto oficial)');
+  ok(r1.items.filter((i) => i.fl).length === 0 || /Alerta crítica/.test(hr), 'las alertas críticas se marcan');
+  ok(/Esfuerzo (bajo|medio|alto) · (días|semanas|meses)/.test(hr) && /Los plazos son una propuesta de orden, no una exigencia de la ley/.test(hr) && /sujeta a revisión/.test(hr), 'el texto aclara que el esfuerzo es una estimación y los plazos una propuesta');
+  ok(/\['t8','route','Hoja de ruta',R8\.items\.length\]/.test(codigo) && /id="t8"/.test(codigo) && /\['t9','trending-up','Evolución'/.test(codigo) && /id="t9"/.test(codigo), 'los resultados tienen las pestañas «Hoja de ruta» y «Evolución»');
+
+  // ── revisiones y evolución ──
+  const rev = () => armar({ sector: 'salud', 'tamaño': '11-50' }, () => 1);
+  const er = rev(); const v1 = er.rev('Diagnóstico inicial', 1790000000000);
+  ok(er.rv.length === 1 && /^r[a-z0-9]{6,}$/.test(v1.id) && v1.e === 'Diagnóstico inicial' && v1.f === 1790000000000 && v1.p.sector === 'salud' && v1.p['tamaño'] === '11-50' && v1.g === er.sc().g && Object.keys(v1.a).length === Object.keys(er.a).length, 'guardar una revisión toma una foto de las respuestas, el perfil, el puntaje y la fecha');
+  er.a['GOB-01'] = 3; ok(v1.a['GOB-01'] === 1 && er.rv[0].a['GOB-01'] === 1, 'cambiar las respuestas después no altera la revisión guardada');
+  const v0 = er.rev('Revisión anterior', 1780000000000);
+  ok(er.rv[0].id === v0.id && er.rv[1].id === v1.id, 'las revisiones quedan ordenadas por fecha');
+  ok(er.rev('x'.repeat(100), 1).e.length === 40 && er.rev('  ', 2).e === 'Revisión', 'el nombre de una revisión se limita a 40 caracteres y no queda vacío');
+  const er2 = rev(); for (let i = 0; i < 30; i++) er2.rev('r' + i, i + 1); ok(er2.rv.length === 24 && er2.rv[23].e === 'r29', 'se conservan como máximo las últimas 24 revisiones');
+  const er3 = rev(); const a3 = er3.rev('A', 5), b3 = er3.rev('B', 6); er3.revDel(a3.id); ok(er3.rv.length === 1 && er3.rv[0].id === b3.id, 'se puede eliminar una revisión');
+  // guardado: la sesión guarda las revisiones y el estado se restaura al cargar
+  const ng = leer12('public/nube.js'), np = leer12('public/nube-prueba.js');
+  ok(/revisiones: \[\.\.\.\(en\.rv \|\| \[\]\)\]/.test(ng) && /revisiones: \[\.\.\.\(en\.rv \|\| \[\]\)\]/.test(np), 'el guardado automático incluye las revisiones (en la nube y en el modo de prueba)');
+  const er4 = new E2(); er4.cargar({ perfil: { sector: 'salud' }, respuestas: er.pub().respuestas, revisiones: [{ id: 'ra', e: 'A', f: 5, a: { 'GOB-01': 1 }, p: {} }, { id: 5, e: 'mala' }, null, { id: 'rb', e: 'B', f: 'x', a: {} }, { id: 'rc', e: 'C', f: 7, a: 'no' }] });
+  ok(er4.rv.length === 1 && er4.rv[0].id === 'ra', 'al cargar, se descartan las revisiones mal formadas');
+  new E2().cargar({}); const er5 = new E2(); er5.rv = [v1]; er5.rs(); ok(er5.rv.length === 0 && new E2().rv.length === 0, 'un motor nuevo o reiniciado no trae revisiones');
+  // lo publicado para el cliente
+  const eC = rev(); eC.rev('Diagnóstico inicial', 1790000000000);
+  const pb = eC.pub(); ok(Object.keys(pb).sort().join() === 'perfil,respuestas,revisiones' && pb.revisiones.length === 1 && Object.keys(pb.revisiones[0]).sort().join() === 'a,e,f,g,id,n,p', 'lo publicado lleva las revisiones (solo respuestas, perfil, nombre, fecha y puntaje)');
+  ok(Object.keys(rev().pub()).sort().join() === 'perfil,respuestas', 'sin revisiones, lo publicado no cambia');
+  ok(JSON.stringify(pb).length < 20000 && /'revisiones', 'consultor'/.test(reglas) && /revisiones\.size\(\) <= 24/.test(reglas), 'las revisiones publicadas son pequeñas y las reglas las permiten (hasta 24)');
+  const eCl = new E2(); eCl.cargar(JSON.parse(JSON.stringify(pb))); ok(eCl.rv.length === 1 && eCl.rv[0].e === 'Diagnóstico inicial', 'el cliente carga las revisiones publicadas');
+
+  // evolución: puntos recalculados con el modelo vigente
+  const ee = armar({ sector: 'salud', 'tamaño': '11-50' }, () => 1); ee.rev('Diagnóstico inicial', 1790000000000);
+  ee.rv[0].g = 0; // un puntaje guardado antiguo no se usa: se recalcula
+  let pts = sb.evoPuntos(ee);
+  ok(pts.length === 1 && pts[0].g === armar({ sector: 'salud', 'tamaño': '11-50' }, () => 1).sc().g && pts[0].act === false, 'las revisiones se recalculan con el modelo vigente (no se usa el puntaje guardado)');
+  ee.a['SEG-01'] = 3; pts = sb.evoPuntos(ee);
+  ok(pts.length === 2 && pts[1].act && pts[1].e === 'Actual' && pts[1].g > pts[0].g, 'si las respuestas cambiaron, se agrega el punto «Actual»');
+  ee.rev('Revisión a 3 meses', 1795000000000); pts = sb.evoPuntos(ee);
+  ok(pts.length === 2 && pts.every((p) => !p.act), 'si las respuestas coinciden con la última revisión, no se duplica el punto actual');
+  ok(sb.evoPuntos(armar({}, mixto)).length === 0, 'sin revisiones no hay evolución');
+  const dp = sb.evoPuntos(ee); ok(dp.every((p) => D.every((d) => p.d[d.id] >= 0 && p.d[d.id] <= 100) && p.n >= 0 && p.n <= 4), 'cada punto trae el puntaje de las ocho dimensiones y su nivel');
+  ok(sb.evoEstado([50]) === 'Pendiente' && sb.evoEstado([]) === 'Pendiente' && sb.evoEstado([40, 80]) === 'Meta alcanzada' && sb.evoEstado([75, 75]) === 'Meta alcanzada' && sb.evoEstado([30, 50]) === 'En avance' && sb.evoEstado([50, 30]) === 'Retroceso' && sb.evoEstado([50, 50.5]) === 'Sin cambio', 'el estado: pendiente con una sola revisión, meta alcanzada desde 75%, en avance, retroceso o sin cambio');
+  ok(Math.abs(sb.idx04(60) - 2.4) < 1e-9 && sb.idx04(75) === 3, 'el índice de 0 a 4 es el puntaje ÷ 25 (la meta, 75%, es 3,0)');
+
+  // pantalla de la evolución
+  vm.runInContext("modo='auditor'", sandbox);
+  const gid2 = sb.document.getElementById; sb.document.getElementById = () => ({ ...el(), options: [] });
+  const ha = sb.evoHtml(ee), hv = sb.evoHtml(armar({}, mixto));
+  vm.runInContext("modo='cliente'", sandbox);
+  const hc = sb.evoHtml(ee), hcv = sb.evoHtml(armar({}, mixto));
+  vm.runInContext("modo='auditor'", sandbox); const eRo = armar({}, mixto); eRo.ro = true; const hro = sb.evoHtml(eRo);
+  sb.document.getElementById = gid2;
+  ok(/Guardar esta evaluación como revisión/.test(ha) && /evoGuardar\(\)/.test(ha) && /<option selected>Revisión a 6 meses<\/option>/.test(ha) && /Aún no hay revisiones guardadas\. Guarde la evaluación de hoy como <strong>diagnóstico inicial<\/strong>/.test(hv) && /<option selected>Diagnóstico inicial<\/option>/.test(hv), 'el consultor ve el formulario para guardar una revisión, con el nombre sugerido según las que ya hay');
+  ok(!/evo-f/.test(hc) && !/evoBorrar/.test(hc) && /Aún no hay revisiones guardadas\./.test(hcv) && !/evo-f/.test(hro), 'el cliente (o una sesión de solo lectura) no puede guardar ni eliminar revisiones');
+  ok(/<svg class="evo-svg"/.test(ha) && /Meta: nivel 3 \(75%\)/.test(ha) && ee.rv.every((r) => ha.includes(r.e)) && /Objetivo/.test(ha) && /Variación/.test(ha) && /Estado/.test(ha) && D.every((d) => ha.includes(d.n)) && /Puntaje global/.test(ha), 'la evolución muestra el gráfico, la tabla por dimensión con objetivo, variación y estado, y el puntaje global');
+  ok(/evoBorrar\('/.test(ha) && /Eliminar/.test(ha) && /evo-svg/.test(hc) && ee.rv.every((r) => hc.includes(r.e)), 'el consultor puede eliminar revisiones y el cliente ve la evolución publicada');
+  ok(/aria-label="Puntaje global en cada revisión:/.test(ha) && /<caption class="sr-only">Seguimiento/.test(ha), 'el gráfico y la tabla son accesibles (descripción y título para lectores de pantalla)');
+  const inyec = armar({ nombre: '<img src=x onerror=1>' }, mixto); inyec.rev('<script>x</script>', 1); sb.document.getElementById = () => ({ ...el(), options: [] });
+  const hi = sb.evoHtml(inyec); sb.document.getElementById = gid2;
+  ok(!/<script>x/.test(hi) && /&lt;script&gt;/.test(hi), 'el nombre de una revisión se escapa (no ejecuta HTML)');
+
+  // ── documentos: informe ejecutivo y acta ──
+  const eD = completa({ nombre: 'Clínica <b>Sur</b> SpA', sector: 'salud', 'tamaño': '51-200' }, mixto); eD.rev('Diagnóstico inicial', 1790000000000); eD.a['SEG-01'] = 3;
+  const di = sb.docInforme(eD), sc = eD.sc();
+  ok(/<h1>Informe ejecutivo<\/h1>/.test(di) && !/<b>Sur<\/b>/.test(di) && /Clínica &lt;b&gt;Sur&lt;\/b&gt; SpA/.test(di) && /Salud \/ Clínicas/.test(di) && /Mediana/.test(di), 'el informe lleva empresa, rubro y tamaño, con el nombre escapado');
+  ok(new RegExp('nivel ' + eD.ml(sc.g).n + ' \\(' + eD.ml(sc.g).nm + '\\)').test(di) && new RegExp('<strong>' + sc.g + '%</strong>').test(di) && new RegExp('índice <strong>' + (sc.g / 25).toFixed(1).replace('.', ',') + ' de 4,0').test(di), 'el resumen dice el nivel, el puntaje y el índice reales');
+  ok(D.every((d) => di.includes(d.n)) && /Resultado por dimensión/.test(di) && /Puntaje global/.test(di), 'el informe muestra las ocho dimensiones');
+  ok(eD.cl2().length > 0 && new RegExp('De las ' + eD.cl2().length + ' obligaciones evaluadas, ' + eD.cl2().filter((c2) => c2.st === 'green').length + ' cumplen, ' + eD.cl2().filter((c2) => c2.st === 'yellow').length + ' cumplen parcialmente y ' + eD.cl2().filter((c2) => c2.st === 'red').length + ' no cumplen').test(di), 'el resumen cuenta bien las obligaciones que cumplen, parcial y no cumplen');
+  const rD = sb.ruta(eD); ok(rD.olas.filter((o) => o.items.length).every((o) => di.includes('Ola ' + o.n + ' · ' + o.t)) && new RegExp(rD.items.length + ' brechas ordenadas').test(di) && rD.olas.every((o) => o.items.length <= 5 || di.includes('Y ' + (o.items.length - 5) + ' más')), 'el informe resume la hoja de ruta por oleadas (hasta 5 iniciativas por oleada)');
+  ok(/<h2>Evolución<\/h2>/.test(di) && /class="dc-t"/.test(di) && /Diagnóstico inicial/.test(di), 'con revisiones guardadas, el informe incluye la evolución');
+  ok(!/<h2>Evolución<\/h2>/.test(sb.docInforme(armar({}, mixto))), 'sin revisiones, el informe no tiene evolución');
+  ok(/no es una auditoría ni una opinión legal/.test(di) && /sujetos a revisión/.test(di) && /Próximos pasos/.test(di) && /Incluye|incluye la ponderación por exposición sectorial y el ajuste por tamaño/.test(di) && new RegExp('sin ajustes sería ' + sc.gb + '%').test(di), 'el informe aclara su alcance, los ajustes de rubro y tamaño y el puntaje sin ajustes');
+  ok(/Aún no hay respuestas para resumir/.test(sb.docInforme(new E2())), 'sin respuestas el informe lo dice');
+  const alerta = armar({}, (q) => (q.fl && q.fl.length ? q.fl[0] : 3)); ok(/<h2>Alertas críticas<\/h2>/.test(sb.docInforme(alerta)) && !/<h2>Alertas críticas<\/h2>/.test(sb.docInforme(armar({}, () => 3))), 'las alertas críticas salen en el informe solo si las hay');
+  // acta
+  sb.window.PZ = { entries: [
+    { id: 'a'.repeat(20), autor: 'Marcela Soto', rol: 'cliente', cargo: 'Gerente de TI', qid: 'GOB-01', texto: 'Lo ve TI <i>hoy</i>', creadoEn: 1790000000000, adjuntos: [{ n: 'politica.pdf', z: 10, p: 1 }], imgs: ['data:image/jpeg;base64,AAAAAAAAAAAAAAAAAAAAAAAA'] },
+    { id: 'b'.repeat(20), autor: 'Carlos Jerez', rol: 'consultor', qid: 'general', texto: 'Acordamos revisar en 3 meses', creadoEn: 1790000100000 }] };
+  const da = sb.docActa(eD);
+  ok(/<h1>Acta de la reunión<\/h1>/.test(da) && /Marcela Soto — Cliente, Gerente de TI/.test(da) && /Carlos Jerez — Consultor AlignData/.test(da), 'el acta lista a los participantes de la pizarra con su rol y cargo');
+  ok(/Lo ve TI &lt;i&gt;hoy&lt;\/i&gt;/.test(da) && !/<i>hoy<\/i>/.test(da) && /Adjuntos: politica\.pdf/.test(da) && /1 imagen\./.test(da), 'el acta incluye los comentarios por pregunta (escapados) con sus adjuntos e imágenes');
+  ok(/Comentarios y acuerdos generales/.test(da) && /Acordamos revisar en 3 meses/.test(da), 'el acta incluye los comentarios generales como acuerdos');
+  ok(eD.ga().filter((q) => eD.a[q.id] !== undefined).every((q) => da.includes(q.id) && da.includes('Respuesta: <strong>' + eD.a[q.id] + ' · ')), 'el acta lista cada respuesta elegida con su texto');
+  ok(/Compromisos propuestos \(Ola 1\)/.test(da) && /Consultor AlignData<\/div><div><span><\/span>Representante de la empresa/.test(da) && /no es una auditoría ni una opinión legal/.test(da), 'el acta tiene compromisos de la Ola 1, líneas de firma y aclaración de alcance');
+  sb.window.PZ = { entries: [] }; ok(/No se registraron participantes/.test(sb.docActa(eD)) && !/Comentarios y acuerdos generales/.test(sb.docActa(eD)), 'sin pizarra, el acta lo dice y no inventa participantes');
+  delete sb.window.PZ;
+  // imprimir
+  const gid3 = sb.document.getElementById, bd = sb.document.body, clases = new Set(), dc = { innerHTML: '' };
+  sb.document.getElementById = (i) => (i === 'doc' ? dc : el()); sb.document.body = { classList: { add: (c2) => clases.add(c2), remove: (c2) => clases.delete(c2) } };
+  sb.imprimirDoc('informe');
+  ok(clases.has('imp-doc') && /Informe ejecutivo D360 - Clínica|Informe ejecutivo D360 - /.test(sb.__impreso) && dc.innerHTML.includes('Informe ejecutivo'), 'imprimir el informe lo arma, marca la página para imprimir solo el documento y pone el título al archivo');
+  sb.__eventos.afterprint && sb.__eventos.afterprint(); ok(!clases.has('imp-doc') && dc.innerHTML === '' && /Diagnóstico|D360/.test(sb.document.title), 'al terminar de imprimir se restaura la pantalla y el título');
+  sb.imprimirDoc('acta'); ok(/Acta D360 - /.test(sb.__impreso) && dc.innerHTML.includes('Acta de la reunión'), 'imprimir el acta pone su propio título');
+  sb.__eventos.afterprint && sb.__eventos.afterprint();
+  sb.document.getElementById = gid3; sb.document.body = bd;
+  // pantalla y estilos
+  ok(/imprimirDoc\(\\'informe\\'\)/.test(codigo) && /imprimirDoc\(\\'acta\\'\)/.test(codigo) && /modo==='cliente'\|\|modo==='auditor'/.test(codigo), 'los resultados tienen los botones «Informe ejecutivo» y «Acta de la reunión»');
+  ok(/<script src="app\.js"><\/script>\s*<script src="ruta\.js"><\/script>/.test(ih) && /<div id="doc" aria-hidden="true"><\/div>\s*<script src="theme\.js">/.test(ih), 'ruta.js se carga después de app.js y el contenedor de documentos es hijo directo de <body>');
+  ok(/body\.imp-doc>\*\{display:none!important\}/.test(css) && /body\.imp-doc>#doc\{display:block!important\}/.test(css) && /#doc\{display:none\}/.test(css), 'al imprimir un documento solo se ve el documento; en pantalla está oculto');
+  ok(/\.dc-fir/.test(css) && /\.dc h2/.test(css), 'el documento tiene sus estilos de impresión');
 }
 
 console.log('\n' + (fallos ? '✗ ' + fallos + ' problema(s)' : '✓ Todas las verificaciones pasaron'));

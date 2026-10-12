@@ -65,6 +65,7 @@
       const d = await N.leerCompartido(tk);
       if (!d) return invalido();
       en.rs(); en.ro = true; en.cargar(d); en.pubEn = ms(d.publicadoEn);
+      en.cons = d.consultor || null;
       if (d.consultor) usuarioBarra({ con: { nombre: d.consultor.nombre, foto: d.consultor.foto, etq: 'Preparado por', rol: 'Consultor AlignData' } });
       let pz = []; try { pz = await N.pzLeerCompartido(tk); } catch (e) { pz = []; } // sin pizarra publicada o sin acceso: se muestran solo los resultados
       PZ.lectura(pz, tk, N);
