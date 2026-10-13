@@ -2,7 +2,7 @@
 
 Código en `public/ruta.js` (se carga después de `app.js`); pruebas en la sección 20 de `npm run verificar`.
 
-## Hoja de ruta por oleadas (pestaña «Hoja de ruta»)
+## Hoja de ruta por etapas (pestaña «Hoja de ruta»)
 
 Convierte cada brecha (pregunta respondida con menos de 3) en una **iniciativa**, con tres datos:
 
@@ -10,9 +10,9 @@ Convierte cada brecha (pregunta respondida con menos de 3) en una **iniciativa**
 - **Esfuerzo** (`EF` en `ruta.js`): 1 bajo (días), 2 medio (semanas), 3 alto (meses) por pregunta. **Criterio inicial de AlignData, sujeto a revisión.**
 - **Hoy / primer paso / meta**: salen de las respuestas de la propia pregunta (la respuesta actual, la siguiente y la de nivel 3). No hay contenido nuevo que revisar legalmente.
 
-Oleadas (estilo «debe / debería / podría / después»): **1 Hacer primero** (alerta crítica, o beneficio alto con esfuerzo bajo o medio), **2 Planificar** (beneficio alto, esfuerzo alto), **3 Aprovechar** (beneficio menor, esfuerzo bajo), **4 Después** (el resto). Los plazos (antes del 1-dic-2026; primeros 3, 6 y 12 meses de vigencia) son una propuesta de orden, no una exigencia legal. Para cada oleada se muestra el puntaje estimado al terminarla. Las preguntas sin responder no entran.
+Etapas (estilo «debe / debería / podría / después»): **1 Hacer primero** (alerta crítica, o beneficio alto con esfuerzo bajo o medio), **2 Planificar** (beneficio alto, esfuerzo alto), **3 Aprovechar** (beneficio menor, esfuerzo bajo), **4 Después** (el resto). Los plazos (antes del 1-dic-2026; primeros 3, 6 y 12 meses de vigencia) son una propuesta de orden, no una exigencia legal. Para cada etapa se muestra el puntaje estimado al terminarla. Las preguntas sin responder no entran.
 
-Para cambiar los parámetros: editar `EF`, `OLAS` o `RT_ALTO` y subir `RT_V`.
+Para cambiar los parámetros: editar `EF`, `OLAS` o `RT_ALTO` y subir `RT_V`. El nombre que se muestra es «etapa»; internamente el campo se sigue llamando `ola` (`OLAS`, `item.ola`, `tareas[].ola`) para no tocar datos ya guardados ni las reglas de Firestore.
 
 ## Evolución en el tiempo (pestaña «Evolución»)
 
@@ -28,11 +28,11 @@ Dónde viven: `sesiones/{id}.revisiones` (lista) y `compartidos/{token}.revision
 
 Documentos para imprimir o guardar como PDF (`imprimirDoc`): se arman en un contenedor oculto (`#doc`) y, al imprimir, solo se ve ese documento (clase `imp-doc` en `<body>`). No cambian el PDF técnico existente, que sigue en 8 páginas.
 
-- **Informe ejecutivo** (3–4 páginas): portada, resumen con nivel, puntaje, índice y obligaciones que cumplen, resultado por dimensión, alertas críticas, hoja de ruta (hasta 5 iniciativas por oleada), evolución si hay revisiones, alcance y límites, próximos pasos.
-- **Acta de la reunión**: participantes (desde la pizarra), resultado, comentarios y acuerdos generales, cada respuesta elegida con sus comentarios (autor y fecha) y adjuntos, compromisos de la Ola 1 y líneas de firma.
+- **Informe ejecutivo** (3–4 páginas): portada, resumen con nivel, puntaje, índice y obligaciones que cumplen, resultado por dimensión, alertas críticas, hoja de ruta (hasta 5 iniciativas por etapa), evolución si hay revisiones, alcance y límites, próximos pasos.
+- **Acta de la reunión**: participantes (desde la pizarra), resultado, comentarios y acuerdos generales, cada respuesta elegida con sus comentarios (autor y fecha) y adjuntos, compromisos de la Etapa 1 y líneas de firma.
 
 Los puede generar el consultor y el cliente (con lo publicado). Todo lo que escriben las personas se escapa antes de mostrarse.
 
 ## Qué falta validar (AlignData)
 
-Los niveles de esfuerzo por pregunta, el umbral de beneficio alto, los plazos de las oleadas y el texto de «Próximos pasos» del informe son propuestas. No se agregó contenido legal nuevo.
+Los niveles de esfuerzo por pregunta, el umbral de beneficio alto, los plazos de las etapas y el texto de «Próximos pasos» del informe son propuestas. No se agregó contenido legal nuevo.

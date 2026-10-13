@@ -49,7 +49,7 @@
       { sel: () => q('#s3 .rh'), t: 'El resultado', x: 'Puntaje, nivel de 0 a 4, índice y alertas críticas. El aviso de abajo dice si se aplicó el ajuste por rubro y por tamaño, con el puntaje sin ajustes.' },
       { sel: () => q('#s3 .eb'), t: 'Documentos y envío', x: 'Descargue el PDF técnico, el Informe ejecutivo o el Acta de la reunión. «Compartir con el cliente» crea un enlace privado que usted puede actualizar o revocar.' },
       { sel: () => q('#s3 .tb'), t: 'Distintas lecturas', x: 'Perfil, Brechas, Plan, Hoja de ruta, Semáforo, Evolución, Alertas, Pizarra y Método. Cada una responde una pregunta distinta del cliente.' },
-      { sel: () => q('#tab-t8'), t: 'Hoja de ruta', x: 'Cada brecha es una iniciativa con su beneficio (puntos de puntaje) y su esfuerzo, ordenadas en cuatro oleadas. Es el plan de adecuación.' },
+      { sel: () => q('#tab-t8'), t: 'Hoja de ruta', x: 'Cada brecha es una iniciativa con su beneficio (puntos de puntaje) y su esfuerzo, ordenadas en cuatro etapas. Es el plan de adecuación.' },
       { sel: () => q('#tab-t9'), t: 'Evolución', x: 'Guarde el diagnóstico inicial y repita el diagnóstico a los 3, 6 y 12 meses para medir el avance contra la meta (nivel 3).' },
       { sel: () => q('#tab-t11'), t: 'Tablero del plan', x: 'Convierta la hoja de ruta en un backlog con un clic y, con D360° Acompaña o Implementa, avance las tareas entre columnas con responsable, fecha y evidencia. El cliente solo las ve.' },
       { sel: () => q('#tab-t10'), t: 'Servicio contratado', x: 'Registre qué paquete contrata el cliente, su estado y el contrato (la referencia al documento del Drive). Registrarlo no activa nada solo: es la decisión que usted deja anotada.' },

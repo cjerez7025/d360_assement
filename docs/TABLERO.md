@@ -15,18 +15,18 @@ Archivo: `public/tablero.js` (carga después de `servicio.js`). Pestaña **Table
 
 El tablero depende del servicio contratado (ver `SERVICIO.md`):
 
-- **Con D360° Inicia (o sin servicio registrado):** el plan se ve como **backlog**, ordenado por oleadas. Es lo que entrega el diagnóstico.
+- **Con D360° Inicia (o sin servicio registrado):** el plan se ve como **backlog**, ordenado por etapas. Es lo que entrega el diagnóstico.
 - **Con D360° Acompaña o Implementa activo (nivel ≥ 3):** el backlog pasa a **tablero de 5 columnas**: Backlog · Por hacer · En curso · En revisión · Hecho. Se habilitan responsable, fecha compromiso, evidencia y mover tareas.
 
 Si el servicio deja de estar activo, el cliente vuelve a ver solo el backlog.
 
 ## Generar el backlog
 
-Botón «Crear el backlog desde la hoja de ruta»: crea una tarea por cada acción de la hoja de ruta, en orden de oleada. El título es `ID de pregunta · meta`. Si la hoja de ruta cambia, «Agregar al backlog las brechas nuevas» suma solo las que aún no tienen tarea (no duplica ni toca las existentes).
+Botón «Crear el backlog desde la hoja de ruta»: crea una tarea por cada acción de la hoja de ruta, en orden de etapa. El título es `ID de pregunta · meta`. Si la hoja de ruta cambia, «Agregar al backlog las brechas nuevas» suma solo las que aún no tienen tarea (no duplica ni toca las existentes).
 
 ## Datos de una tarea
 
-`id`, título (≤120), estado, ola, pregunta de origen (`qid`), responsable (≤60), fecha compromiso, fecha en que se hizo, nota interna (≤300) y evidencia (nombre ≤80 + enlace https opcional). Máximo 120 tareas por sesión.
+`id`, título (≤120), estado, etapa, pregunta de origen (`qid`), responsable (≤60), fecha compromiso, fecha en que se hizo, nota interna (≤300) y evidencia (nombre ≤80 + enlace https opcional). Máximo 120 tareas por sesión.
 
 - Pasar una tarea a «Hecho» guarda la fecha; sacarla de «Hecho» la borra.
 - Una tarea con fecha compromiso pasada y sin terminar se marca **vencida**.
@@ -34,7 +34,7 @@ Botón «Crear el backlog desde la hoja de ruta»: crea una tarea por cada acci�
 
 ## Qué ve el cliente (privacidad)
 
-Al publicar, al cliente solo llegan `id, título, estado, ola, pregunta, responsable, fecha compromiso y fecha de término`. **La nota interna y la evidencia no se publican.**
+Al publicar, al cliente solo llegan `id, título, estado, etapa, pregunta, responsable, fecha compromiso y fecha de término`. **La nota interna y la evidencia no se publican.**
 
 ## Relación con el diagnóstico
 

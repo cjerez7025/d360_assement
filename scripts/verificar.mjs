@@ -707,7 +707,7 @@ seccion('19. Rubros de AlignData, tamaño de la empresa y escala de madurez úni
   ok(/Exposición<\/th>/.test(h6) && Object.keys(SEC_BN).every((b) => !por(b).length || h6.includes(SEC_BN[b])) && /clasificación de exposición que usa AlignData/.test(h6) && /régimen propio/.test(h6), 'la tabla de rubros muestra la banda de exposición y aclara su origen y el régimen propio de los órganos públicos');
 }
 
-seccion('20. Hoja de ruta por oleadas, evolución en el tiempo, informe ejecutivo y acta');
+seccion('20. Hoja de ruta por etapas, evolución en el tiempo, informe ejecutivo y acta');
 {
   const raiz12 = path.resolve(path.dirname(file), '..');
   const leer12 = (f) => fs.readFileSync(path.join(raiz12, f), 'utf8').replace(/\r\n/g, '\n');
@@ -720,7 +720,7 @@ seccion('20. Hoja de ruta por oleadas, evolución en el tiempo, informe ejecutiv
 
   // ── datos ──
   ok(Q.every((q) => [1, 2, 3].includes(EF[q.id])) && Object.keys(EF).every((k) => Q.some((q) => q.id === k)), 'cada pregunta tiene un esfuerzo (1 bajo, 2 medio, 3 alto) y no hay preguntas inexistentes');
-  ok(OLAS.length === 4 && OLAS.every((o, i) => o.n === i + 1 && o.t && o.p && o.d) && /^\d+\.\d+$/.test(RT_V) && RT_ALTO > 0, 'hay cuatro oleadas con nombre, plazo y descripción, y la hoja de ruta tiene versión');
+  ok(OLAS.length === 4 && OLAS.every((o, i) => o.n === i + 1 && o.t && o.p && o.d) && /^\d+\.\d+$/.test(RT_V) && RT_ALTO > 0, 'hay cuatro etapas con nombre, plazo y descripción, y la hoja de ruta tiene versión');
   ok(Object.keys(EF_N).join() === '1,2,3' && Object.keys(EF_T).join() === '1,2,3', 'los esfuerzos tienen nombre y duración');
 
   // ── el beneficio es el cálculo real del motor ──
@@ -735,12 +735,12 @@ seccion('20. Hoja de ruta por oleadas, evolución en el tiempo, informe ejecutiv
   const flojo = (dim) => (q) => (q.dm === dim ? 0 : 3);
   ok(g(completa({ sector: 'fintech' }, flojo('terceros')), 'terceros') > g(completa({ sector: 'otro' }, flojo('terceros')), 'terceros') && g(completa({ 'tamaño': '201+' }, flojo('seguridad')), 'seguridad') > g(completa({ 'tamaño': '1-10' }, flojo('seguridad')), 'seguridad'), 'una brecha vale más puntos donde el rubro o el tamaño pesan más (terceros en fintech; seguridad en una empresa grande)');
 
-  // ── reglas de las oleadas ──
+  // ── reglas de las etapas ──
   const regla = (i) => (i.fl || (i.alto && i.ef < 3) ? 1 : i.alto ? 2 : i.ef === 1 ? 3 : 4);
-  ok(r1.items.every((i) => i.ola === regla(i) && i.fl === !!(i.q.fl && i.q.fl.includes(i.v)) && i.alto === (i.gain >= RT_ALTO)), 'cada iniciativa está en la oleada que dicen las reglas (alerta crítica o beneficio alto con esfuerzo bajo o medio: 1; alto con esfuerzo alto: 2; beneficio menor con esfuerzo bajo: 3; el resto: 4)');
-  ok(r1.items.every((x, k, a) => k === 0 || a[k - 1].ola <= x.ola) && r1.olas.every((o) => o.items.every((i) => i.ola === o.n)) && r1.olas.reduce((t2, o) => t2 + o.items.length, 0) === r1.items.length, 'las iniciativas quedan ordenadas por oleada y ninguna se repite ni se pierde');
-  ok(r1.olas.every((o, i, a) => (i === 0 || o.hasta >= a[i - 1].hasta) && o.hasta <= 100) && r1.olas[3].hasta === 100, 'el puntaje estimado al terminar cada oleada solo sube y termina en 100');
-  ok(r1.olas.every((o) => Math.abs(o.gain - o.items.reduce((t2, i) => t2 + i.gain, 0)) < 1e-9), 'el beneficio de cada oleada es la suma de sus iniciativas');
+  ok(r1.items.every((i) => i.ola === regla(i) && i.fl === !!(i.q.fl && i.q.fl.includes(i.v)) && i.alto === (i.gain >= RT_ALTO)), 'cada iniciativa está en la etapa que dicen las reglas (alerta crítica o beneficio alto con esfuerzo bajo o medio: 1; alto con esfuerzo alto: 2; beneficio menor con esfuerzo bajo: 3; el resto: 4)');
+  ok(r1.items.every((x, k, a) => k === 0 || a[k - 1].ola <= x.ola) && r1.olas.every((o) => o.items.every((i) => i.ola === o.n)) && r1.olas.reduce((t2, o) => t2 + o.items.length, 0) === r1.items.length, 'las iniciativas quedan ordenadas por etapa y ninguna se repite ni se pierde');
+  ok(r1.olas.every((o, i, a) => (i === 0 || o.hasta >= a[i - 1].hasta) && o.hasta <= 100) && r1.olas[3].hasta === 100, 'el puntaje estimado al terminar cada etapa solo sube y termina en 100');
+  ok(r1.olas.every((o) => Math.abs(o.gain - o.items.reduce((t2, i) => t2 + i.gain, 0)) < 1e-9), 'el beneficio de cada etapa es la suma de sus iniciativas');
   const rl = sb.ruta(armar({}, () => 3));
   ok(rl.items.length === 0 && sb.rutaHtml(armar({}, () => 3)).includes('No hay brechas pendientes'), 'sin brechas no hay iniciativas y la pantalla lo dice');
   ok(sb.rutaHtml(new E2()).includes('Aún no hay respuestas'), 'sin respuestas la pantalla lo dice');
@@ -751,7 +751,7 @@ seccion('20. Hoja de ruta por oleadas, evolución en el tiempo, informe ejecutiv
   const gid = sb.document.getElementById; sb.document.getElementById = () => ({ ...el(), options: [] });
   const hr = sb.rutaHtml(e1);
   sb.document.getElementById = gid;
-  ok(r1.olas.filter((o) => o.items.length).every((o) => hr.includes('Ola ' + o.n + ' · ' + o.t)) && new RegExp('de <strong>' + e1.sc().g + '%</strong> a <strong>100%</strong>').test(hr), 'la pantalla muestra cada oleada con iniciativas y el puntaje de hoy y el final');
+  ok(r1.olas.filter((o) => o.items.length).every((o) => hr.includes('Etapa ' + o.n + ' · ' + o.t)) && new RegExp('de <strong>' + e1.sc().g + '%</strong> a <strong>100%</strong>').test(hr), 'la pantalla muestra cada etapa con iniciativas y el puntaje de hoy y el final');
   ok(r1.items.every((i) => hr.includes(i.q.id) && hr.includes('+' + (i.gain).toFixed(1).replace('.', ',') + ' pts')) && /Primer paso/.test(hr) && /Meta/.test(hr) && /Hoy/.test(hr), 'cada iniciativa muestra su pregunta, su beneficio en puntos, dónde está hoy, el primer paso y la meta');
   ok(/data-a="14 ter"/.test(hr) || /class="ref"/.test(hr), 'las iniciativas citan el artículo de la ley (abre el texto oficial)');
   ok(r1.items.filter((i) => i.fl).length === 0 || /Alerta crítica/.test(hr), 'las alertas críticas se marcan');
@@ -819,7 +819,7 @@ seccion('20. Hoja de ruta por oleadas, evolución en el tiempo, informe ejecutiv
   ok(new RegExp('nivel ' + eD.ml(sc.g).n + ' \\(' + eD.ml(sc.g).nm + '\\)').test(di) && new RegExp('<strong>' + sc.g + '%</strong>').test(di) && new RegExp('índice <strong>' + (sc.g / 25).toFixed(1).replace('.', ',') + ' de 4,0').test(di), 'el resumen dice el nivel, el puntaje y el índice reales');
   ok(D.every((d) => di.includes(d.n)) && /Resultado por dimensión/.test(di) && /Puntaje global/.test(di), 'el informe muestra las ocho dimensiones');
   ok(eD.cl2().length > 0 && new RegExp('De las ' + eD.cl2().length + ' obligaciones evaluadas, ' + eD.cl2().filter((c2) => c2.st === 'green').length + ' cumplen, ' + eD.cl2().filter((c2) => c2.st === 'yellow').length + ' cumplen parcialmente y ' + eD.cl2().filter((c2) => c2.st === 'red').length + ' no cumplen').test(di), 'el resumen cuenta bien las obligaciones que cumplen, parcial y no cumplen');
-  const rD = sb.ruta(eD); ok(rD.olas.filter((o) => o.items.length).every((o) => di.includes('Ola ' + o.n + ' · ' + o.t)) && new RegExp(rD.items.length + ' brechas ordenadas').test(di) && rD.olas.every((o) => o.items.length <= 5 || di.includes('Y ' + (o.items.length - 5) + ' más')), 'el informe resume la hoja de ruta por oleadas (hasta 5 iniciativas por oleada)');
+  const rD = sb.ruta(eD); ok(rD.olas.filter((o) => o.items.length).every((o) => di.includes('Etapa ' + o.n + ' · ' + o.t)) && new RegExp(rD.items.length + ' brechas ordenadas').test(di) && rD.olas.every((o) => o.items.length <= 5 || di.includes('Y ' + (o.items.length - 5) + ' más')), 'el informe resume la hoja de ruta por etapas (hasta 5 iniciativas por etapa)');
   ok(/<h2>Evolución<\/h2>/.test(di) && /class="dc-t"/.test(di) && /Diagnóstico inicial/.test(di), 'con revisiones guardadas, el informe incluye la evolución');
   ok(!/<h2>Evolución<\/h2>/.test(sb.docInforme(armar({}, mixto))), 'sin revisiones, el informe no tiene evolución');
   ok(/no es una auditoría ni una opinión legal/.test(di) && /sujetos a revisión/.test(di) && /Próximos pasos/.test(di) && /Incluye|incluye la ponderación por exposición sectorial y el ajuste por tamaño/.test(di) && new RegExp('sin ajustes sería ' + sc.gb + '%').test(di), 'el informe aclara su alcance, los ajustes de rubro y tamaño y el puntaje sin ajustes');
@@ -834,7 +834,7 @@ seccion('20. Hoja de ruta por oleadas, evolución en el tiempo, informe ejecutiv
   ok(/Lo ve TI &lt;i&gt;hoy&lt;\/i&gt;/.test(da) && !/<i>hoy<\/i>/.test(da) && /Adjuntos: politica\.pdf/.test(da) && /1 imagen\./.test(da), 'el acta incluye los comentarios por pregunta (escapados) con sus adjuntos e imágenes');
   ok(/Comentarios y acuerdos generales/.test(da) && /Acordamos revisar en 3 meses/.test(da), 'el acta incluye los comentarios generales como acuerdos');
   ok(eD.ga().filter((q) => eD.a[q.id] !== undefined).every((q) => da.includes(q.id) && da.includes('Respuesta: <strong>' + eD.a[q.id] + ' · ')), 'el acta lista cada respuesta elegida con su texto');
-  ok(/Compromisos propuestos \(Ola 1\)/.test(da) && /Consultor AlignData<\/div><div><span><\/span>Representante de la empresa/.test(da) && /no es una auditoría ni una opinión legal/.test(da), 'el acta tiene compromisos de la Ola 1, líneas de firma y aclaración de alcance');
+  ok(/Compromisos propuestos \(Etapa 1\)/.test(da) && /Consultor AlignData<\/div><div><span><\/span>Representante de la empresa/.test(da) && /no es una auditoría ni una opinión legal/.test(da), 'el acta tiene compromisos de la Etapa 1, líneas de firma y aclaración de alcance');
   sb.window.PZ = { entries: [] }; ok(/No se registraron participantes/.test(sb.docActa(eD)) && !/Comentarios y acuerdos generales/.test(sb.docActa(eD)), 'sin pizarra, el acta lo dice y no inventa participantes');
   delete sb.window.PZ;
   // imprimir
@@ -964,7 +964,7 @@ seccion('24. Tour guiado para el consultor y para el cliente');
   const todoTxt = JSON.stringify(R);
   ok(/1 a 4 elige y Enter avanza/.test(todoTxt) && /hasta 5 MB/.test(todoTxt) && /Ctrl\+V/.test(todoTxt), 'el tour menciona los atajos y límites reales (teclas 1 a 4, Enter, Ctrl+V y 5 MB)');
   ok(/no se muestran puntajes/.test(JSON.stringify(R.invitado)), 'el tour del invitado aclara que no verá puntajes durante la reunión (como ocurre en la aplicación)');
-  ok(/3, 6 y 12 meses/.test(JSON.stringify(R.resultados)) && /cuatro oleadas/.test(JSON.stringify(R.resultados)), 'el tour de resultados explica la evolución (3, 6 y 12 meses) y las cuatro oleadas de la hoja de ruta');
+  ok(/3, 6 y 12 meses/.test(JSON.stringify(R.resultados)) && /cuatro etapas/.test(JSON.stringify(R.resultados)), 'el tour de resultados explica la evolución (3, 6 y 12 meses) y las cuatro etapas de la hoja de ruta');
   // quién ve cuál
   ok(/if \(m === 'invitado'\) return s === 'sv' \? 'invitado' : ''/.test(tj) && /if \(m === 'cliente'\) return s === 's3' \? 'cliente' : ''/.test(tj) && /if \(!usuario\(\)\) return ''/.test(tj) && /s === 'sd' \? 'panel' : s === 's2' \? 'sesion' : s === 's3' \? 'resultados' : ''/.test(tj), 'cada pantalla tiene su recorrido: el invitado ve el de la reunión, el lector de resultados el suyo, y el consultor el del panel, la sesión o los resultados');
   // arranque y repetición
@@ -1223,16 +1223,16 @@ seccion('29. Backlog y tablero kanban del plan');
   const L = sb.tarLimpio;
   ok(Array.isArray(L(null)) && L(null).length === 0 && L('x').length === 0 && L({}).length === 0 && L([null, 5, 'x', {}, { id: '', t: 'a' }, { id: 'a1', t: '   ' }]).length === 0, 'una lista vacía, mal formada o con tareas sin id o sin título se descarta');
   const b1 = L([{ id: 'ab-c!1', t: '<b>Hacer</b>   algo\n importante', e: 'robada', ola: 9, qid: 'NO-EXISTE', r: 'x'.repeat(100), v: 'no', h: -3, n: 'n'.repeat(500), ev: { n: 'e'.repeat(200), u: 'javascript:alert(1)' }, c: 'x' }])[0];
-  ok(b1.id === 'abc1' && b1.t === 'Hacer algo importante' && b1.e === 'backlog' && b1.ola === 4 && b1.qid === '' && b1.r.length === 60 && b1.v === 0 && b1.h === 0 && b1.n.length === 300 && b1.ev.n.length === 80 && b1.ev.u === '' && b1.c === 0, 'se limpian las etiquetas y los espacios, se limitan los largos y un estado, una oleada, una pregunta o un enlace inválidos se corrigen');
+  ok(b1.id === 'abc1' && b1.t === 'Hacer algo importante' && b1.e === 'backlog' && b1.ola === 4 && b1.qid === '' && b1.r.length === 60 && b1.v === 0 && b1.h === 0 && b1.n.length === 300 && b1.ev.n.length === 80 && b1.ev.u === '' && b1.c === 0, 'se limpian las etiquetas y los espacios, se limitan los largos y un estado, una etapa, una pregunta o un enlace inválidos se corrigen');
   ok(L([{ id: 'a', t: 'Uno' }, { id: 'a', t: 'Dos' }, { id: 'b', t: 'Tres' }]).map((t) => t.t).join() === 'Uno,Tres', 'un id repetido se descarta');
   ok(L(Array.from({ length: 200 }, (_, i) => ({ id: 'x' + i, t: 'T' + i }))).length === TAR_MAX, 'nunca hay más de 120 tareas');
   ok(L([{ id: 'a', t: 'x', e: 'en_curso', ola: 2, qid: 'GOB-01', ev: { u: 'https://drive.google.com/x' }, v: 1790000000000, h: 1790000100000 }])[0].qid === 'GOB-01' && L([{ id: 'a', t: 'x', ev: { u: 'https://drive.google.com/x' } }])[0].ev.u === 'https://drive.google.com/x', 'una pregunta real y un enlace https se conservan');
   const pubT = sb.tarPublico([{ id: 'a', t: 'x', e: 'hecha', ola: 1, qid: 'GOB-01', r: 'Ana', v: 5, h: 6, n: 'interna', ev: { n: 'Acta', u: 'https://x.cl/a' }, c: 9 }]);
-  ok(JSON.stringify(Object.keys(pubT[0]).sort()) === JSON.stringify(['e', 'h', 'id', 'ola', 'qid', 'r', 't', 'v']), 'al cliente solo viaja el título, el estado, la oleada, el responsable y las fechas (nunca la nota interna ni la evidencia)');
+  ok(JSON.stringify(Object.keys(pubT[0]).sort()) === JSON.stringify(['e', 'h', 'id', 'ola', 'qid', 'r', 't', 'v']), 'al cliente solo viaja el título, el estado, la etapa, el responsable y las fechas (nunca la nota interna ni la evidencia)');
 
   // ── backlog desde la hoja de ruta ──
   const e1 = nuevo(), rt = sb.ruta(e1), n1 = sb.tarDesdeRuta(e1);
-  ok(n1.length === rt.items.length && n1.every((t, i) => t.qid === rt.items[i].q.id && t.ola === rt.items[i].ola && t.e === 'backlog' && /^[a-z0-9]{10}$/.test(t.id) && t.t.startsWith(t.qid + ' · ')), 'se crea una tarea por brecha, en el orden y la oleada de la hoja de ruta, todas en el backlog');
+  ok(n1.length === rt.items.length && n1.every((t, i) => t.qid === rt.items[i].q.id && t.ola === rt.items[i].ola && t.e === 'backlog' && /^[a-z0-9]{10}$/.test(t.id) && t.t.startsWith(t.qid + ' · ')), 'se crea una tarea por brecha, en el orden y la etapa de la hoja de ruta, todas en el backlog');
   ok(n1.every((t) => t.t.length <= 120 && !/</.test(t.t)) && new Set(n1.map((t) => t.id)).size === n1.length, 'los títulos son cortos y sin etiquetas, y cada tarea tiene un id propio');
   e1.tar = n1.slice(0, 5); const n2 = sb.tarDesdeRuta(e1);
   ok(n2.length === n1.length - 5 && n2.every((t) => !e1.tar.some((x) => x.qid === t.qid)), 'volver a generar solo agrega las brechas que no tienen tarea (no duplica ni pisa)');
@@ -1251,7 +1251,7 @@ seccion('29. Backlog y tablero kanban del plan');
   const R = sb.tarResumen(x), gan = Object.fromEntries(sb.ruta(x).items.map((i) => [i.q.id, i.gain]));
   ok(R.total === n1.length && R.hechas === 2 && R.por.en_curso === 1 && R.por.backlog === n1.length - 3 && R.pct === Math.round(2 / n1.length * 100), 'el resumen cuenta las tareas por estado y el porcentaje hecho');
   ok(Math.abs(R.confirmable - (gan[x.tar[0].qid] + gan[x.tar[1].qid])) < 1e-9 && R.confirmable > 0, 'el resumen dice cuántos puntos sumarían las tareas hechas al confirmarlas en una revisión');
-  ok(R.olas[1][1] + R.olas[2][1] + R.olas[3][1] + R.olas[4][1] === n1.length && R.olas[x.tar[0].ola][0] >= 1, 'el avance también se cuenta por oleada');
+  ok(R.olas[1][1] + R.olas[2][1] + R.olas[3][1] + R.olas[4][1] === n1.length && R.olas[x.tar[0].ola][0] >= 1, 'el avance también se cuenta por etapa');
   const dia = (d) => new Date(2026, 10, d, 9).getTime();
   ok(sb.tarVencida({ v: dia(10), e: 'en_curso' }, dia(12)) && !sb.tarVencida({ v: dia(10), e: 'hecha' }, dia(12)) && !sb.tarVencida({ v: dia(12), e: 'en_curso' }, dia(12)) && !sb.tarVencida({ v: 0, e: 'en_curso' }, dia(12)) && sb.tarVencida({ v: dia(11), e: 'por_hacer' }, dia(12)), 'una tarea está vencida si su fecha pasó y no está hecha (el mismo día no cuenta)');
 
@@ -1269,7 +1269,7 @@ seccion('29. Backlog y tablero kanban del plan');
   sb.document.getElementById = gid;
   ok(/Crear el backlog desde la hoja de ruta \(\d+\)/.test(hVacioA) && /onclick="tarGenerar\(\)"/.test(hVacioA) && /Aún no hay tareas/.test(hVacioA), 'el consultor ve el botón para crear el backlog desde la hoja de ruta, con cuántas tareas traería');
   ok(/Su consultor aún no publicó el plan de trabajo como tareas/.test(hVacioC) && !/tarGenerar/.test(hVacioC), 'el cliente, sin tareas, ve que su consultor aún no las publicó y no tiene botones');
-  ok(/El plan de adecuación como <strong>backlog<\/strong>, ordenado por oleadas/.test(hBackC) && /se activa con <strong>D360° Acompaña<\/strong> o <strong>D360° Implementa<\/strong>/.test(hBackC) && !/kb-tablero/.test(hBackC) && /Ola 1 · Hacer primero/.test(hBackC) && !/tarEditar|tarMover|draggable/.test(hBackC), 'sin Acompaña o Implementa, el cliente ve el backlog por oleadas (solo lectura) y que el tablero se activa con esos servicios');
+  ok(/El plan de adecuación como <strong>backlog<\/strong>, ordenado por etapas/.test(hBackC) && /se activa con <strong>D360° Acompaña<\/strong> o <strong>D360° Implementa<\/strong>/.test(hBackC) && !/kb-tablero/.test(hBackC) && /Etapa 1 · Hacer primero/.test(hBackC) && !/tarEditar|tarMover|draggable/.test(hBackC), 'sin Acompaña o Implementa, el cliente ve el backlog por etapas (solo lectura) y que el tablero se activa con esos servicios');
   ok(/Agregar al backlog las brechas nuevas|Crear el backlog/.test(hBackA) && /srvDlg\(\)/.test(hBackA) && !/kb-tablero/.test(hBackA) && /tarEditar\('/.test(hBackA) && !/tarMover/.test(hBackA), 'sin el servicio, el consultor ve el backlog editable, el acceso para registrar el servicio y ningún selector de estado');
   ok(/kb-tablero/.test(hTabA) && TAR_ORD.every((k) => hTabA.includes('data-e="' + k + '"') && hTabC.includes('data-e="' + k + '"')) && (hTabA.match(/draggable="true"/g) || []).length === n1.length && (hTabA.match(/onchange="tarMover\(/g) || []).length === n1.length, 'con el servicio activo se ven las cinco columnas y el consultor puede arrastrar cada tarea o cambiar su estado con un selector');
   ok(!/draggable|tarMover|tarEditar|tarGenerar|tarNueva/.test(hTabC) && /actualizado por su consultor/.test(hTabC), 'el cliente ve el tablero sin poder mover ni editar nada');
