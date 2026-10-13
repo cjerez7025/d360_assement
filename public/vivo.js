@@ -20,13 +20,25 @@
     let actual = null, ultimaClave = null, hb = null, apagar = null, conduce = null;
     // este dispositivo se identifica ante el consultor con un código al azar de esta visita (no se guarda en el equipo)
     const pid = Array.from(crypto.getRandomValues(new Uint8Array(20)), (b) => 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'[b % 62]).join('');
-    const latir = () => { N.vivoLatido(tk); if (N.vivoPresente && PZ.persona && PZ.persona.n) N.vivoPresente(tk, pid, PZ.persona); };
+    let salio = false;
+    const latir = () => { if (salio) return; N.vivoLatido(tk); if (N.vivoPresente && PZ.persona && PZ.persona.n) N.vivoPresente(tk, pid, PZ.persona); };
     // barra superior: quién conduce la reunión y quién es usted
-    const barra = () => usuarioBarra({ con: conduce ? { nombre: conduce.nombre, foto: conduce.foto, etq: 'Conduce', rol: 'Consultor AlignData' } : null, yo: PZ.persona && PZ.persona.n ? { nombre: PZ.persona.n, rol: 'Cliente', sub: PZ.persona.c } : null, salir: false });
+    const barra = () => usuarioBarra({ con: conduce ? { nombre: conduce.nombre, foto: conduce.foto, etq: 'Conduce', rol: 'Consultor AlignData' } : null, yo: PZ.persona && PZ.persona.n ? { nombre: PZ.persona.n, rol: 'Cliente', sub: PZ.persona.c } : null, salir: true });
     // línea visible con quién es usted (en el celular los nombres de la barra superior no caben)
     const quien = () => { const e = $('vh-quien'); if (!e) return; const p = PZ.persona; e.innerHTML = p && p.n ? '<i data-lucide="user-check"></i> Participa como <strong>' + esc(p.n) + '</strong>' + (p.c ? ' · ' + esc(p.c) : '') + ' <button type="button" class="vh-cambiar" onclick="vivoCambiarNombre()">Cambiar</button>' : '<i data-lucide="user"></i> <button type="button" class="vh-cambiar" onclick="vivoCambiarNombre()">Escriba su nombre para participar</button>'; lucide.createIcons(); };
     window.vivoCambiarNombre = () => PZ.pedirPersona(true).then(() => { barra(); quien(); latir(); });
     window.pzPersonaCambio = () => { barra(); quien(); latir(); }; PZ.pedirPersona().then(() => { barra(); quien(); latir(); });
+    // salir de la reunión: deja de aparecer como conectado, se quita su nombre de este dispositivo y puede volver a entrar con el mismo enlace
+    window.salir = async () => {
+      salio = true; if (hb) { clearInterval(hb); hb = null; } if (apagar) { apagar(); apagar = null; }
+      if (PZ.parar) { try { PZ.parar(); } catch (e) { /* ya estaba detenida */ } }
+      try { if (N.vivoSalir) await N.vivoSalir(tk, pid); } catch (e) { /* la reunión ya se cerró */ }
+      if (PZ.olvidar) PZ.olvidar();
+      window.pzPersonaCambio = () => {}; usuarioBarra(null);
+      fin('Salió de la reunión', 'Ya no figura como conectado y su nombre se quitó de este dispositivo. Puede volver a entrar con el mismo enlace mientras la reunión siga abierta.');
+      $('se-a').innerHTML = '<button type="button" class="btn-go" onclick="location.reload()"><i data-lucide="log-in"></i> Volver a entrar</button>';
+      if (window.lucide) lucide.createIcons();
+    };
     ss('sv'); $('sv-h').innerHTML = '<p class="vh-n" role="status">Conectando con su consultor…</p>';
 
     const cerrar = (t, p) => { if (hb) clearInterval(hb); if (apagar) { apagar(); apagar = null; } fin(t, p); };

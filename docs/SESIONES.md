@@ -80,6 +80,14 @@ En el modo de prueba la reunión en vivo se puede probar abriendo el enlace en *
 
 Cada dispositivo del cliente que abre el enlace en vivo escribe su nombre y la hora del servidor (cada ~25 s) en `en_vivo/{token}/presentes/{código al azar}`; el consultor las lista y el botón dice «Conectado: Marcela», «2 conectados» o, si aún no escribieron su nombre, «Cliente conectado». Se considera conectado a quien avisó en los últimos 70 s, y la misma persona se cuenta una vez aunque recargue o use dos dispositivos. En el celular, el cliente ve una línea «Participa como …» (los nombres de la barra superior no caben en pantallas angostas) con la opción de cambiarlo. Las reglas solo dejan al cliente escribir su propia presencia (nombre ≤ 60, cargo ≤ 60, hora del servidor); solo el consultor las lee y las borra, y se borran al terminar la reunión. **Al publicar este cambio hay que desplegar primero `firestore:d360`.**
 
+### Eliminar una sesión (consultor)
+
+Cada tarjeta del panel tiene «Eliminar». El diálogo dice qué se pierde (respuestas, revisiones, servicio registrado, pizarra con sus archivos, el enlace de resultados del cliente y la reunión en vivo) y pide **escribir el nombre de la empresa** para confirmar (sin importar mayúsculas ni espacios de más). Firestore no borra las subcolecciones al borrar un documento, así que `eliminarSesion` (en `nube.js`) borra primero la pizarra publicada con sus partes, las solicitudes y el enlace publicado, luego la reunión en vivo (pizarra y presencias), luego la pizarra de la sesión y **al final la sesión**: si algo falla, la sesión sigue en la lista y se puede reintentar. No se puede deshacer; conviene descargar antes el informe, el acta o el PDF. Es también la forma de atender la eliminación de datos de un cliente (ver «Protección de datos» más arriba).
+
+### Salir de la reunión (invitado)
+
+El invitado tiene un botón «Salir» en la barra superior: deja de aparecer como conectado (borra su propia presencia; las reglas se lo permiten mientras el enlace esté vigente), se quita su nombre de ese dispositivo, deja de enviar avisos y ve un mensaje de despedida con la opción «Volver a entrar» con el mismo enlace.
+
 ## Archivos
 
 | Archivo | Rol |

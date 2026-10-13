@@ -250,3 +250,17 @@ export function solicitudesEscuchar(tk, cb) {
   return F.onSnapshot(F.collection(db, 'compartidos', tk, 'solicitudes'),
     (s) => cb(s.docs.map((x) => { const v = x.data(); return { id: x.id, paquete: v.paquete, nombre: v.nombre, cargo: v.cargo || '', creadoEn: v.creadoEn && v.creadoEn.toMillis ? v.creadoEn.toMillis() : 0 }; }).sort((a, b) => b.creadoEn - a.creadoEn)), () => cb([]));
 }
+
+// ── eliminar una sesión con todo lo que depende de ella ──
+// Firestore no borra las subcolecciones al borrar un documento: se borran una por una y, al final, la sesión.
+// Si algo falla a mitad de camino, la sesión sigue existiendo y se puede reintentar (borrar de nuevo no daña nada).
+const borrarSolicitudes = async (tk) => { const s = await F.getDocs(F.collection(db, 'compartidos', tk, 'solicitudes')); for (const x of s.docs) await F.deleteDoc(x.ref); };
+export async function eliminarSesion(sid, d) {
+  const tkC = d && d.compartido && d.compartido.token, tkV = d && d.vivo && d.vivo.token;
+  if (tkC) { await borrarTodoPz(rutaComp(tkC)); await borrarSolicitudes(tkC); await F.deleteDoc(F.doc(db, 'compartidos', tkC)); }
+  if (tkV) { await borrarTodoPz(rutaVivo(tkV)); await vivoPresentesLimpiar(tkV); await F.deleteDoc(vivoRef(tkV)); }
+  await borrarTodoPz(rutaSes(sid));
+  await F.deleteDoc(F.doc(db, 'sesiones', sid));
+}
+// ── el invitado sale de la reunión: se quita su presencia ──
+export async function vivoSalir(tk, pid) { try { await F.deleteDoc(F.doc(db, 'en_vivo', tk, 'presentes', pid)); } catch (e) { /* el enlace ya se cerró */ } }

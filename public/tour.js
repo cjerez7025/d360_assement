@@ -62,7 +62,7 @@
       { sel: () => q('#sv-q .qh'), t: 'La pregunta y la ley', x: 'Cada pregunta cita el artículo de la ley que la sustenta. Púlselo para leer el texto oficial.' },
       { sel: () => q('#sv-q .optw'), t: 'Proponga una respuesta', x: 'Elija la que mejor describe a su organización; la bombilla muestra un ejemplo de cada una. Su consultor la ve y decide cuál queda registrada.' },
       { sel: () => q('#pz-slot'), t: 'Pizarra compartida', x: 'Escriba comentarios, pegue imágenes con Ctrl+V o adjunte documentos de hasta 5 MB. Todos ven quién escribió qué.' },
-      { t: 'Eso es todo', x: 'Mientras se responde no se muestran puntajes: los recibirá al final con un enlace de resultados. Puede repetir este recorrido con el botón «Tour».' }
+      { t: 'Eso es todo', x: 'Mientras se responde no se muestran puntajes: los recibirá al final con un enlace de resultados. Puede repetir este recorrido con el botón «Tour». Para salir de la reunión, use «Salir».' }
     ] },
     cliente: { nombre: 'Sus resultados', pasos: [
       { sel: () => q('.cbanner'), t: 'Sus resultados', x: 'Preparados por AlignData y en modo lectura. El enlace es privado: compártalo solo con quien corresponda.' },

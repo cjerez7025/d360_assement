@@ -317,6 +317,8 @@ ${lectura ? '' : `<form class="pz-f" id="pzf${n}" novalidate>
   setInterval(() => document.querySelectorAll('time.pz-hora').forEach((t) => { const ms = +t.dataset.t; if (ms) t.textContent = pzCuando(ms); }), 60000);
 
   // ───────── identificación de los integrantes del cliente (sin cuenta: escriben su nombre) ─────────
+  // al salir de la reunión, el nombre se quita de este dispositivo (puede ser un equipo compartido)
+  PZS.olvidar = function () { PZS.persona = null; try { localStorage.removeItem(LS); } catch (e) { /* sin almacenamiento */ } };
   PZS.pedirPersona = function (forzar) {
     return new Promise((ok) => {
       const d = $('dlg-nombre');

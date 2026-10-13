@@ -1299,3 +1299,9 @@ dialog.dlg-srv{max-width:640px}
 /* el botón principal sigue siendo de degradado aunque también sea un «.be» de vidrio */
 .be.be-p{background:var(--btn-grad);border-color:transparent;color:#04201B;box-shadow:0 10px 26px rgba(0,184,148,.32),inset 0 1px 0 rgba(255,255,255,.4)}
 .be.be-p:hover{filter:brightness(1.06)}
+
+/* ── eliminar sesión ── */
+.be-del{color:var(--lv0-ink)}
+.be-del:hover{background:var(--lv0-soft);border-color:color-mix(in srgb,var(--lv0-ink) 40%,transparent)}
+.del-l{margin:8px 0 12px;padding-left:20px;display:grid;gap:4px}
+dialog.dlg-del{max-width:560px}

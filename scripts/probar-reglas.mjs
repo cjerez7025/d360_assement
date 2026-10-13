@@ -71,7 +71,9 @@ c('presencia: el cliente no puede listarlas', 'DENY', 'list', PRES, { mock: vige
 c('presencia: el consultor las lee', 'ALLOW', 'get', PRES, { auth: consultor, existente: { n: 'Carlos' } });
 c('presencia: el consultor las lista', 'ALLOW', 'list', PRES, { auth: consultor });
 c('presencia: el consultor las borra', 'ALLOW', 'delete', PRES, { auth: consultor });
-c('presencia: el cliente no las borra', 'DENY', 'delete', PRES, { mock: vigente });
+c('presencia: el invitado quita su propia presencia al salir', 'ALLOW', 'delete', PRES, { mock: vigente });
+c('presencia: con el enlace vencido ya no se puede', 'DENY', 'delete', PRES, { mock: vencido });
+c('presencia: sin enlace vigente nadie sin cuenta borra', 'DENY', 'delete', PRES, { mock: sinPadre });
 const SOL = `/compartidos/${CT}/solicitudes/${ID}`, T0 = '2026-10-11T12:00:00Z';
 const existeCompartido = { function: 'exists', args: [{ anyValue: {} }], result: { value: true } };
 const noExisteCompartido = { function: 'exists', args: [{ anyValue: {} }], result: { value: false } };

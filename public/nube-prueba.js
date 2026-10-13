@@ -156,3 +156,14 @@ export function solicitudesEscuchar(tk, cb) {
   oyentes.add(emitir); emitir();
   return () => oyentes.delete(emitir);
 }
+
+// ── eliminar una sesión con todo lo que depende de ella ──
+export async function eliminarSesion(sid, dd) {
+  const d = leerTodo(), p = pzD(d), tkC = dd && dd.compartido && dd.compartido.token, tkV = dd && dd.vivo && dd.vivo.token;
+  Object.values(p.ses[sid] || {}).forEach((e) => quitarPartes(p, 'ses', sid, e)); delete p.ses[sid];
+  if (tkC) { Object.values(p.comp[tkC] || {}).forEach((e) => quitarPartes(p, 'comp', tkC, e)); delete p.comp[tkC]; delete d.compartidos[tkC]; }
+  if (tkV) { Object.values(p.vivo[tkV] || {}).forEach((e) => quitarPartes(p, 'vivo', tkV, e)); delete p.vivo[tkV]; delete d.vivo[tkV]; }
+  delete d.sesiones[sid]; guardarTodo(d);
+}
+// ── el invitado sale de la reunión: se quita su presencia ──
+export async function vivoSalir(tk, pid) { const d = leerTodo(); if (d.vivo[tk] && d.vivo[tk].presentes) { delete d.vivo[tk].presentes[pid]; guardarTodo(d); } }

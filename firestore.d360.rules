@@ -188,7 +188,7 @@ service cloud.firestore {
       allow delete: if esConsultor();
 
       // Presencia: cada dispositivo del cliente avisa su nombre y la hora (cada ~25 s) en presentes/{código al azar}.
-      // El cliente solo puede escribir su propia presencia con la hora del servidor; solo el consultor las lista y las borra.
+      // El cliente solo puede escribir (y quitar) su propia presencia con la hora del servidor; solo el consultor las lista.
       match /presentes/{pid} {
         allow get, list: if esConsultor();
         allow create, update: if esIdPz(pid)
@@ -198,7 +198,8 @@ service cloud.firestore {
           && request.resource.data.n is string && request.resource.data.n.size() >= 1 && request.resource.data.n.size() <= 60
           && (!('c' in request.resource.data) || (request.resource.data.c is string && request.resource.data.c.size() <= 60))
           && request.resource.data.t == request.time;
-        allow delete: if esConsultor();
+        // quien sale de la reunión borra su propia presencia (el código de 20 caracteres es suyo y no se puede listar)
+        allow delete: if esConsultor() || enlaceVigente();
       }
 
       // Pizarra en vivo: mientras el enlace está vigente, cualquiera con el token ve los comentarios y puede AGREGAR

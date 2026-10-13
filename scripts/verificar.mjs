@@ -887,7 +887,7 @@ seccion('22. Presencia: quién está conectado en la reunión en vivo');
   ok(/Escriba su nombre para participar/.test(vj), 'si aún no escribió su nombre, la línea se lo pide');
   ok(/quien\(\); lucide\.createIcons\(\)/.test(vj) && /esc\(p\.n\)/.test(vj) && /esc\(p\.c\)/.test(vj), 'la línea se actualiza con cada cambio de pregunta y el nombre y el cargo se escapan');
   ok(/const pid = Array\.from\(crypto\.getRandomValues\(new Uint8Array\(20\)\)/.test(vj) && !/localStorage\.setItem\([^)]*pid/.test(vj), 'cada dispositivo usa un código al azar de 20 letras o números que no se guarda en el equipo');
-  ok(/const latir = \(\) => \{ N\.vivoLatido\(tk\); if \(N\.vivoPresente && PZ\.persona && PZ\.persona\.n\) N\.vivoPresente\(tk, pid, PZ\.persona\); \}/.test(vj) && /hb = setInterval\(latir, 25000\)/.test(vj) && /visibilitychange', \(\) => \{ if \(!document\.hidden\) latir\(\)/.test(vj), 'el dispositivo avisa su nombre al entrar, cada 25 segundos y al volver a la pestaña');
+  ok(/const latir = \(\) => \{ if \(salio\) return; N\.vivoLatido\(tk\); if \(N\.vivoPresente && PZ\.persona && PZ\.persona\.n\) N\.vivoPresente\(tk, pid, PZ\.persona\); \}/.test(vj) && /hb = setInterval\(latir, 25000\)/.test(vj) && /visibilitychange', \(\) => \{ if \(!document\.hidden\) latir\(\)/.test(vj), 'el dispositivo avisa su nombre al entrar, cada 25 segundos y al volver a la pestaña');
   ok(/vivoCambiarNombre = \(\) => PZ\.pedirPersona\(true\)\.then\(\(\) => \{ barra\(\); quien\(\); latir\(\); \}\)/.test(vj), 'al cambiar el nombre, se actualiza la pantalla y se avisa al consultor');
   // datos
   const exp = (src) => ['vivoPresente', 'vivoPresentes', 'vivoPresentesLimpiar'].every((f) => new RegExp('export (async )?function ' + f + '\\b').test(src));
@@ -1140,6 +1140,68 @@ seccion('27. Servicio contratado: paquetes, estados, hitos y solicitudes del cli
   const bloque = cs.slice(cs.indexOf('/* ── servicio contratado ── */')), antes = cs.slice(0, cs.indexOf('/* ── servicio contratado ── */'));
   const nuevas = [...new Set([...bloque.matchAll(/\.(srv-[\w-]+|sc-srv)/g)].map((m) => m[1]))];
   ok(nuevas.length > 15 && nuevas.every((c2) => !new RegExp('\\.' + c2.replace(/-/g, '\\-') + '(?![\\w-])').test(antes)), 'ninguno de los ' + nuevas.length + ' nombres de clase nuevos ya existía');
+}
+
+seccion('28. Eliminar sesiones (consultor) y salir de la reunión (invitado)');
+{
+  const raiz20 = path.resolve(path.dirname(file), '..');
+  const leer20 = (f) => fs.readFileSync(path.join(raiz20, f), 'utf8').replace(/\r\n/g, '\n');
+  const ss = leer20('public/sesiones.js'), vj = leer20('public/vivo.js'), ng = leer20('public/nube.js'), np = leer20('public/nube-prueba.js'), rg = leer20('firestore.d360.rules'), ih = leer20('public/index.html'), pj = leer20('public/pizarra.js'), cs = leer20('public/styles.css');
+
+  // ── eliminar: lo que ve el consultor ──
+  ok(/class=\"be be-del\" onclick=\"elimSes\('\$\{s\.id\}'\)\" aria-label=\"Eliminar la sesión de \$\{esc\(p\.nombre \|\| 'Sin nombre'\)\}\"><i data-lucide=\"trash-2\"><\/i>Eliminar<\/button>/.test(ss), 'cada sesión del panel tiene un botón «Eliminar» con nombre accesible (dice de qué empresa es)');
+  ok(/<dialog class="dlg dlg-del" id="dlg-del" aria-labelledby="del-t">/.test(ih), 'la página tiene el diálogo de confirmación');
+  ok(/Para confirmar, escriba el nombre de la empresa/.test(ss) && /id="del-go" disabled/.test(ss) && /norm\(\$\('del-n'\)\.value\) !== norm\(/.test(ss), 'para eliminar hay que escribir el nombre de la empresa: el botón sigue desactivado hasta que coincida');
+  ok(/normalize\('NFC'\)\.trim\(\)\.replace\(\/\\s\+\/g, ' '\)\.toLowerCase\(\)/.test(ss), 'la comparación ignora mayúsculas, espacios de más y la forma de las tildes');
+  ok(/No se puede deshacer\. Si necesita conservar algo, descargue antes el informe ejecutivo, el acta o el PDF/.test(ss) && /El enlace de resultados dejará de funcionar para el cliente/.test(ss) && /La reunión en vivo se cerrará/.test(ss) && /La pizarra, con sus comentarios, imágenes y archivos adjuntos/.test(ss), 'el diálogo dice qué se pierde: respuestas, pizarra y archivos, el enlace del cliente y la reunión en vivo, y que no se puede deshacer');
+  ok(/No se pudo terminar de eliminar[\s\S]{0,120}La sesión sigue en la lista: puede reintentar/.test(ss) && /go\.innerHTML = '<i data-lucide="trash-2"><\/i>Reintentar'/.test(ss), 'si falla a mitad de camino, la sesión sigue en la lista y se puede reintentar');
+  ok(/if \(act && act\.id === s\.id\) await window\.dash\(\);\s*\/\/[^\n]*\n\s*await N\.eliminarSesion\(s\.id, s\);/.test(ss), 'si la sesión estaba abierta, se cierra antes de borrar (se guarda lo pendiente y se sueltan las escuchas)');
+  ok(/\.be-del\{color:var\(--lv0-ink\)\}/.test(cs) && /dialog\.dlg-del\{max-width:560px\}/.test(cs), 'el botón y el diálogo tienen su estilo');
+
+  // ── eliminar: la capa de datos de la nube borra todo lo que depende de la sesión, y la sesión al final ──
+  const fn = ng.slice(ng.indexOf('export async function eliminarSesion'), ng.indexOf('// ── el invitado sale'));
+  const orden = ['rutaComp(tkC)', 'borrarSolicitudes(tkC)', "'compartidos', tkC", 'rutaVivo(tkV)', 'vivoPresentesLimpiar(tkV)', 'vivoRef(tkV)', 'rutaSes(sid)', "'sesiones', sid"].map((x) => fn.indexOf(x));
+  ok(orden.every((x) => x > 0) && orden.every((x, i, a) => i === 0 || x > a[i - 1]), 'en la nube se borran primero la pizarra, las solicitudes y el enlace publicado, luego la reunión en vivo y su pizarra, luego la pizarra de la sesión y, al final, la sesión');
+  ok(/const borrarTodoPz = async/.test(ng) && /borrarPartes\(amb, ruta\[1\]/.test(ng), 'los archivos adjuntos (guardados en partes) se borran junto con cada comentario');
+  ok(/Si algo falla a mitad de camino, la sesión sigue existiendo y se puede reintentar/.test(ng), 'el diseño permite reintentar tras un fallo');
+  ok(/allow get, list, delete: if esConsultor\(\);/.test(rg) && /match \/solicitudes\/\{sid\}/.test(rg), 'las reglas ya permiten al consultor borrar sesiones, pizarras, partes, enlaces, solicitudes y reuniones (no hizo falta cambiarlas)');
+
+  // ── eliminar: prueba real de la versión de prueba (misma interfaz) ──
+  {
+    const url = (await import('node:url')).pathToFileURL(path.join(raiz20, 'public/nube-prueba.js')).href + '?t=' + Date.now();
+    const antes = { w: globalThis.window, ls: globalThis.localStorage, ce: globalThis.CustomEvent }, mem = {};
+    globalThis.window = { addEventListener() {}, dispatchEvent() {} }; globalThis.CustomEvent = class { constructor(t, o) { this.type = t; this.detail = o && o.detail; } };
+    globalThis.localStorage = { getItem: (k) => (k in mem ? mem[k] : null), setItem: (k, v) => { mem[k] = String(v); }, removeItem: (k) => { delete mem[k]; } };
+    try {
+      const M = await import(url), TC = 'C'.repeat(32), TV = 'V'.repeat(32), TC2 = 'D'.repeat(32), adj = [{ n: 'a.pdf', z: 10, p: 2 }];
+      mem.d360mock = JSON.stringify({
+        sesiones: { S1: { perfil: { nombre: 'Uno' }, compartido: { token: TC }, vivo: { token: TV } }, S2: { perfil: { nombre: 'Dos' }, compartido: { token: TC2 } } },
+        compartidos: { [TC]: { solicitudes: { a: { nombre: 'M' } } }, [TC2]: { solicitudes: {} } }, vivo: { [TV]: { presentes: { p1: { n: 'A', t: 1 }, p2: { n: 'B', t: 1 } } } }, sesion: null,
+        pz: { ses: { S1: { e1: { id: 'e1', adjuntos: adj, creadoEn: 1 } }, S2: { e9: { id: 'e9', adjuntos: adj, creadoEn: 1 } } }, comp: { [TC]: { e1: { id: 'e1', adjuntos: adj, creadoEn: 1 } }, [TC2]: { e9: { id: 'e9', adjuntos: adj, creadoEn: 1 } } }, vivo: { [TV]: { e1: { id: 'e1', adjuntos: adj, creadoEn: 1 } } },
+          partes: { 'ses:S1:e1:0_0': 'x', 'ses:S1:e1:0_1': 'x', 'comp:C:e1:0_0': 'x', ['comp:' + TC + ':e1:0_0']: 'x', ['comp:' + TC + ':e1:0_1']: 'x', ['vivo:' + TV + ':e1:0_0']: 'x', ['vivo:' + TV + ':e1:0_1']: 'x', 'ses:S2:e9:0_0': 'otra', 'ses:S2:e9:0_1': 'otra', ['comp:' + TC2 + ':e9:0_0']: 'otra' } }
+      });
+      await M.eliminarSesion('S1', { compartido: { token: TC }, vivo: { token: TV } });
+      const d = JSON.parse(mem.d360mock);
+      ok(Object.keys(d.sesiones).join() === 'S2' && !(TC in d.compartidos) && (TC2 in d.compartidos) && !(TV in d.vivo), 'al eliminar una sesión desaparecen ella, su enlace publicado y su reunión en vivo, y las demás sesiones quedan intactas');
+      ok(!('S1' in d.pz.ses) && !(TC in d.pz.comp) && !(TV in d.pz.vivo) && ('S2' in d.pz.ses) && (TC2 in d.pz.comp), 'desaparecen sus tres pizarras (sesión, publicada y en vivo) y las de otras sesiones no se tocan');
+      ok(Object.keys(d.pz.partes).every((k) => !k.startsWith('ses:S1:') && !k.startsWith('comp:' + TC + ':') && !k.startsWith('vivo:' + TV + ':')) && Object.keys(d.pz.partes).filter((k) => k.includes(':e9:')).length === 3, 'se borran los archivos adjuntos de la sesión eliminada y se conservan los de las demás (3 partes)');
+      await M.eliminarSesion('S1', { compartido: { token: TC }, vivo: { token: TV } });
+      ok(Object.keys(JSON.parse(mem.d360mock).sesiones).join() === 'S2', 'eliminar de nuevo lo ya eliminado no falla (se puede reintentar)');
+      // invitado: salir
+      mem.d360mock = JSON.stringify({ sesiones: {}, compartidos: {}, vivo: { [TV]: { presentes: { p1: { n: 'A', t: 1 }, p2: { n: 'B', t: 1 } } } }, sesion: null, pz: { ses: {}, vivo: {}, comp: {}, partes: {} } });
+      await M.vivoSalir(TV, 'p1'); await M.vivoSalir('X'.repeat(32), 'p9');
+      ok(Object.keys(JSON.parse(mem.d360mock).vivo[TV].presentes).join() === 'p2', 'al salir, el invitado quita solo su presencia (y salir de un enlace inexistente no falla)');
+    } finally { globalThis.window = antes.w; globalThis.localStorage = antes.ls; globalThis.CustomEvent = antes.ce; if (antes.w === undefined) delete globalThis.window; if (antes.ls === undefined) delete globalThis.localStorage; if (antes.ce === undefined) delete globalThis.CustomEvent; }
+  }
+
+  // ── invitado: salir de la reunión ──
+  ok(/salir: true \}\);/.test(vj) && /window\.salir = async \(\) => \{/.test(vj), 'la barra superior del invitado tiene el botón «Salir»');
+  ok(/salio = true; if \(hb\) \{ clearInterval\(hb\); hb = null; \} if \(apagar\) \{ apagar\(\); apagar = null; \}/.test(vj) && /const latir = \(\) => \{ if \(salio\) return;/.test(vj), 'al salir se detienen los avisos de presencia y las escuchas, y no se reanudan al volver a la pestaña');
+  ok(/N\.vivoSalir\(tk, pid\)/.test(vj) && /PZ\.olvidar\(\)/.test(vj) && /PZS\.olvidar = function \(\) \{ PZS\.persona = null; try \{ localStorage\.removeItem\(LS\); \} catch/.test(pj), 'al salir se quita su presencia y su nombre del dispositivo');
+  ok(/fin\('Salió de la reunión', 'Ya no figura como conectado y su nombre se quitó de este dispositivo\. Puede volver a entrar con el mismo enlace mientras la reunión siga abierta\.'\)/.test(vj) && /Volver a entrar/.test(vj), 'muestra un mensaje de despedida y la opción de volver a entrar con el mismo enlace');
+  ok(/export async function vivoSalir\(tk, pid\)/.test(ng) && /export async function vivoSalir\(tk, pid\)/.test(np), 'la capa de datos (nube y prueba) tiene vivoSalir');
+  ok(/allow delete: if esConsultor\(\) \|\| enlaceVigente\(\);/.test(rg.slice(rg.indexOf('match /presentes/'), rg.indexOf('// Pizarra en vivo'))), 'las reglas dejan al invitado quitar su presencia mientras el enlace esté vigente');
+  ok(/Para salir de la reunión, use «Salir»\./.test(leer20('public/tour.js')), 'el tour del invitado dice cómo salir');
 }
 
 console.log('\n' + (fallos ? '✗ ' + fallos + ' problema(s)' : '✓ Todas las verificaciones pasaron'));

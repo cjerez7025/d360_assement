@@ -127,7 +127,7 @@ ${s.servicio && srvEtiqueta(s.servicio) ? '<p class="sc-srv"><i data-lucide="han
 <div class="mtr" role="img" aria-label="Avance ${av}%"><i style="width:${av}%"></i></div>
 <div class="sc-stats"><span>${s.hechas || 0} de ${s.total || '—'} respondidas</span><span>${s.puntaje != null ? '<span class="sc-lv"><b>' + s.puntaje + '%</b> ' + esc(niv) + '</span>' : 'Sin puntaje aún'}</span></div>
 <p class="sc-foot">Actualizada ${rel(ms(s.actualizadoEn))}${s.actualizadoPor ? ' por ' + esc(s.actualizadoPor) : ''}</p>
-<div class="sc-act"><button class="be be-p" onclick="abrirSes('${s.id}')"><i data-lucide="play"></i>${s.estado === 'completa' ? 'Abrir' : 'Continuar'}</button><button class="be" onclick="resSes('${s.id}')"><i data-lucide="bar-chart-3"></i>Resultados</button><button class="be" onclick="cmpSes('${s.id}')"><i data-lucide="share-2"></i>Compartir</button></div></article>`;
+<div class="sc-act"><button class="be be-p" onclick="abrirSes('${s.id}')"><i data-lucide="play"></i>${s.estado === 'completa' ? 'Abrir' : 'Continuar'}</button><button class="be" onclick="resSes('${s.id}')"><i data-lucide="bar-chart-3"></i>Resultados</button><button class="be" onclick="cmpSes('${s.id}')"><i data-lucide="share-2"></i>Compartir</button><button class="be be-del" onclick="elimSes('${s.id}')" aria-label="Eliminar la sesión de ${esc(p.nombre || 'Sin nombre')}"><i data-lucide="trash-2"></i>Eliminar</button></div></article>`;
   }
   let nvPrev = {};
   function renderDash() {
@@ -154,6 +154,34 @@ ${s.servicio && srvEtiqueta(s.servicio) ? '<p class="sc-srv"><i data-lucide="han
     PZ.parar();
     en.rs(); cs = null; act = null; $('saveind').hidden = true; vivoBtn();
     ss('sd'); renderDash();
+  };
+  // ── eliminar una sesión: se confirma escribiendo el nombre de la empresa ──
+  let elim = null;
+  const norm = (x) => String(x || '').normalize('NFC').trim().replace(/\s+/g, ' ').toLowerCase();
+  function elimRender() {
+    const s = elim; if (!s) return;
+    const p = s.perfil || {}, nom = p.nombre || 'Sin nombre', n = (s.revisiones || []).length, vivoAct = !!(s.vivo && s.vivo.token && (+s.vivo.venceEn || 0) > Date.now());
+    const h = s.hechas || 0, efectos = ['Las respuestas (' + h + (h === 1 ? ' respondida' : ' respondidas') + ') y los resultados.', n ? (n === 1 ? 'La revisión guardada.' : 'Las ' + n + ' revisiones guardadas.') : '', s.servicio ? 'El servicio contratado registrado.' : '', 'La pizarra, con sus comentarios, imágenes y archivos adjuntos.', s.compartido ? '<strong>El enlace de resultados dejará de funcionar para el cliente.</strong>' : '', vivoAct ? '<strong>La reunión en vivo se cerrará.</strong>' : ''].filter(Boolean);
+    $('del-slot').innerHTML = `<p>Va a eliminar la sesión de <strong>${esc(nom)}</strong>. Se borrarán de forma definitiva:</p><ul class="del-l">${efectos.map((t) => '<li>' + t + '</li>').join('')}</ul>
+<p class="dlg-warn" role="note"><i data-lucide="triangle-alert"></i>No se puede deshacer. Si necesita conservar algo, descargue antes el informe ejecutivo, el acta o el PDF.</p>
+<div class="fg"><label for="del-n">Para confirmar, escriba el nombre de la empresa: <strong>${esc(nom)}</strong></label><input id="del-n" autocomplete="off" oninput="elimEscribe()"></div>
+<div id="del-er" class="dlg-warn" role="alert" hidden></div>
+<div class="dlg-act"><button type="button" class="be dng" id="del-go" disabled onclick="elimHacer()"><i data-lucide="trash-2"></i>Eliminar definitivamente</button><button type="button" class="be" onclick="document.getElementById('dlg-del').close()">Cancelar</button></div>`;
+    lucide.createIcons();
+  }
+  window.elimSes = (id) => { const s = lista.find((x) => x.id === id); if (!s) return; elim = s; elimRender(); const d = $('dlg-del'); if (!d.open) d.showModal(); const i = $('del-n'); if (i) i.focus(); };
+  window.elimEscribe = () => { const s = elim; if (!s) return; $('del-go').disabled = norm($('del-n').value) !== norm((s.perfil || {}).nombre || 'Sin nombre'); };
+  window.elimHacer = async () => {
+    const s = elim; if (!s || !N || !N.eliminarSesion || norm($('del-n').value) !== norm((s.perfil || {}).nombre || 'Sin nombre')) return;
+    const go = $('del-go'); go.disabled = true; go.textContent = 'Eliminando…'; $('del-er').hidden = true;
+    try {
+      if (act && act.id === s.id) await window.dash(); // si estaba abierta, se cierra antes (se guarda lo pendiente y se sueltan las escuchas)
+      await N.eliminarSesion(s.id, s);
+    } catch (e) {
+      $('del-er').textContent = 'No se pudo terminar de eliminar (' + (e.code || e.message) + '). La sesión sigue en la lista: puede reintentar y se retomará donde quedó.'; $('del-er').hidden = false;
+      go.disabled = false; go.innerHTML = '<i data-lucide="trash-2"></i>Reintentar'; lucide.createIcons(); return;
+    }
+    elim = null; $('dlg-del').close();
   };
   window.nueva = function () {
     ['f1', 'f4', 'f5'].forEach((id) => { $(id).value = ''; });
