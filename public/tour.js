@@ -51,6 +51,7 @@
       { sel: () => q('#s3 .tb'), t: 'Distintas lecturas', x: 'Perfil, Brechas, Plan, Hoja de ruta, Semáforo, Evolución, Alertas, Pizarra y Método. Cada una responde una pregunta distinta del cliente.' },
       { sel: () => q('#tab-t8'), t: 'Hoja de ruta', x: 'Cada brecha es una iniciativa con su beneficio (puntos de puntaje) y su esfuerzo, ordenadas en cuatro oleadas. Es el plan de adecuación.' },
       { sel: () => q('#tab-t9'), t: 'Evolución', x: 'Guarde el diagnóstico inicial y repita el diagnóstico a los 3, 6 y 12 meses para medir el avance contra la meta (nivel 3).' },
+      { sel: () => q('#tab-t11'), t: 'Tablero del plan', x: 'Convierta la hoja de ruta en un backlog con un clic y, con D360° Acompaña o Implementa, avance las tareas entre columnas con responsable, fecha y evidencia. El cliente solo las ve.' },
       { sel: () => q('#tab-t10'), t: 'Servicio contratado', x: 'Registre qué paquete contrata el cliente, su estado y el contrato (la referencia al documento del Drive). Registrarlo no activa nada solo: es la decisión que usted deja anotada.' },
       { sel: () => q('#tab-t7'), t: 'Método', x: 'Explica cómo se calculó, con los números de esta sesión. Sirve para responder «¿por qué este puntaje?».' },
       { sel: () => menu('.sb-it[data-id="cmp"]'), t: 'Publicar', x: 'Cuando esté conforme, comparta el enlace de resultados con el cliente. Si corrige una respuesta después, puede actualizar lo publicado.' }
@@ -70,6 +71,7 @@
       { sel: () => q('#s3 .eb'), t: 'Descargue', x: 'El PDF técnico, el Informe ejecutivo y el Acta de la reunión se pueden guardar para compartir en su organización.' },
       { sel: () => q('#s3 .tb'), t: 'Recorra las pestañas', x: 'Brechas, Plan de acción, Semáforo de obligaciones, Alertas y Pizarra con los comentarios de la reunión.' },
       { sel: () => q('#tab-t8'), t: 'Hoja de ruta', x: 'Qué hacer primero, qué planificar y qué dejar para después, con el beneficio y el esfuerzo de cada iniciativa.' },
+      { sel: () => q('#tab-t11'), t: 'Tablero del plan', x: 'El plan de adecuación como tareas: ve qué se hará primero y, cuando corresponda, cómo avanza. Lo actualiza su consultor.' },
       { sel: () => q('#tab-t10'), t: 'Su servicio', x: 'Aquí ve qué incluye su servicio actual y qué otros servicios existen. Si quiere avanzar, puede pedírselo a su consultor con un botón.' },
       { sel: () => q('#tab-t7'), t: 'Método', x: 'Explica cómo se calculó su resultado, con los números de su sesión.' }
     ] }

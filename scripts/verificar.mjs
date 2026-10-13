@@ -5,7 +5,7 @@ import vm from 'node:vm';
 
 const file = process.argv[2] || 'public/app.js';
 const code = fs.readFileSync(file, 'utf8');
-const codigoRuta = ['ruta.js', 'servicio.js'].map((f) => fs.readFileSync(path.join(path.dirname(file), f), 'utf8')).join('\n'); // hoja de ruta, evolución, servicio y documentos (se cargan después de app.js)
+const codigoRuta = ['ruta.js', 'servicio.js', 'tablero.js'].map((f) => fs.readFileSync(path.join(path.dirname(file), f), 'utf8')).join('\n'); // hoja de ruta, evolución, servicio y documentos (se cargan después de app.js)
 
 // stubs mínimos del navegador
 const el = () => ({ textContent: '', innerHTML: '', value: '', style: {}, classList: { add() {}, remove() {}, toggle() {} }, addEventListener() {}, setAttribute() {}, getContext: () => ({}) });
@@ -21,8 +21,8 @@ const sandbox = {
 };
 sandbox.globalThis = sandbox;
 vm.createContext(sandbox);
-vm.runInContext(code + '\n' + codigoRuta + '\n;globalThis.__t={SRV_P,SRV_E,SRV_ORD,SRV_V,SRV_SOLICITABLES,SRV_URL,SRV_ACT,EF,EF_N,EF_T,OLAS,RT_V,RT_ALTO,EVO_TIPOS,D,Q,A,CL,E2,en,SEC,SEC_F,SEC_DIM,SEC_N,SEC_J,SEC_K,SEC_V,SEC_B,SEC_BN,TAM,TAM_K,TAM_V,TAM_DIM};', sandbox);
-const { SRV_P, SRV_E, SRV_ORD, SRV_V, SRV_SOLICITABLES, SRV_URL, SRV_ACT, EF, EF_N, EF_T, OLAS, RT_V, RT_ALTO, EVO_TIPOS, D, Q, A, CL, E2, en, SEC, SEC_F, SEC_DIM, SEC_N, SEC_J, SEC_K, SEC_V, SEC_B, SEC_BN, TAM, TAM_K, TAM_V, TAM_DIM } = sandbox.__t;
+vm.runInContext(code + '\n' + codigoRuta + '\n;globalThis.__t={TAR_E,TAR_ORD,TAR_MAX,TAR_NIVEL,TAR_V,SRV_P,SRV_E,SRV_ORD,SRV_V,SRV_SOLICITABLES,SRV_URL,SRV_ACT,EF,EF_N,EF_T,OLAS,RT_V,RT_ALTO,EVO_TIPOS,D,Q,A,CL,E2,en,SEC,SEC_F,SEC_DIM,SEC_N,SEC_J,SEC_K,SEC_V,SEC_B,SEC_BN,TAM,TAM_K,TAM_V,TAM_DIM};', sandbox);
+const { TAR_E, TAR_ORD, TAR_MAX, TAR_NIVEL, TAR_V, SRV_P, SRV_E, SRV_ORD, SRV_V, SRV_SOLICITABLES, SRV_URL, SRV_ACT, EF, EF_N, EF_T, OLAS, RT_V, RT_ALTO, EVO_TIPOS, D, Q, A, CL, E2, en, SEC, SEC_F, SEC_DIM, SEC_N, SEC_J, SEC_K, SEC_V, SEC_B, SEC_BN, TAM, TAM_K, TAM_V, TAM_DIM } = sandbox.__t;
 
 let fallos = 0;
 const ok = (c, m) => { if (!c) { fallos++; console.log('  ✗ ' + m); } };
@@ -260,7 +260,7 @@ seccion('10. Sesiones guardadas (consultor y cliente)');
   ok((reglas.match(/if true/g) || []).length === 3 && /allow get: if true/.test(reglas) && /match \/pizarra\/\{eid\} \{\s+allow get, list: if true;/.test(reglas) && /match \/partes\/\{pid\} \{\s+allow get: if true;\s+allow list: if false;/.test(reglas), 'las únicas lecturas públicas son get de un resultado compartido, su pizarra publicada y el contenido de sus documentos (todo bajo el mismo token)');
   ok(/match \/sesiones\/\{id\}\s*\{\s*allow read, write: if esConsultor\(\);/.test(reglas), 'las sesiones solo las ven los consultores');
   ok(/email_verified == true/.test(reglas) && /request\.auth\.token\.email in \[/.test(reglas), 'los consultores se validan por correo verificado en una lista');
-  ok(/hasOnly\(\['perfil', 'respuestas', 'notas', 'revisiones', 'servicio', 'consultor', 'publicadoEn', 'version'\]\)/.test(reglas) && /token\.size\(\) == 32/.test(reglas), 'lo compartido solo admite esos campos (incluye quién lo preparó) y un token de 32 caracteres');
+  ok(/hasOnly\(\['perfil', 'respuestas', 'notas', 'revisiones', 'servicio', 'tareas', 'consultor', 'publicadoEn', 'version'\]\)/.test(reglas) && /token\.size\(\) == 32/.test(reglas), 'lo compartido solo admite esos campos (incluye quién lo preparó) y un token de 32 caracteres');
   ok(/match \/\{document=\*\*\}\s*\{\s*allow read, write: if false;/.test(reglas), 'todo lo demás debe estar denegado');
   ok(Array.isArray(fbj.firestore) && fbj.firestore.length === 1 && fbj.firestore[0].database === 'd360', 'solo debe publicarse la base d360 (nunca la (default) del portal)');
   const cfgTxt = leer('public/firebase-config.js');
@@ -778,7 +778,7 @@ seccion('20. Hoja de ruta por oleadas, evolución en el tiempo, informe ejecutiv
   const eC = rev(); eC.rev('Diagnóstico inicial', 1790000000000);
   const pb = eC.pub(); ok(Object.keys(pb).sort().join() === 'perfil,respuestas,revisiones' && pb.revisiones.length === 1 && Object.keys(pb.revisiones[0]).sort().join() === 'a,e,f,g,id,n,p', 'lo publicado lleva las revisiones (solo respuestas, perfil, nombre, fecha y puntaje)');
   ok(Object.keys(rev().pub()).sort().join() === 'perfil,respuestas', 'sin revisiones, lo publicado no cambia');
-  ok(JSON.stringify(pb).length < 20000 && /'revisiones', 'servicio', 'consultor'/.test(reglas) && /revisiones\.size\(\) <= 24/.test(reglas), 'las revisiones publicadas son pequeñas y las reglas las permiten (hasta 24)');
+  ok(JSON.stringify(pb).length < 20000 && /'revisiones', 'servicio', 'tareas', 'consultor'/.test(reglas) && /revisiones\.size\(\) <= 24/.test(reglas), 'las revisiones publicadas son pequeñas y las reglas las permiten (hasta 24)');
   const eCl = new E2(); eCl.cargar(JSON.parse(JSON.stringify(pb))); ok(eCl.rv.length === 1 && eCl.rv[0].e === 'Diagnóstico inicial', 'el cliente carga las revisiones publicadas');
 
   // evolución: puntos recalculados con el modelo vigente
@@ -951,7 +951,7 @@ seccion('24. Tour guiado para el consultor y para el cliente');
   const R = vm.runInNewContext('(function(){ const menu = () => null, q = () => null; return {' + m[1] + '\n }; })()');
   const nombres = Object.keys(R);
   ok(['panel', 'sesion', 'resultados', 'invitado', 'cliente'].every((k) => nombres.includes(k)) && nombres.length === 5, 'hay cinco recorridos: panel, sesión y resultados del consultor, y reunión en vivo y resultados del cliente');
-  ok(nombres.every((k) => R[k].nombre && R[k].pasos.length >= 6 && R[k].pasos.length <= 8 && R[k].pasos.every((p) => p.t && p.x && p.t.length <= 40 && p.x.length >= 40 && p.x.length <= 260)), 'cada recorrido tiene entre 6 y 8 pasos, con un título corto y una explicación breve');
+  ok(nombres.every((k) => R[k].nombre && R[k].pasos.length >= 6 && R[k].pasos.length <= 9 && R[k].pasos.every((p) => p.t && p.x && p.t.length <= 40 && p.x.length >= 40 && p.x.length <= 260)), 'cada recorrido tiene entre 6 y 9 pasos, con un título corto y una explicación breve');
   ok(nombres.every((k) => R[k].pasos.filter((p) => !p.sel).length <= 2), 'solo la bienvenida y el cierre pueden no apuntar a un elemento');
   // los elementos a los que apuntan existen en la aplicación
   const sels = [...tj.matchAll(/q\('([^']+)'\)|menu\('([^']+)'\)/g)].map((x) => x[1] || x[2]);
@@ -1202,6 +1202,104 @@ seccion('28. Eliminar sesiones (consultor) y salir de la reunión (invitado)');
   ok(/export async function vivoSalir\(tk, pid\)/.test(ng) && /export async function vivoSalir\(tk, pid\)/.test(np), 'la capa de datos (nube y prueba) tiene vivoSalir');
   ok(/allow delete: if esConsultor\(\) \|\| enlaceVigente\(\);/.test(rg.slice(rg.indexOf('match /presentes/'), rg.indexOf('// Pizarra en vivo'))), 'las reglas dejan al invitado quitar su presencia mientras el enlace esté vigente');
   ok(/Para salir de la reunión, use «Salir»\./.test(leer20('public/tour.js')), 'el tour del invitado dice cómo salir');
+}
+
+seccion('29. Backlog y tablero kanban del plan');
+{
+  const raiz21 = path.resolve(path.dirname(file), '..');
+  const leer21 = (f) => fs.readFileSync(path.join(raiz21, f), 'utf8').replace(/\r\n/g, '\n');
+  const tj = leer21('public/tablero.js'), aj = leer21('public/app.js'), ih = leer21('public/index.html'), lj = leer21('public/lateral.js'), ng = leer21('public/nube.js'), np = leer21('public/nube-prueba.js'), rg = leer21('firestore.d360.rules'), cs = leer21('public/styles.css'), tourj = leer21('public/tour.js');
+  const sb = sandbox;
+  const armar = (perfil, f) => { const e = new E2(); e.p = perfil; Q.filter((q) => !q.iS).forEach((q, i) => { e.a[q.id] = f(q, i); }); return e; };
+  const mixto = (q, i) => (i * 7 + 1) % 4;
+  const guardados = []; // el motor guarda al cambiar: se cuentan las llamadas
+  const nuevo = (srv) => { const e = armar({ sector: 'salud', 'tamaño': '51-200' }, mixto); e.srv = srv || null; e.sv = () => { guardados.push(1); }; return e; };
+
+  // ── datos ──
+  ok(TAR_ORD.join() === 'backlog,por_hacer,en_curso,revision,hecha' && Object.keys(TAR_E).join() === TAR_ORD.join() && TAR_E.revision === 'En revisión' && TAR_E.hecha === 'Hecho', 'las columnas son Backlog, Por hacer, En curso, En revisión y Hecho');
+  ok(TAR_MAX === 120 && TAR_NIVEL === 3 && /^\d+\.\d+$/.test(TAR_V), 'el tablero admite hasta 120 tareas y se activa desde el nivel 3 (Acompaña o Implementa)');
+
+  // ── lo que viene de la base de datos nunca se usa tal cual ──
+  const L = sb.tarLimpio;
+  ok(Array.isArray(L(null)) && L(null).length === 0 && L('x').length === 0 && L({}).length === 0 && L([null, 5, 'x', {}, { id: '', t: 'a' }, { id: 'a1', t: '   ' }]).length === 0, 'una lista vacía, mal formada o con tareas sin id o sin título se descarta');
+  const b1 = L([{ id: 'ab-c!1', t: '<b>Hacer</b>   algo\n importante', e: 'robada', ola: 9, qid: 'NO-EXISTE', r: 'x'.repeat(100), v: 'no', h: -3, n: 'n'.repeat(500), ev: { n: 'e'.repeat(200), u: 'javascript:alert(1)' }, c: 'x' }])[0];
+  ok(b1.id === 'abc1' && b1.t === 'Hacer algo importante' && b1.e === 'backlog' && b1.ola === 4 && b1.qid === '' && b1.r.length === 60 && b1.v === 0 && b1.h === 0 && b1.n.length === 300 && b1.ev.n.length === 80 && b1.ev.u === '' && b1.c === 0, 'se limpian las etiquetas y los espacios, se limitan los largos y un estado, una oleada, una pregunta o un enlace inválidos se corrigen');
+  ok(L([{ id: 'a', t: 'Uno' }, { id: 'a', t: 'Dos' }, { id: 'b', t: 'Tres' }]).map((t) => t.t).join() === 'Uno,Tres', 'un id repetido se descarta');
+  ok(L(Array.from({ length: 200 }, (_, i) => ({ id: 'x' + i, t: 'T' + i }))).length === TAR_MAX, 'nunca hay más de 120 tareas');
+  ok(L([{ id: 'a', t: 'x', e: 'en_curso', ola: 2, qid: 'GOB-01', ev: { u: 'https://drive.google.com/x' }, v: 1790000000000, h: 1790000100000 }])[0].qid === 'GOB-01' && L([{ id: 'a', t: 'x', ev: { u: 'https://drive.google.com/x' } }])[0].ev.u === 'https://drive.google.com/x', 'una pregunta real y un enlace https se conservan');
+  const pubT = sb.tarPublico([{ id: 'a', t: 'x', e: 'hecha', ola: 1, qid: 'GOB-01', r: 'Ana', v: 5, h: 6, n: 'interna', ev: { n: 'Acta', u: 'https://x.cl/a' }, c: 9 }]);
+  ok(JSON.stringify(Object.keys(pubT[0]).sort()) === JSON.stringify(['e', 'h', 'id', 'ola', 'qid', 'r', 't', 'v']), 'al cliente solo viaja el título, el estado, la oleada, el responsable y las fechas (nunca la nota interna ni la evidencia)');
+
+  // ── backlog desde la hoja de ruta ──
+  const e1 = nuevo(), rt = sb.ruta(e1), n1 = sb.tarDesdeRuta(e1);
+  ok(n1.length === rt.items.length && n1.every((t, i) => t.qid === rt.items[i].q.id && t.ola === rt.items[i].ola && t.e === 'backlog' && /^[a-z0-9]{10}$/.test(t.id) && t.t.startsWith(t.qid + ' · ')), 'se crea una tarea por brecha, en el orden y la oleada de la hoja de ruta, todas en el backlog');
+  ok(n1.every((t) => t.t.length <= 120 && !/</.test(t.t)) && new Set(n1.map((t) => t.id)).size === n1.length, 'los títulos son cortos y sin etiquetas, y cada tarea tiene un id propio');
+  e1.tar = n1.slice(0, 5); const n2 = sb.tarDesdeRuta(e1);
+  ok(n2.length === n1.length - 5 && n2.every((t) => !e1.tar.some((x) => x.qid === t.qid)), 'volver a generar solo agrega las brechas que no tienen tarea (no duplica ni pisa)');
+  e1.tar = n1; ok(sb.tarDesdeRuta(e1).length === 0, 'con todas las tareas creadas, no hay nada que agregar');
+  const mucho = nuevo(); mucho.tar = Array.from({ length: TAR_MAX - 2 }, (_, i) => ({ id: 'z' + i, t: 'T', e: 'backlog', ola: 1, qid: '', r: '', v: 0, h: 0, n: '', ev: { n: '', u: '' }, c: 0 })); ok(sb.tarDesdeRuta(mucho).length <= 2, 'la lista generada respeta el máximo de 120');
+
+  // ── mover tareas ──
+  const t0 = e1.tar[0], antesG = guardados.length;
+  ok(sb.tarEstado(e1, t0.id, 'en_curso') && t0.e === 'en_curso' && t0.h === 0 && guardados.length === antesG + 1, 'mover una tarea cambia su estado y guarda');
+  ok(sb.tarEstado(e1, t0.id, 'hecha') && t0.e === 'hecha' && t0.h > 0 && sb.tarEstado(e1, t0.id, 'revision') && t0.h === 0, 'completar una tarea registra la fecha y devolverla la quita');
+  ok(!sb.tarEstado(e1, t0.id, 'inventado') && !sb.tarEstado(e1, 'noexiste', 'hecha') && !sb.tarEstado({ ...e1, ro: true, tar: e1.tar, sv() {} }, t0.id, 'hecha'), 'un estado inventado, una tarea inexistente o una sesión de solo lectura no cambian nada');
+  ok(armar({}, mixto).p && (() => { const r = armar({ sector: 'salud' }, mixto); r.tar = []; return r.sc().g; })() === armar({ sector: 'salud' }, mixto).sc().g && (() => { const x = nuevo(); x.tar = n1.map((t) => ({ ...t, e: 'hecha', h: 1 })); return x.sc().g === nuevo().sc().g && JSON.stringify(x.a) === JSON.stringify(nuevo().a); })(), 'completar tareas NO cambia las respuestas ni el puntaje: el diagnóstico solo cambia al guardar una revisión');
+
+  // ── resumen del avance ──
+  const x = nuevo(); x.tar = n1.map((t) => ({ ...t })); x.tar[0].e = 'hecha'; x.tar[1].e = 'hecha'; x.tar[2].e = 'en_curso';
+  const R = sb.tarResumen(x), gan = Object.fromEntries(sb.ruta(x).items.map((i) => [i.q.id, i.gain]));
+  ok(R.total === n1.length && R.hechas === 2 && R.por.en_curso === 1 && R.por.backlog === n1.length - 3 && R.pct === Math.round(2 / n1.length * 100), 'el resumen cuenta las tareas por estado y el porcentaje hecho');
+  ok(Math.abs(R.confirmable - (gan[x.tar[0].qid] + gan[x.tar[1].qid])) < 1e-9 && R.confirmable > 0, 'el resumen dice cuántos puntos sumarían las tareas hechas al confirmarlas en una revisión');
+  ok(R.olas[1][1] + R.olas[2][1] + R.olas[3][1] + R.olas[4][1] === n1.length && R.olas[x.tar[0].ola][0] >= 1, 'el avance también se cuenta por oleada');
+  const dia = (d) => new Date(2026, 10, d, 9).getTime();
+  ok(sb.tarVencida({ v: dia(10), e: 'en_curso' }, dia(12)) && !sb.tarVencida({ v: dia(10), e: 'hecha' }, dia(12)) && !sb.tarVencida({ v: dia(12), e: 'en_curso' }, dia(12)) && !sb.tarVencida({ v: 0, e: 'en_curso' }, dia(12)) && sb.tarVencida({ v: dia(11), e: 'por_hacer' }, dia(12)), 'una tarea está vencida si su fecha pasó y no está hecha (el mismo día no cuenta)');
+
+  // ── activación según el servicio ──
+  const S = (paquete, estado) => ({ paquete, estado, ref: { n: '', u: '' }, hitos: {}, por: '', en: 0 });
+  ok(!sb.tarActivo(nuevo()) && !sb.tarActivo(nuevo(S('inicia', 'activa'))) && !sb.tarActivo(nuevo(S('evalua', 'activa'))) && !sb.tarActivo(nuevo(S('combo', 'activa'))) && !sb.tarActivo(nuevo(S('acompana', 'propuesta'))) && !sb.tarActivo(nuevo(S('acompana', 'aceptada'))), 'sin servicio, con Inicia, Evalúa, Combo o un Acompaña que aún no está activo, el tablero no está activo');
+  ok(sb.tarActivo(nuevo(S('acompana', 'activa'))) && sb.tarActivo(nuevo(S('implementa', 'activa'))) && sb.tarActivo(nuevo(S('acompana', 'entregada'))), 'con Acompaña o Implementa activos, el tablero se activa');
+
+  // ── pantalla ──
+  const gid = sb.document.getElementById; sb.document.getElementById = () => ({ ...el(), options: [] });
+  const vacio = nuevo(), hVacioA = sb.tarHtml(vacio, 'auditor'), hVacioC = sb.tarHtml(vacio, 'cliente');
+  const conT = nuevo(); conT.tar = n1.map((t) => ({ ...t })); const hBackA = sb.tarHtml(conT, 'auditor'), hBackC = sb.tarHtml(conT, 'cliente');
+  const act = nuevo(S('acompana', 'activa')); act.tar = n1.map((t) => ({ ...t })); act.tar[0].e = 'en_curso'; act.tar[0].r = 'Ana <i>Soto</i>'; act.tar[0].v = Date.now() - 5 * 86400000; act.tar[1].e = 'hecha'; act.tar[1].h = Date.now(); act.tar[1].ev = { n: 'Acta', u: 'https://drive.google.com/file/d/x' }; act.tar[2].t = 'Tarea <script>x</script> rara'; act.tar[2].n = 'NOTA-INTERNA-SECRETA';
+  const hTabA = sb.tarHtml(act, 'auditor'), hTabC = sb.tarHtml(act, 'cliente');
+  sb.document.getElementById = gid;
+  ok(/Crear el backlog desde la hoja de ruta \(\d+\)/.test(hVacioA) && /onclick="tarGenerar\(\)"/.test(hVacioA) && /Aún no hay tareas/.test(hVacioA), 'el consultor ve el botón para crear el backlog desde la hoja de ruta, con cuántas tareas traería');
+  ok(/Su consultor aún no publicó el plan de trabajo como tareas/.test(hVacioC) && !/tarGenerar/.test(hVacioC), 'el cliente, sin tareas, ve que su consultor aún no las publicó y no tiene botones');
+  ok(/El plan de adecuación como <strong>backlog<\/strong>, ordenado por oleadas/.test(hBackC) && /se activa con <strong>D360° Acompaña<\/strong> o <strong>D360° Implementa<\/strong>/.test(hBackC) && !/kb-tablero/.test(hBackC) && /Ola 1 · Hacer primero/.test(hBackC) && !/tarEditar|tarMover|draggable/.test(hBackC), 'sin Acompaña o Implementa, el cliente ve el backlog por oleadas (solo lectura) y que el tablero se activa con esos servicios');
+  ok(/Agregar al backlog las brechas nuevas|Crear el backlog/.test(hBackA) && /srvDlg\(\)/.test(hBackA) && !/kb-tablero/.test(hBackA) && /tarEditar\('/.test(hBackA) && !/tarMover/.test(hBackA), 'sin el servicio, el consultor ve el backlog editable, el acceso para registrar el servicio y ningún selector de estado');
+  ok(/kb-tablero/.test(hTabA) && TAR_ORD.every((k) => hTabA.includes('data-e="' + k + '"') && hTabC.includes('data-e="' + k + '"')) && (hTabA.match(/draggable="true"/g) || []).length === n1.length && (hTabA.match(/onchange="tarMover\(/g) || []).length === n1.length, 'con el servicio activo se ven las cinco columnas y el consultor puede arrastrar cada tarea o cambiar su estado con un selector');
+  ok(!/draggable|tarMover|tarEditar|tarGenerar|tarNueva/.test(hTabC) && /actualizado por su consultor/.test(hTabC), 'el cliente ve el tablero sin poder mover ni editar nada');
+  ok(/Ana &lt;i&gt;Soto&lt;\/i&gt;/.test(hTabA) && !/<i>Soto<\/i>/.test(hTabA) && /Tarea &lt;script&gt;x&lt;\/script&gt; rara|Tarea  rara|Tarea x rara/.test(hTabA) && !/<script>x/.test(hTabA), 'lo que escribe el consultor se escapa y se limpia antes de mostrarse');
+  ok(/vencida/.test(hTabA) && /1 tarea vencida/.test(hTabA) && /kb-ven/.test(hTabA), 'una tarea vencida se marca y se cuenta');
+  ok(/Las tareas hechas podrían sumar <strong>\+/.test(hTabA) && /el puntaje solo cambia al guardar una revisión/.test(hTabA) && !/Las tareas hechas podrían sumar/.test(hTabC), 'el consultor ve cuántos puntos sumarían las tareas hechas y que el puntaje solo cambia con una revisión; el cliente no ve ese cálculo');
+  ok(/Completar una tarea registra el avance, pero no cambia la respuesta de la pregunta ni el puntaje/.test(hTabA) && /Completar una tarea no cambia el puntaje/.test(sb.tarHtml(conT, 'cliente')), 'ambas vistas aclaran que completar una tarea no cambia el puntaje');
+  ok(!/NOTA-INTERNA-SECRETA/.test(hTabC) && !/drive\.google\.com\/file\/d\/x/.test(sb.tarHtml(Object.assign(nuevo(S('acompana', 'activa')), { tar: sb.tarLimpio(sb.tarPublico(act.tar)) }), 'cliente')), 'el cliente nunca ve la nota interna ni el enlace de evidencia (no viajan en lo publicado)');
+  ok(/<a href="https:\/\/drive\.google\.com\/file\/d\/x" target="_blank" rel="noopener noreferrer"/.test(hTabA), 'la evidencia del consultor es un enlace https que se abre en otra pestaña sin dar acceso a la página');
+
+  // ── el motor y la conexión con el resto ──
+  const eC = new E2(); eC.cargar({ perfil: {}, respuestas: {}, tareas: [{ id: 'q1', t: 'Una tarea', e: 'hecha', ola: 1 }, { id: 5 }, null] });
+  ok(eC.tar.length === 1 && eC.tar[0].e === 'hecha' && new E2().tar.length === 0, 'al cargar una sesión se normalizan las tareas y un motor nuevo no trae ninguna');
+  const eP = nuevo(); eP.tar = n1.map((t) => ({ ...t, n: 'secreta' }));
+  ok(Object.keys(eP.pub()).sort().join() === 'perfil,respuestas,tareas' && eP.pub().tareas.every((t) => !('n' in t) && !('ev' in t)) && Object.keys(nuevo().pub()).sort().join() === 'perfil,respuestas', 'lo publicado lleva las tareas sin notas ni evidencia, y sin tareas no cambia');
+  const eR = new E2(); eR.tar = [{ id: 'a' }]; eR.rs(); ok(eR.tar.length === 0, 'reiniciar el motor limpia las tareas');
+  ok(/\['t11','kanban','Tablero',\(en\.tar\|\|\[\]\)\.length\|\|''\]/.test(aj) && /id="t11"/.test(aj) && /tarHtml\(en,modo\)/.test(aj) && /tarLimpio\(d\.tareas\)/.test(aj) && /tarPublico\(this\.tar\)/.test(aj), 'los resultados tienen la pestaña «Tablero» para el consultor y el cliente');
+  ok(/<dialog class="dlg dlg-tarea" id="dlg-tarea" aria-labelledby="tarea-t">/.test(ih) && /<script src="servicio\.js"><\/script>\s*<script src="tablero\.js"><\/script>/.test(ih), 'la página tiene el diálogo de la tarea y carga tablero.js después de servicio.js');
+  ok(/id: 'tab', ic: 'kanban', t: 'Tablero', fn: \(\) => irRes\('t11'\)/.test(lj) && /!\['t8', 't9', 't11'\]\.includes\(tabActual\(\)\)/.test(lj), 'el menú lateral tiene «Tablero» con el avance (hechas/total)');
+  ok(/tareas: en\.tar && en\.tar\.length \? en\.tar : null/.test(ng) && /tareas: en\.tar && en\.tar\.length \? en\.tar : null/.test(np), 'el guardado automático incluye las tareas (en la nube y en el modo de prueba)');
+  ok(/function tareasPub\(d\)/.test(rg) && /d\.tareas is list && d\.tareas\.size\(\) <= 120/.test(rg) && /'servicio', 'tareas', 'consultor'/.test(rg), 'las reglas permiten publicar hasta 120 tareas');
+  ok(/@media print\{#t11\{display:none!important\}\}/.test(cs) && /\.kb-tablero\{display:grid;grid-template-columns:repeat\(5,minmax\(230px,1fr\)\);gap:12px;overflow-x:auto/.test(cs), 'el tablero no sale en el PDF y en pantallas angostas se desplaza hacia el lado');
+  ok(/id="tar-t" maxlength="120"/.test(tj) && /id="tar-eu" type="url"/.test(tj) && /El enlace debe empezar con https:\/\//.test(tj) && /Nota interna <span class="opc">\(no la ve el cliente\)/.test(tj) && /confirm\('¿Eliminar esta tarea\? No se puede deshacer\.'\)/.test(tj), 'el formulario valida el título y el enlace, avisa que la nota es interna y confirma antes de eliminar');
+  ok(/El estado se puede cambiar cuando el servicio contratado sea D360° Acompaña o Implementa/.test(tj) && /<select id="tar-e"\$\{act \? '' : ' disabled'\}>/.test(tj), 'sin el servicio activo, el estado de la tarea no se puede cambiar');
+  ok(/dragstart/.test(tj) && /dragover/.test(tj) && /drop/.test(tj) && /aria-label="Estado de la tarea/.test(tj), 'se puede arrastrar entre columnas y, para el teclado y los lectores de pantalla, usar el selector de estado');
+  ok(/#tab-t11/.test(tourj) && /Tablero del plan/.test(tourj), 'los tours mencionan el tablero');
+  // los nombres de clase nuevos no chocan con los de antes
+  const mk = '/* ── tablero kanban del plan ── */', bloque = cs.slice(cs.indexOf(mk)), previo = cs.slice(0, cs.indexOf(mk));
+  const nuevas = [...new Set([...bloque.matchAll(/\.(kb-[\w-]+)/g)].map((m2) => m2[1]))];
+  ok(nuevas.length > 25 && nuevas.every((c2) => !new RegExp('\\.' + c2.replace(/-/g, '\\-') + '(?![\\w-])').test(previo)), 'ninguno de los ' + nuevas.length + ' nombres de clase nuevos ya existía');
 }
 
 console.log('\n' + (fallos ? '✗ ' + fallos + ' problema(s)' : '✓ Todas las verificaciones pasaron'));

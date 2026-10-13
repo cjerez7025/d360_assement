@@ -95,6 +95,11 @@ service cloud.firestore {
             && d.servicio.estado in ['propuesta', 'aceptada', 'activa', 'entregada']);
     }
 
+    // Tareas del plan que ve el cliente (solo lectura): hasta 120.
+    function tareasPub(d) {
+      return !('tareas' in d) || (d.tareas is list && d.tareas.size() <= 120);
+    }
+
     // Sesiones de diagnóstico (respuestas, notas de la reunión, datos del cliente): solo consultores.
     match /sesiones/{id} {
       allow read, write: if esConsultor();
@@ -120,9 +125,10 @@ service cloud.firestore {
       allow list: if false;
       allow create, update: if esConsultor()
         && token.size() == 32
-        && request.resource.data.keys().hasOnly(['perfil', 'respuestas', 'notas', 'revisiones', 'servicio', 'consultor', 'publicadoEn', 'version'])
+        && request.resource.data.keys().hasOnly(['perfil', 'respuestas', 'notas', 'revisiones', 'servicio', 'tareas', 'consultor', 'publicadoEn', 'version'])
         && consultorOk(request.resource.data)
         && servicioPub(request.resource.data)
+        && tareasPub(request.resource.data)
         && (!('revisiones' in request.resource.data)
             || (request.resource.data.revisiones is list && request.resource.data.revisiones.size() <= 24));
       allow delete: if esConsultor();

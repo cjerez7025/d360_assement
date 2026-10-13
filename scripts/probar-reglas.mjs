@@ -101,6 +101,15 @@ c('resultados: un paquete inventado no vale', 'DENY', 'create', `/compartidos/${
 c('resultados: un estado inventado no vale', 'DENY', 'create', `/compartidos/${CT}`, { auth: consultor, data: SRVP({ paquete: 'evalua', estado: 'pagado' }) });
 c('resultados: el servicio incompleto no vale', 'DENY', 'create', `/compartidos/${CT}`, { auth: consultor, data: SRVP({ paquete: 'evalua' }) });
 c('sesión: el consultor guarda el servicio contratado', 'ALLOW', 'update', `/sesiones/${SID}`, { auth: consultor, data: { servicio: { paquete: 'evalua', estado: 'aceptada', ref: { n: 'Propuesta 14', u: 'https://drive.google.com/x' }, hitos: { anticipo: 1790000000000 } } }, existente: { perfil: {} } });
+const TARP = (l) => ({ perfil: {}, respuestas: {}, tareas: l, publicadoEn: T0, version: 'd360v3' });
+const TAREA = { id: 'abc123', t: 'GOB-02 · Política publicada', e: 'en_curso', ola: 1, qid: 'GOB-02', r: 'Ana', v: 0, h: 0 };
+c('resultados: se publican las tareas del plan', 'ALLOW', 'create', `/compartidos/${CT}`, { auth: consultor, data: TARP([TAREA]) });
+c('resultados: hasta 120 tareas', 'ALLOW', 'create', `/compartidos/${CT}`, { auth: consultor, data: TARP(Array(120).fill(TAREA)) });
+c('resultados: más de 120 tareas no', 'DENY', 'create', `/compartidos/${CT}`, { auth: consultor, data: TARP(Array(121).fill(TAREA)) });
+c('resultados: las tareas deben ser una lista', 'DENY', 'create', `/compartidos/${CT}`, { auth: consultor, data: TARP('x') });
+c('resultados: otra persona no publica tareas', 'DENY', 'create', `/compartidos/${CT}`, { auth: otro, data: TARP([TAREA]) });
+c('sesión: el consultor guarda las tareas', 'ALLOW', 'update', `/sesiones/${SID}`, { auth: consultor, data: { tareas: [{ ...TAREA, n: 'nota interna', ev: { n: 'Acta', u: 'https://drive.google.com/x' } }] }, existente: { perfil: {} } });
+c('sesión: sin cuenta no se guardan tareas', 'DENY', 'update', `/sesiones/${SID}`, { data: { tareas: [TAREA] }, existente: { perfil: {} } });
 const VIVO = `/en_vivo/${TK}/pizarra/${ID}`, SES = `/sesiones/${SID}/pizarra/${ID}`, COM = `/compartidos/${CT}/pizarra/${ID}`;
 
 // pizarra en vivo · cliente (sin cuenta)

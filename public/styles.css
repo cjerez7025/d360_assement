@@ -1305,3 +1305,44 @@ dialog.dlg-srv{max-width:640px}
 .be-del:hover{background:var(--lv0-soft);border-color:color-mix(in srgb,var(--lv0-ink) 40%,transparent)}
 .del-l{margin:8px 0 12px;padding-left:20px;display:grid;gap:4px}
 dialog.dlg-del{max-width:560px}
+
+/* ── tablero kanban del plan ── */
+.kb-bar{display:flex;flex-wrap:wrap;gap:10px;margin:12px 0}
+.kb-res{display:grid;gap:8px;margin:12px 0;padding:14px 16px;border-radius:var(--rm);background:var(--glass-bg-2);border:1px solid var(--glass-bd)}
+.kb-barra{height:8px;margin-top:6px;border-radius:99px;background:var(--sunk);overflow:hidden}
+.kb-barra i{display:block;height:100%;border-radius:inherit;background:var(--btn-grad)}
+.kb-n{display:inline-block;margin:2px 10px 2px 0;font-size:var(--fs-sm);color:var(--text-2)}
+.kb-n b{font-variant-numeric:tabular-nums;color:var(--text)}
+.kb-rojo{color:var(--lv0-ink);font-weight:600}.kb-verde{color:var(--lv4-ink);font-weight:600}
+.kb-rojo svg,.kb-verde svg{width:16px;height:16px;vertical-align:-3px}
+.kb-tablero{display:grid;grid-template-columns:repeat(5,minmax(230px,1fr));gap:12px;overflow-x:auto;padding-bottom:8px;scrollbar-width:thin}
+.kb-col{min-width:0;padding:10px;border-radius:var(--rm);background:var(--glass-bg-2);border:1px solid var(--glass-bd);transition:background .15s,border-color .15s}
+.kb-col>h4{display:flex;align-items:center;justify-content:space-between;margin:2px 4px 10px;font-size:var(--fs-base)}
+.kb-col>h4 span{min-width:24px;padding:1px 8px;border-radius:99px;background:var(--sunk);font-size:var(--fs-xs);text-align:center}
+.kb-col-hecha>h4{color:var(--lv4-ink)}.kb-col-en_curso>h4{color:var(--lv2-ink)}.kb-col-revision>h4{color:var(--lv3-ink)}
+.kb-cuerpo{display:grid;gap:10px;align-content:start;min-height:80px}
+.kb-vacio{padding:14px 8px;text-align:center;color:var(--muted);font-size:var(--fs-sm)}
+.kb-sobre{background:color-mix(in srgb,var(--brand) 14%,var(--glass-bg-2));border-color:var(--brand-ink)}
+.kb-t{padding:12px 14px;border-radius:var(--rs);background:var(--surface);border:1px solid var(--border);border-left-width:4px;box-shadow:var(--shadow-sm);min-width:0}
+.kb-t[draggable="true"]{cursor:grab}.kb-arr{opacity:.45}
+.kb-ola1{border-left-color:var(--lv0-mark)}.kb-ola2{border-left-color:var(--lv1-mark)}.kb-ola3{border-left-color:var(--lv3-mark)}.kb-ola4{border-left-color:var(--lvn-mark)}
+.kb-ven{box-shadow:0 0 0 2px color-mix(in srgb,var(--lv0-mark) 45%,transparent),var(--shadow-sm)}
+.kb-h{display:flex;flex-wrap:wrap;gap:4px 8px;margin-bottom:4px;font-size:var(--fs-xs);color:var(--muted)}
+.kb-h .kb-ola{font-weight:700;color:var(--text-2)}
+.kb-tit{display:block;width:100%;margin:0 0 4px;padding:0;border:0;background:none;text-align:left;font:700 var(--fs-base)/1.35 var(--font-b);color:var(--text);overflow-wrap:anywhere}
+button.kb-tit{cursor:pointer;text-decoration:underline;text-decoration-color:transparent;text-underline-offset:3px}
+button.kb-tit:hover{text-decoration-color:var(--brand-ink);color:var(--brand-ink)}
+.kb-q{margin:0 0 6px;font-size:var(--fs-sm);color:var(--text-2);overflow-wrap:anywhere}
+.kb-m{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:var(--fs-sm);color:var(--text-2)}
+.kb-m span,.kb-m a{display:inline-flex;align-items:center;gap:4px;min-width:0;overflow-wrap:anywhere}
+.kb-m svg{width:14px;height:14px}
+.kb-ev{color:var(--brand-ink)}
+.kb-mv{display:block;margin-top:8px}
+.kb-mv select{width:100%;min-height:36px;padding:4px 8px;border-radius:var(--rs);border:1.5px solid var(--field);background:var(--glass-bg);font-size:var(--fs-sm)}
+.kb-ola-g{margin-top:18px}
+.kb-ola-g h4{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.kb-ola-g h4 span{padding:1px 8px;border-radius:99px;background:var(--sunk);font-size:var(--fs-xs)}
+.kb-lista{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px}
+dialog.dlg-tarea{max-width:600px}
+dialog.dlg-tarea textarea{width:100%;padding:10px 14px;border-radius:var(--rs);border:1.5px solid var(--field);background:var(--glass-bg);font:inherit;resize:vertical}
+@media print{#t11{display:none!important}}

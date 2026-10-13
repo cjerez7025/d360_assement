@@ -266,6 +266,16 @@
   </div>
 </dialog>
 
+<dialog class="dlg dlg-tarea" id="dlg-tarea" aria-labelledby="tarea-t">
+  <div class="dlg-in">
+    <div class="dlg-h">
+      <h2 id="tarea-t"><i data-lucide="kanban"></i> Tarea</h2>
+      <button type="button" class="dlg-x" onclick="document.getElementById('dlg-tarea').close()" aria-label="Cerrar">×</button>
+    </div>
+    <div id="tarea-slot"></div>
+  </div>
+</dialog>
+
 <dialog class="dlg dlg-del" id="dlg-del" aria-labelledby="del-t">
   <div class="dlg-in">
     <div class="dlg-h">
@@ -366,6 +376,7 @@
 <script src="app.js"></script>
 <script src="ruta.js"></script>
 <script src="servicio.js"></script>
+<script src="tablero.js"></script>
 <script src="pizarra.js"></script>
 <script src="sesiones.js"></script>
 <script src="vivo.js"></script>
