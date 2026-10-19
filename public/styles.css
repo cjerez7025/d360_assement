@@ -406,16 +406,6 @@ svg{flex-shrink:0}
 .clt .ca{font-size:var(--fs-sm);color:var(--muted);display:block;margin-top:1px}
 
 /* llamado a la acción */
-.cta{background:linear-gradient(165deg,var(--navy),var(--navy-soft));border-radius:var(--r);padding:44px 32px;color:var(--on-navy);text-align:center;margin-top:24px;position:relative;overflow:hidden;isolation:isolate;--focus:#5EEAD4}
-.cta::before{content:'';position:absolute;width:440px;height:440px;background:radial-gradient(circle,rgba(0,184,148,.11) 0%,transparent 65%);top:-40%;right:-12%;border-radius:50%}
-.cta>*{position:relative;z-index:1}
-.cta h3{font-family:var(--font-d);font-size:1.5rem;font-weight:800;margin-bottom:10px;letter-spacing:-.02em}
-.cta p{color:var(--on-navy-2);margin-bottom:26px;font-size:var(--fs-md);max-width:480px;margin-left:auto;margin-right:auto;line-height:1.6}
-.cta p strong{color:var(--on-navy)}
-.cta-s{text-align:left;max-width:440px;margin:0 auto 28px;font-size:var(--fs-base);line-height:1.5;display:flex;flex-direction:column;gap:12px}
-.cta-s div{display:flex;gap:10px;align-items:flex-start}
-.cta-s svg{width:18px;height:18px;color:var(--navy-brand);margin-top:2px}
-.cta-b{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
 .bc{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:12px 24px;border-radius:var(--rs);font-weight:700;font-size:var(--fs-base);border:none;text-decoration:none}
 .bc svg{width:17px;height:17px}
 .bcp{background:var(--brand);color:var(--on-brand)}
@@ -646,7 +636,7 @@ a.be{text-decoration:none}
     --lv4-ink:#166534;--lv4-soft:#DCFCE7;--lv4-mark:#15803D;
     --lvn-ink:#475467;--lvn-soft:#E8EDEB;--lvn-mark:#667085}
   *{-webkit-print-color-adjust:exact;print-color-adjust:exact;animation:none!important;transition:none!important}
-  .topbar,.eb,.ebn,.cta,.tb,.qn,.bq,.key,.skip,.cbanner,.pbanner,.pp-act,.idxp,dialog{display:none!important}
+  .topbar,.eb,.ebn,.tb,.qn,.bq,.key,.skip,.cbanner,.pbanner,.pp-act,.idxp,dialog{display:none!important}
   body{background:#fff!important;min-height:0}
   .nvbar{display:none!important}
   .wrap{max-width:100%;padding:0}
@@ -744,7 +734,6 @@ a.be{text-decoration:none}
   .br.nm{grid-template-columns:1fr;grid-template-areas:"bm" "pill"}
   .qn{flex-direction:column-reverse}
   .bb{justify-content:center}
-  .cta{padding:34px 20px}
   .bc{width:100%}
   .nvbar-in{flex-wrap:wrap}
   .nvbar .pn-scale{order:3;margin-left:auto;width:70px}
