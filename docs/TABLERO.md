@@ -20,6 +20,19 @@ El tablero depende del servicio contratado (ver `SERVICIO.md`):
 
 Si el servicio deja de estar activo, el cliente vuelve a ver solo el backlog.
 
+## El tablero (estilo Jira)
+
+Con Acompaña o Implementa activo, el plan se ve como un tablero de Jira con carriles:
+
+- **Columnas por estado**, todas a la vez: Backlog · Por hacer · En curso · En revisión · Hecho. Con pantalla ancha la página se ensancha para que quepan sin desplazar; en celular se apilan.
+- **Un carril por etapa** (Etapa 1 · Hacer primero, etc.), con su plazo y cuántas tareas de la etapa están hechas. Cada carril se pliega con su flecha. «Sin agrupar» muestra una sola fila.
+- **Tarjetas compactas:** la pregunta como título (y la meta debajo), la clave de la pregunta (por ejemplo `GOB-02`), la fecha compromiso (en rojo si venció), la fecha de término, el clip de evidencia y el avatar del responsable (iniciales y color según el nombre).
+- **Avanzar una tarea:** arrastrar la tarjeta a otra columna **de su misma etapa**, usar las flechas ‹ › que aparecen al pasar el ratón (siempre visibles en pantallas táctiles) o el selector de estado (accesible con teclado). Pulsar la tarjeta abre el detalle para asignar responsable, fecha, evidencia y nota.
+- **Crear una tarea** directamente en el Backlog de una etapa («+ Crear tarea»).
+- **Filtros:** búsqueda (por título, pregunta, clave, responsable o dimensión), etapa, responsable (o «Sin asignar») y «Solo vencidas». Dicen «Mostrando X de Y tareas» y se quitan con un clic. No se guardan.
+- **Resumen de avance:** una barra segmentada por estado, con la leyenda y las tareas vencidas.
+- El cliente ve el mismo tablero en solo lectura (sin flechas, selector ni edición).
+
 ## Generar el backlog
 
 Botón «Crear el backlog desde la hoja de ruta»: crea una tarea por cada acción de la hoja de ruta, en orden de etapa. El título es `ID de pregunta · meta`. Si la hoja de ruta cambia, «Agregar al backlog las brechas nuevas» suma solo las que aún no tienen tarea (no duplica ni toca las existentes).

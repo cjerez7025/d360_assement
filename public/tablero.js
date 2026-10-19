@@ -62,16 +62,76 @@ function tarEstado(e, id, est) {
 
 // ── pantalla ──
 const kbF = (ms) => fchd(new Date(ms));
-function kbTarjeta(t, rol, mov) {
-  const q = t.qid ? Q.find((x) => x.id === t.qid) : null, d = q ? D.find((x) => x.id === q.dm) : null, ven = tarVencida(t);
-  const op = TAR_ORD.map((k) => `<option value="${k}"${k === t.e ? ' selected' : ''}>${TAR_E[k]}</option>`).join('');
-  return `<article class="kb-t kb-ola${t.ola}${ven ? ' kb-ven' : ''}" data-id="${esc(t.id)}"${mov ? ' draggable="true"' : ''}>
-<div class="kb-h"><span class="kb-ola">Etapa ${t.ola}</span>${d ? `<span class="kb-dm">${esc(d.n)}</span>` : '<span class="kb-dm">Tarea propia</span>'}</div>
-${rol === 'auditor' ? `<button type="button" class="kb-tit" onclick="tarEditar('${esc(t.id)}')" aria-label="Editar la tarea: ${esc(t.t)}">${esc(t.t)}</button>` : `<p class="kb-tit">${esc(t.t)}</p>`}
-${q ? `<p class="kb-q">${esc(tarTxt(q.q))}</p>` : ''}
-<div class="kb-m">${t.r ? `<span title="Responsable"><i data-lucide="user"></i>${esc(t.r)}</span>` : ''}${t.v ? `<span class="${ven ? 'kb-rojo' : ''}" title="Fecha compromiso"><i data-lucide="calendar"></i>${kbF(t.v)}${ven ? ' · vencida' : ''}</span>` : ''}${t.h ? `<span class="kb-verde" title="Fecha en que se completó"><i data-lucide="circle-check"></i>${kbF(t.h)}</span>` : ''}${t.ev && t.ev.u ? `<a href="${esc(t.ev.u)}" target="_blank" rel="noopener noreferrer" class="kb-ev"><i data-lucide="paperclip"></i>${esc(t.ev.n || 'Evidencia')}</a>` : t.ev && t.ev.n ? `<span title="Evidencia"><i data-lucide="paperclip"></i>${esc(t.ev.n)}</span>` : ''}</div>
-${rol === 'auditor' && mov ? `<label class="kb-mv"><span class="sr-only">Mover «${esc(t.t)}» a</span><select aria-label="Estado de la tarea ${esc(t.t)}" onchange="tarMover('${esc(t.id)}',this.value)">${op}</select></label>` : ''}</article>`;
+const kbC = (ms) => { const d = new Date(ms); return String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0'); };
+const kbFil = { q: '', o: 0, r: '', v: false, a: 'ola' }; // filtros y agrupación de esta pantalla (no se guardan)
+const kbCerr = {}; // etapas plegadas en el tablero
+const kbSolo = (t) => (t.qid && t.t.startsWith(t.qid + ' · ') ? t.t.slice(t.qid.length + 3) : t.t); // el código ya se ve aparte, como la clave en Jira
+// Título de la tarjeta: una tarea generada desde la hoja de ruta («GOB-01 · Designado formalmente») sola no se entiende, así que se muestra la pregunta
+// y la meta queda debajo; si el consultor cambió el título, se respeta el suyo.
+function kbTit(t) {
+  const q = t.qid ? Q.find((x) => x.id === t.qid) : null, meta = q ? (q.op.find((o) => o.v === 3) || {}).l || '' : '';
+  return q && t.t === tarTxt(q.id + ' · ' + meta).slice(0, 120) ? { t: tarTxt(q.q), sub: meta } : { t: kbSolo(t), sub: '' };
 }
+function kbIni(n) { return (tarTxt(n).split(' ').filter(Boolean).slice(0, 2).map((w) => Array.from(w)[0]).join('') || '?').toUpperCase(); }
+function kbHue(n) { let h = 0; for (const c of String(n)) h = (h * 31 + c.charCodeAt(0)) % 360; return h; }
+const kbFiltrando = () => !!(kbFil.q || kbFil.o || kbFil.r || kbFil.v);
+
+function tarFiltrar(l) {
+  const q = tarTxt(kbFil.q).toLowerCase();
+  return l.filter((t) => {
+    if (kbFil.o && t.ola !== kbFil.o) return false;
+    if (kbFil.r === '__') { if (t.r) return false; } else if (kbFil.r && t.r !== kbFil.r) return false;
+    if (kbFil.v && !tarVencida(t)) return false;
+    if (q) {
+      const pq = t.qid ? Q.find((x) => x.id === t.qid) : null, dm = pq ? (D.find((x) => x.id === pq.dm) || {}).n || '' : '';
+      if (!(t.t + ' ' + t.qid + ' ' + t.r + ' ' + dm + ' ' + (pq ? pq.q : '')).toLowerCase().includes(q)) return false;
+    }
+    return true;
+  });
+}
+
+function kbTarjeta(t, rol, mov) {
+  const q = t.qid ? Q.find((x) => x.id === t.qid) : null, ven = tarVencida(t), i = TAR_ORD.indexOf(t.e), edit = rol === 'auditor', ti = kbTit(t);
+  const op = TAR_ORD.map((k) => `<option value="${k}"${k === t.e ? ' selected' : ''}>${TAR_E[k]}</option>`).join('');
+  const av = t.r ? `<span class="kb-av" style="--h:${kbHue(t.r)}" title="Responsable: ${esc(t.r)}" aria-label="Responsable: ${esc(t.r)}">${esc(kbIni(t.r))}</span>` : '<span class="kb-av kb-av-0" title="Sin responsable" aria-label="Sin responsable"><i data-lucide="user"></i></span>';
+  const ev = t.ev && t.ev.u ? `<a href="${esc(t.ev.u)}" target="_blank" rel="noopener noreferrer" class="kb-ev" title="Evidencia: ${esc(t.ev.n || 'enlace')}" aria-label="Evidencia: ${esc(t.ev.n || 'enlace')}"><i data-lucide="paperclip"></i></a>` : t.ev && t.ev.n ? `<span class="kb-ev" title="Evidencia: ${esc(t.ev.n)}"><i data-lucide="paperclip"></i></span>` : '';
+  const acc = edit && mov ? `<div class="kb-acc"><button type="button" class="kb-mb" onclick="tarSig('${esc(t.id)}',-1)" aria-label="Mover «${esc(ti.t)}» a ${i > 0 ? TAR_E[TAR_ORD[i - 1]] : 'la columna anterior'}"${i === 0 ? ' disabled' : ''}><i data-lucide="chevron-left"></i></button><button type="button" class="kb-mb" onclick="tarSig('${esc(t.id)}',1)" aria-label="Mover «${esc(ti.t)}» a ${i < TAR_ORD.length - 1 ? TAR_E[TAR_ORD[i + 1]] : 'la columna siguiente'}"${i === TAR_ORD.length - 1 ? ' disabled' : ''}><i data-lucide="chevron-right"></i></button></div>
+<label class="kb-mv"><span class="sr-only">Estado de «${esc(ti.t)}»</span><select aria-label="Estado de la tarea ${esc(ti.t)}" onchange="tarMover('${esc(t.id)}',this.value)">${op}</select></label>` : '';
+  return `<article class="kb-t kb-ola${t.ola}${ven ? ' kb-ven' : ''}${t.e === 'hecha' ? ' kb-hecha' : ''}" data-id="${esc(t.id)}"${edit ? ' data-edit="1"' : ''}${mov ? ' draggable="true"' : ''}>
+${edit ? `<button type="button" class="kb-tit" onclick="tarEditar('${esc(t.id)}')" aria-label="Editar la tarea: ${esc(ti.t)}">${esc(ti.t)}</button>` : `<p class="kb-tit">${esc(ti.t)}</p>`}${ti.sub ? `<p class="kb-sub">Meta: ${esc(ti.sub)}</p>` : ''}
+<div class="kb-pie"><span class="kb-key"${q ? ` title="${esc(tarTxt(q.q))}"` : ''}>${esc(t.qid || 'Propia')}</span>${t.v ? `<span class="kb-fe${ven ? ' kb-rojo' : ''}" title="Fecha compromiso: ${kbF(t.v)}${ven ? ' (vencida)' : ''}"><i data-lucide="${ven ? 'alarm-clock' : 'calendar'}"></i>${kbC(t.v)}</span>` : ''}${t.h ? `<span class="kb-fe kb-verde" title="Completada el ${kbF(t.h)}"><i data-lucide="circle-check"></i>${kbC(t.h)}</span>` : ''}${ev}${av}</div>
+${acc}</article>`;
+}
+
+function kbBarra(e) {
+  const rs = [...new Set((e.tar || []).map((t) => t.r).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es'));
+  const chip = (o, n) => `<button type="button" class="kb-chip" aria-pressed="${kbFil.o === o}" onclick="tarFiltro('o',${o})">${n}</button>`;
+  return `<div class="kb-tools"><label class="kb-bus"><i data-lucide="search"></i><span class="sr-only">Buscar tarea</span><input type="search" id="kb-q" placeholder="Buscar tarea…" value="${esc(kbFil.q)}" oninput="tarFiltro('q',this.value)" autocomplete="off"></label>
+<div class="kb-chips" role="group" aria-label="Filtrar por etapa">${chip(0, 'Todas')}${[1, 2, 3, 4].map((o) => chip(o, 'Etapa ' + o)).join('')}</div>
+<label class="kb-sel"><span>Responsable</span><select onchange="tarFiltro('r',this.value)"><option value="">Todos</option><option value="__"${kbFil.r === '__' ? ' selected' : ''}>Sin asignar</option>${rs.map((r) => `<option value="${esc(r)}"${kbFil.r === r ? ' selected' : ''}>${esc(r)}</option>`).join('')}</select></label>
+<label class="kb-chk"><input type="checkbox"${kbFil.v ? ' checked' : ''} onchange="tarFiltro('v',this.checked)"> Solo vencidas</label>
+<div class="kb-chips kb-vista" role="group" aria-label="Agrupar el tablero"><button type="button" class="kb-chip" aria-pressed="${kbFil.a === 'ola'}" onclick="tarFiltro('a','ola')">Por etapa</button><button type="button" class="kb-chip" aria-pressed="${kbFil.a === 'plano'}" onclick="tarFiltro('a','plano')">Sin agrupar</button></div></div>`;
+}
+
+// El tablero: una columna por estado y una fila (carril) por etapa, como un tablero de Jira con carriles
+function tarZona(e, rol) {
+  const todas = e.tar || [], l = tarFiltrar(todas), mov = rol === 'auditor';
+  const cuenta = kbFiltrando() ? `<p class="kb-cuenta" role="status">Mostrando ${l.length} de ${todas.length} tareas · <button type="button" class="kb-lnk" onclick="tarLimpiar()">Quitar filtros</button></p>` : '';
+  if (!l.length) return `${cuenta}<p class="kb-vacio kb-vacio-g">Ninguna tarea coincide con los filtros.</p>`;
+  const heads = `<div class="kb-heads" aria-hidden="true">${TAR_ORD.map((k) => `<div class="kb-hd kb-hd-${k}">${k === 'hecha' ? '<i data-lucide="check"></i>' : ''}${TAR_E[k]} <span>${l.filter((t) => t.e === k).length}</span></div>`).join('')}</div>`;
+  const fila = (ts, o) => `<div class="kb-row">${TAR_ORD.map((k) => { const c = ts.filter((t) => t.e === k); return `<section class="kb-col kb-col-${k}" data-e="${k}"${o ? ` data-o="${o}"` : ''} aria-label="${TAR_E[k]}${o ? ', etapa ' + o : ''}: ${c.length} ${c.length === 1 ? 'tarea' : 'tareas'}"><h5 class="kb-ch">${TAR_E[k]} <span>${c.length}</span></h5>${c.map((t) => kbTarjeta(t, rol, mov)).join('')}${mov && k === 'backlog' && o ? `<button type="button" class="kb-add" onclick="tarNueva(${o})"><i data-lucide="plus"></i>Crear tarea</button>` : ''}</section>`; }).join('')}</div>`;
+  let cuerpo;
+  if (kbFil.a === 'plano') cuerpo = fila(l, 0);
+  else {
+    cuerpo = [1, 2, 3, 4].map((o) => {
+      const ts = l.filter((t) => t.ola === o); if (!ts.length) return '';
+      const all = todas.filter((t) => t.ola === o), hechas = all.filter((t) => t.e === 'hecha').length, cerr = !!kbCerr[o];
+      return `<div class="kb-lane${cerr ? ' kb-cerr' : ''}"><h4 class="kb-lt"><button type="button" class="kb-lh" aria-expanded="${!cerr}" onclick="tarLane(${o})"><i data-lucide="chevron-down"></i><span class="kb-ln kb-ola${o}">Etapa ${o}</span><span class="kb-lnom">${esc(OLAS[o - 1].t)}</span><em>${esc(OLAS[o - 1].p)}</em></button><span class="kb-lp">${hechas} de ${all.length} hechas<i class="kb-lbar" aria-hidden="true"><b style="width:${all.length ? Math.round(hechas / all.length * 100) : 0}%"></b></i></span></h4>${cerr ? '' : fila(ts, o)}</div>`;
+    }).join('');
+  }
+  return `${cuenta}<div class="kb-tablero" role="group" aria-label="Tablero de tareas"><div class="kb-grid">${heads}${cuerpo}</div></div>`;
+}
+
 function tarHtml(e, rol) {
   const l = e.tar || [], act = tarActivo(e), r = tarResumen(e);
   const cab = `<h3><div class="ic lv3"><i data-lucide="kanban"></i></div>Tablero del plan</h3>`;
@@ -80,13 +140,14 @@ function tarHtml(e, rol) {
   if (!l.length) {
     return `<div class="rs">${cab}<p class="lead">${rol === 'auditor' ? 'Aún no hay tareas. Cree el backlog desde la hoja de ruta: una tarea por brecha, ordenadas por etapa.' : 'Su consultor aún no publicó el plan de trabajo como tareas. Mientras tanto, la hoja de ruta muestra qué hacer y en qué orden.'}</p>${bar}</div>`;
   }
-  const resumen = `<div class="kb-res" role="status"><div><strong>${r.hechas} de ${r.total}</strong> tareas hechas (${r.pct}%)<div class="kb-barra" role="img" aria-label="Avance ${r.pct}%"><i style="width:${r.pct}%"></i></div></div><div>${TAR_ORD.map((k) => `<span class="kb-n kb-n-${k}">${TAR_E[k]} <b>${r.por[k]}</b></span>`).join('')}</div>${r.vencidas ? `<div class="kb-rojo"><i data-lucide="alarm-clock"></i> ${r.vencidas} ${r.vencidas === 1 ? 'tarea vencida' : 'tareas vencidas'}</div>` : ''}${r.confirmable > 0.05 && rol === 'auditor' ? `<div class="kb-verde"><i data-lucide="circle-check"></i> Las tareas hechas podrían sumar <strong>+${fnum(r.confirmable)} pts</strong>, pero el puntaje solo cambia al guardar una revisión.</div>` : ''}</div>`;
+  const seg = TAR_ORD.filter((k) => r.por[k]).map((k) => `<i class="kb-seg kb-seg-${k}" style="width:${(r.por[k] / r.total * 100).toFixed(2)}%" title="${TAR_E[k]}: ${r.por[k]}"></i>`).join('');
+  const resumen = `<div class="kb-res" role="status"><div><strong>${r.hechas} de ${r.total}</strong> tareas hechas (${r.pct}%)</div><div class="kb-seg-b" role="img" aria-label="Avance ${r.pct}%: ${TAR_ORD.map((k) => TAR_E[k] + ' ' + r.por[k]).join(', ')}">${seg}</div><div class="kb-leyenda">${TAR_ORD.map((k) => `<span class="kb-n kb-n-${k}"><i class="kb-pt kb-seg-${k}"></i>${TAR_E[k]} <b>${r.por[k]}</b></span>`).join('')}</div>${r.vencidas ? `<div class="kb-rojo"><i data-lucide="alarm-clock"></i> ${r.vencidas} ${r.vencidas === 1 ? 'tarea vencida' : 'tareas vencidas'}</div>` : ''}${r.confirmable > 0.05 && rol === 'auditor' ? `<div class="kb-verde"><i data-lucide="circle-check"></i> Las tareas hechas podrían sumar <strong>+${fnum(r.confirmable)} pts</strong>, pero el puntaje solo cambia al guardar una revisión.</div>` : ''}</div>`;
   if (!act) {
     const porOla = [1, 2, 3, 4].map((o) => ({ o, ts: l.filter((t) => t.ola === o) })).filter((x) => x.ts.length);
     return `<div class="rs">${cab}<p class="lead">El plan de adecuación como <strong>backlog</strong>, ordenado por etapas. El tablero con seguimiento (estados, responsables, fechas y evidencia) se activa con <strong>D360° Acompaña</strong> o <strong>D360° Implementa</strong>.</p>${rol === 'auditor' ? '<p class="srv-ay"><button type="button" class="be" onclick="srvDlg()"><i data-lucide="handshake"></i>Registrar el servicio contratado</button></p>' : ''}${bar}${porOla.map((g) => `<section class="kb-ola-g"><h4>Etapa ${g.o} · ${esc(OLAS[g.o - 1].t)} <span>${g.ts.length}</span></h4><div class="kb-lista">${g.ts.map((t) => kbTarjeta(t, rol, false)).join('')}</div></section>`).join('')}<p class="met-n">Completar una tarea no cambia el puntaje: el diagnóstico se actualiza al guardar una revisión.</p></div>`;
   }
   const mov = rol === 'auditor';
-  return `<div class="rs">${cab}<p class="lead">${mov ? 'Arrastre las tareas entre columnas o use el selector de cada una. Pulse el título para asignar responsable, fecha y evidencia.' : 'El avance del plan de adecuación, actualizado por su consultor.'}</p>${bar}${resumen}<div class="kb-tablero" role="group" aria-label="Tablero de tareas">${TAR_ORD.map((k) => { const ts = l.filter((t) => t.e === k); return `<section class="kb-col kb-col-${k}" data-e="${k}" aria-label="${TAR_E[k]}: ${ts.length} tareas"><h4>${TAR_E[k]} <span>${ts.length}</span></h4><div class="kb-cuerpo">${ts.map((t) => kbTarjeta(t, rol, mov)).join('') || '<p class="kb-vacio">Sin tareas</p>'}</div></section>`; }).join('')}</div><p class="met-n">Completar una tarea registra el avance, pero no cambia la respuesta de la pregunta ni el puntaje: eso ocurre al guardar una revisión en «Evolución».</p></div>`;
+  return `<div class="rs">${cab}<p class="lead">${mov ? 'Arrastre las tarjetas entre columnas, use las flechas de cada una o pulse su título para asignar responsable, fecha y evidencia.' : 'El avance del plan de adecuación, actualizado por su consultor.'}</p>${bar}${resumen}${kbBarra(e)}<div id="kb-zona">${tarZona(e, rol)}</div><p class="met-n">Completar una tarea registra el avance, pero no cambia la respuesta de la pregunta ni el puntaje: eso ocurre al guardar una revisión en «Evolución».</p></div>`;
 }
 function tarRefrescar() {
   const p = document.getElementById('t11'); if (p && typeof modo !== 'undefined') p.innerHTML = tarHtml(en, modo);
@@ -97,12 +158,23 @@ function tarRefrescar() {
   if (window.lucide) lucide.createIcons();
   if (window.sbActualizar) window.sbActualizar();
 }
+// solo el tablero (sin tocar la barra de filtros, para no perder el foco al escribir en la búsqueda)
+function tarZonaRefrescar() {
+  const z = document.getElementById('kb-zona'); if (!z || typeof modo === 'undefined') return;
+  z.innerHTML = tarZona(en, modo);
+  if (window.lucide) lucide.createIcons();
+}
+function tarFiltro(k, v) { if (!(k in kbFil)) return; kbFil[k] = k === 'o' ? +v || 0 : k === 'v' ? !!v : String(v == null ? '' : v); if (k === 'q') tarZonaRefrescar(); else tarRefrescar(); }
+function tarLimpiar() { kbFil.q = ''; kbFil.o = 0; kbFil.r = ''; kbFil.v = false; tarRefrescar(); }
+function tarLane(o) { kbCerr[o] = !kbCerr[o]; tarZonaRefrescar(); }
 
 // ── acciones del consultor ──
 function tarGenerar() { if (en.ro) return; const n = tarDesdeRuta(en); if (!n.length) return; en.tar = (en.tar || []).concat(n); en.sv(); tarRefrescar(); }
 function tarMover(id, est) { if (tarEstado(en, id, est)) tarRefrescar(); }
+// flechas de la tarjeta: a la columna anterior (-1) o a la siguiente (1)
+function tarSig(id, dir) { const t = (en.tar || []).find((x) => x.id === id); if (!t) return; const k = TAR_ORD[TAR_ORD.indexOf(t.e) + (dir < 0 ? -1 : 1)]; if (k) tarMover(id, k); }
 let tarEdit = null;
-function tarNueva() { tarEdit = { id: '', t: '', e: 'backlog', ola: 3, qid: '', r: '', v: 0, h: 0, n: '', ev: { n: '', u: '' }, c: Date.now() }; tarRender(); const d = document.getElementById('dlg-tarea'); if (d && !d.open) d.showModal(); }
+function tarNueva(ola) { tarEdit = { id: '', t: '', e: 'backlog', ola: [1, 2, 3, 4].includes(+ola) ? +ola : 3, qid: '', r: '', v: 0, h: 0, n: '', ev: { n: '', u: '' }, c: Date.now() }; tarRender(); const d = document.getElementById('dlg-tarea'); if (d && !d.open) d.showModal(); }
 function tarEditar(id) { const t = (en.tar || []).find((x) => x.id === id); if (!t) return; tarEdit = JSON.parse(JSON.stringify(t)); tarRender(); const d = document.getElementById('dlg-tarea'); if (d && !d.open) d.showModal(); }
 const kbDia = (ms) => { if (!ms) return ''; const d = new Date(ms); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
 function tarRender() {
@@ -141,11 +213,15 @@ function tarEliminar() {
   if (typeof confirm === 'function' && !confirm('¿Eliminar esta tarea? No se puede deshacer.')) return;
   en.tar = (en.tar || []).filter((x) => x.id !== tarEdit.id); en.sv(); document.getElementById('dlg-tarea').close(); tarEdit = null; tarRefrescar();
 }
-// arrastrar y soltar entre columnas (además del selector, que es la forma accesible)
+// arrastrar y soltar entre columnas (además de las flechas y el selector, que son la forma accesible).
+// Cada etapa es un carril: una tarjeta solo se suelta en las columnas de su propia etapa (o en cualquiera si el tablero está sin agrupar).
 if (typeof document !== 'undefined' && document.addEventListener) {
-  let arrastrando = null;
-  document.addEventListener('dragstart', (ev) => { const t = ev.target.closest && ev.target.closest('.kb-t[draggable="true"]'); if (!t) return; arrastrando = t.dataset.id; ev.dataTransfer.effectAllowed = 'move'; try { ev.dataTransfer.setData('text/plain', arrastrando); } catch (x) { /* navegador sin datos de arrastre */ } t.classList.add('kb-arr'); });
-  document.addEventListener('dragend', (ev) => { arrastrando = null; document.querySelectorAll('.kb-arr,.kb-sobre').forEach((x) => x.classList.remove('kb-arr', 'kb-sobre')); });
-  document.addEventListener('dragover', (ev) => { const c = ev.target.closest && ev.target.closest('.kb-col'); if (!c || !arrastrando) return; ev.preventDefault(); document.querySelectorAll('.kb-sobre').forEach((x) => x !== c && x.classList.remove('kb-sobre')); c.classList.add('kb-sobre'); });
-  document.addEventListener('drop', (ev) => { const c = ev.target.closest && ev.target.closest('.kb-col'); if (!c || !arrastrando) return; ev.preventDefault(); const id = arrastrando; arrastrando = null; tarMover(id, c.dataset.e); });
+  let arrastrando = null, carril = '';
+  document.addEventListener('dragstart', (ev) => { const t = ev.target.closest && ev.target.closest('.kb-t[draggable="true"]'); if (!t) return; arrastrando = t.dataset.id; const c = t.closest('.kb-col'); carril = c && c.dataset.o ? c.dataset.o : ''; ev.dataTransfer.effectAllowed = 'move'; try { ev.dataTransfer.setData('text/plain', arrastrando); } catch (x) { /* navegador sin datos de arrastre */ } t.classList.add('kb-arr'); });
+  document.addEventListener('dragend', () => { arrastrando = null; carril = ''; document.querySelectorAll('.kb-arr,.kb-sobre').forEach((x) => x.classList.remove('kb-arr', 'kb-sobre')); });
+  const destino = (ev) => { const c = arrastrando && ev.target.closest && ev.target.closest('.kb-col'); return c && (!c.dataset.o || !carril || c.dataset.o === carril) ? c : null; };
+  document.addEventListener('dragover', (ev) => { const c = destino(ev); if (!c) return; ev.preventDefault(); document.querySelectorAll('.kb-sobre').forEach((x) => x !== c && x.classList.remove('kb-sobre')); c.classList.add('kb-sobre'); });
+  document.addEventListener('drop', (ev) => { const c = destino(ev); if (!c) return; ev.preventDefault(); const id = arrastrando, t = (en.tar || []).find((x) => x.id === id); arrastrando = null; if (t && t.e !== c.dataset.e) tarMover(id, c.dataset.e); else document.querySelectorAll('.kb-sobre').forEach((x) => x.classList.remove('kb-sobre')); });
+  // pulsar la tarjeta (no sus botones) la abre para editarla
+  document.addEventListener('click', (ev) => { const c = ev.target.closest && ev.target.closest('.kb-t[data-edit]'); if (c && !ev.target.closest('button,select,a,label')) tarEditar(c.dataset.id); });
 }

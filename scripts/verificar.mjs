@@ -5,7 +5,7 @@ import vm from 'node:vm';
 
 const file = process.argv[2] || 'public/app.js';
 const code = fs.readFileSync(file, 'utf8');
-const codigoRuta = ['ruta.js', 'servicio.js', 'tablero.js'].map((f) => fs.readFileSync(path.join(path.dirname(file), f), 'utf8')).join('\n'); // hoja de ruta, evolución, servicio y documentos (se cargan después de app.js)
+const codigoRuta = ['ruta.js', 'servicio.js', 'tablero.js', 'porque.js'].map((f) => fs.readFileSync(path.join(path.dirname(file), f), 'utf8')).join('\n'); // hoja de ruta, evolución, servicio y documentos (se cargan después de app.js)
 
 // stubs mínimos del navegador
 const el = () => ({ textContent: '', innerHTML: '', value: '', style: {}, classList: { add() {}, remove() {}, toggle() {} }, addEventListener() {}, setAttribute() {}, getContext: () => ({}) });
@@ -21,8 +21,8 @@ const sandbox = {
 };
 sandbox.globalThis = sandbox;
 vm.createContext(sandbox);
-vm.runInContext(code + '\n' + codigoRuta + '\n;globalThis.__t={TAR_E,TAR_ORD,TAR_MAX,TAR_NIVEL,TAR_V,SRV_P,SRV_E,SRV_ORD,SRV_V,SRV_SOLICITABLES,SRV_URL,SRV_ACT,EF,EF_N,EF_T,OLAS,RT_V,RT_ALTO,EVO_TIPOS,D,Q,A,CL,E2,en,SEC,SEC_F,SEC_DIM,SEC_N,SEC_J,SEC_K,SEC_V,SEC_B,SEC_BN,TAM,TAM_K,TAM_V,TAM_DIM};', sandbox);
-const { TAR_E, TAR_ORD, TAR_MAX, TAR_NIVEL, TAR_V, SRV_P, SRV_E, SRV_ORD, SRV_V, SRV_SOLICITABLES, SRV_URL, SRV_ACT, EF, EF_N, EF_T, OLAS, RT_V, RT_ALTO, EVO_TIPOS, D, Q, A, CL, E2, en, SEC, SEC_F, SEC_DIM, SEC_N, SEC_J, SEC_K, SEC_V, SEC_B, SEC_BN, TAM, TAM_K, TAM_V, TAM_DIM } = sandbox.__t;
+vm.runInContext(code + '\n' + codigoRuta + '\n;globalThis.__t={kbFil,kbCerr,TAR_E,TAR_ORD,TAR_MAX,TAR_NIVEL,TAR_V,SRV_P,SRV_E,SRV_ORD,SRV_V,SRV_SOLICITABLES,SRV_URL,SRV_ACT,EF,EF_N,EF_T,OLAS,RT_V,RT_ALTO,EVO_TIPOS,D,Q,A,CL,E2,en,SEC,SEC_F,SEC_DIM,SEC_N,SEC_J,SEC_K,SEC_V,SEC_B,SEC_BN,TAM,TAM_K,TAM_V,TAM_DIM};', sandbox);
+const { kbFil, kbCerr, TAR_E, TAR_ORD, TAR_MAX, TAR_NIVEL, TAR_V, SRV_P, SRV_E, SRV_ORD, SRV_V, SRV_SOLICITABLES, SRV_URL, SRV_ACT, EF, EF_N, EF_T, OLAS, RT_V, RT_ALTO, EVO_TIPOS, D, Q, A, CL, E2, en, SEC, SEC_F, SEC_DIM, SEC_N, SEC_J, SEC_K, SEC_V, SEC_B, SEC_BN, TAM, TAM_K, TAM_V, TAM_DIM } = sandbox.__t;
 
 let fallos = 0;
 const ok = (c, m) => { if (!c) { fallos++; console.log('  ✗ ' + m); } };
@@ -358,6 +358,45 @@ seccion('12. Referencias a la ley (popup con el texto oficial, enlace a la BCN y
   ok(/<dialog[^>]*id="dlg-ley"[^>]*aria-labelledby="ley-t"/.test(ih) && /src="ley\.js"/.test(ih), 'falta el diálogo de la ley o su script en index.html');
   ok(!/ley-texto\.js/.test(ih) && /ley-texto\.js/.test(lj), 'el texto de la ley (150 KB) debe cargarse solo al abrir el popup, no con la página');
   ok(/idNorma=\$\{LEY\.n\}&idVersion=\$\{LEY\.v\}&idParte=\$\{a\.id\}/.test(lj), 'el enlace a la BCN debe llevar idNorma, idVersion e idParte (abre el artículo directo)');
+  // ── menciones a otros artículos dentro del texto de la ley ──
+  {
+    const wx = { }; const ctxx = { window: wx, document: { addEventListener() {}, getElementById() {} }, esc: (x) => String(x).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])) };
+    vm.runInNewContext(leer4('public/ley-texto.js'), { window: wx }); ctxx.LEY = wx.LEY;
+    vm.runInNewContext(lj, ctxx);
+    const en = (t, a) => wx.leyEnlazar(t, a), ks = (h) => [...h.matchAll(/data-k="([^"]+)"/g)].map((m) => m[1]).join('|');
+    ok(ks(en('lo dispuesto en los artículos 14 bis y 14 quinquies. Y el artículo 14 septies también', '15 bis')) === '14 bis|14 quinquies|14 septies', 'en el texto de la ley, «los artículos 14 bis y 14 quinquies» y «el artículo 14 septies» son botones que abren cada artículo');
+    ok(ks(en('conforme al artículo 1º de la ley N° 18.575', '2')) === '' && ks(en('los artículos 680 y siguientes del Código de Procedimiento Civil', '47')) === '', 'las menciones a artículos de otra norma («de la ley N° …», «del Código …») no se enlazan, porque no son de esta ley');
+    ok(ks(en('el artículo anterior y el artículo 999', '28')) === '' && ks(en('el artículo 16, los datos', '16')) === '', 'no se enlaza «el artículo anterior», un artículo que no está en el texto ni el mismo artículo que se está leyendo');
+    ok(!/<b>/.test(en('artículo 13, letra d) <b>x</b>', '5')) && /artículo <button[^>]*>13<\/button>, letra d\) &lt;b&gt;x&lt;\/b&gt;/.test(en('artículo 13, letra d) <b>x</b>', '5')), 'el resto del texto se escapa: no se puede colar HTML');
+    const todos = Object.keys(wx.LEY.a).flatMap((k) => wx.LEY.a[k].p.map((p) => [k, p]));
+    ok(todos.every(([k, p]) => [...en(p, k).matchAll(/data-k="([^"]+)"/g)].every((m) => wx.LEY.a[m[1]])), 'todo enlace del texto de la ley lleva a un artículo que existe');
+    ok(/#dlg-ley \.ley-x/.test(lj) && /if \(!ctx\.lista\.includes\(k\)\) \{ ctx\.lista\.push\(k\); chips\(\); \}/.test(lj) && /\.ley-x\{display:inline/.test(cs), 'el botón del texto abre el artículo, queda en la fila de atajos y tiene su estilo');
+  }
+  // ── explicaciones y ejemplos por artículo (ley-ejemplos.js) ──
+  {
+    const wx2 = {}; vm.runInNewContext(leer4('public/ley-texto.js'), { window: wx2 }); vm.runInNewContext(leer4('public/ley-ejemplos.js'), { window: wx2 });
+    const LL = wx2.LEY, EJ = wx2.LEY_EJ, oi = (k) => LL.o.indexOf(k);
+    // artículos que el recuadro puede mostrar: los citados por las preguntas y el semáforo, con sus rangos
+    const alc = new Set();
+    for (const t of [...Q.flatMap((q) => [q.ar, q.cx, q.ev, q.s]), ...CL.map((c) => c.ar)].filter(Boolean)) for (const tk2 of sandbox.leyTokens(t)) {
+      const r = /^(.+)-(.+)$/.exec(tk2);
+      if (r) { for (let n = oi(r[1]); n >= 0 && n <= oi(r[2]); n++) alc.add(LL.o[n]); } else if (LL.a[tk2]) alc.add(tk2);
+    }
+    ok(alc.size > 40, 'el cálculo de artículos alcanzables funciona (' + alc.size + ')');
+    ok([...alc].every((k) => EJ[k]), 'todo artículo que el recuadro puede mostrar tiene su explicación y su ejemplo (faltan: ' + [...alc].filter((k) => !EJ[k]).join(', ') + ')');
+    ok(Object.keys(EJ).every((k) => LL.a[k]), 'todo ejemplo corresponde a un artículo que existe en el texto de la ley');
+    ok(Object.values(EJ).every((x) => typeof x.s === 'string' && x.s.length > 60 && typeof x.e === 'string' && x.e.length > 80 && (x.n === undefined || (typeof x.n === 'string' && x.n.length > 20)) && !/[<>]/.test(x.s + x.e + (x.n || ''))), 'cada ejemplo tiene explicación y caso concreto, sin HTML');
+    const T2 = (k) => LL.a[k].p.join(' '), E2 = (k) => EJ[k].s + ' ' + EJ[k].e + ' ' + (EJ[k].n || '');
+    // las cifras de los ejemplos deben coincidir con el texto oficial
+    ok(/5\.000/.test(E2('35')) && /10\.000/.test(E2('35')) && /20\.000/.test(E2('35')) && /5\.000/.test(T2('35')) && /10\.000/.test(T2('35')) && /20\.000/.test(T2('35')) && /50 %/.test(E2('35')) && /50%/.test(T2('35')) && /2 %/.test(E2('35')) && /4 %/.test(E2('35')) && /2% o 4%/.test(T2('35')), 'art. 35: las multas (5.000, 10.000 y 20.000 UTM), el recargo de 50 % y el 2 % o 4 % coinciden con la ley');
+    ok(/30 días corridos/.test(E2('11')) && /30 días hábiles/.test(E2('11')) && /treinta días corridos/.test(T2('11')) && /treinta días hábiles/.test(T2('11')) && /dos días hábiles/.test(E2('8 ter')) && /dos días hábiles/.test(T2('11')), 'arts. 11 y 8 ter: los plazos (30 días corridos, 30 días hábiles, dos días hábiles) coinciden con la ley');
+    ok(/30 días hábiles/.test(E2('41')) && /seis meses/.test(E2('41')) && /15 días hábiles/.test(E2('41')) && /treinta días hábiles/.test(T2('41')) && /seis meses/.test(T2('41')) && /quince días hábiles/.test(T2('41')) && /diez días hábiles/.test(T2('41')) && /10 días hábiles/.test(E2('41')) && /tres días hábiles/.test(T2('41')) && /tres días hábiles/.test(E2('41')), 'art. 41: los plazos del reclamo ante la Agencia coinciden con la ley');
+    ok(/catorce/.test(T2('16 quáter')) && /14/.test(E2('16 quáter')) && /dieciséis/.test(T2('16 quáter')) && /16 años/.test(E2('16 quáter')), 'art. 16 quáter: las edades (14 y 16 años) coinciden con la ley');
+    ok(/cinco años/.test(T2('18')) && /cinco años/.test(T2('39')) && /cinco años/.test(E2('39')) && /siete días hábiles/.test(T2('19')) && /siete días hábiles/.test(E2('19')) && /tres días/.test(T2('19')) && /veinticuatro meses/.test(T2('38')) && /30 días/.test(E2('38')) && /treinta días/.test(T2('38')) && /treinta meses/.test(T2('36')) && /treinta meses/.test(E2('36')), 'arts. 18, 19, 36, 38 y 39: los plazos de los ejemplos coinciden con la ley');
+    ok(/seis derechos|acceso, rectificación, supresión, oposición, portabilidad y bloqueo/.test(E2('4')) && /ocho reglas/.test(E2('3')) && LL.a['3'].p.filter((p) => /^[a-h]\) Principio/.test(p)).length === 8, 'art. 3: son ocho principios');
+    ok(/abre|ley-ejemplos\.js/.test(lj) && /<details\$\{ejAbierto \? ' open' : ''\}><summary>/.test(lj) && /Explicado con un ejemplo/.test(lj) && /id="ley-ej"/.test(ih) && /\.ley-ej summary/.test(cs) && /no es asesoría legal/.test(lj) && /script\('ley-ejemplos\.js'\)\.catch\(\(\) => \{\}\)/.test(lj), 'el recuadro muestra «Explicado con un ejemplo» (desplegable), avisa que no es asesoría legal y no falla si los ejemplos no cargan');
+    ok(!/ley-ejemplos\.js/.test(ih), 'los ejemplos se cargan solo al abrir el recuadro, junto con el texto de la ley');
+  }
   ok((lj.match(/target="_blank"/g) || []).length === (lj.match(/rel="noopener noreferrer"/g) || []).length, 'todo enlace externo debe llevar rel="noopener noreferrer"');
   ok(/showModal\(\)/.test(lj) && !/\beval\(|document\.write\(/.test(lj), 'el diálogo debe ser modal y no usar eval/document.write');
   ok(/refLey\(q\.ar,leyRel\(q\)\)[\s\S]*refLey\(q\.cx,leyRel\(q\)\)/.test(aj) && /refLey\(q\.ar, leyRel\(q\)\)[\s\S]*refLey\(q\.cx, leyRel\(q\)\)/.test(vj2), 'la referencia y la explicación legal deben ser clicables en el panel del consultor y en el del cliente');
@@ -700,7 +739,7 @@ seccion('19. Rubros de AlignData, tamaño de la empresa y escala de madurez úni
   const e0 = new E2();
   ok([[0, 'Inexistente', 'crítico'], [30, 'Reactivo', 'alto'], [50, 'Parcial', 'medio'], [70, 'Gestionado', 'bajo'], [90, 'Optimizado', 'mínimo']].every(([p, nm, ri], i) => { const l = e0.ml(p); return l.n === i && l.nm === nm && l.ri === ri; }), 'los niveles son Inexistente, Reactivo, Parcial, Gestionado y Optimizado (0 a 4), con riesgo crítico, alto, medio, bajo y mínimo');
   ok(!/Sin protección'|'En desarrollo'/.test(codigo.replace(/"id":"[A-Z]+-\d+[a-z]?".*/g, '')), 'los nombres antiguos de los niveles ya no se usan fuera de las preguntas');
-  ok(/Índice \$\{fnum\(sc\.g\/25\)\} de 4,0 · riesgo \$\{mt\.ri\} · meta: nivel 3 \(Gestionado\)/.test(codigo), 'los resultados muestran el índice de 0 a 4, el riesgo y la meta (nivel 3)');
+  ok(/Índice \$\{fnum\(sc\.g\/25\)\} de 4,0 · riesgo \$\{mt\.ri\}(?:\$\{PQ\([^}]*\)\})? · meta: nivel 3 \(Gestionado\)/.test(codigo), 'los resultados muestran el índice de 0 a 4, el riesgo y la meta (nivel 3)');
   const h6 = h5;
   ok(/misma escala del Assessment y del Informe Ejecutivo/.test(h6) && /puntaje global ÷ 25/.test(h6) && ['Inexistente', 'Reactivo', 'Parcial', 'Gestionado', 'Optimizado'].every((n) => h6.includes(n)) && /riesgo crítico/.test(h6) && /riesgo mínimo/.test(h6), 'el método explica la escala (niveles, riesgo e índice de 0 a 4)');
   ok(new RegExp('en su sesión, ' + (x5.g / 25).toFixed(1).replace('.', ',') + ' de 4,0').test(h6), 'el índice de 0 a 4 de la sesión es el puntaje ÷ 25');
@@ -1291,15 +1330,112 @@ seccion('29. Backlog y tablero kanban del plan');
   ok(/id: 'tab', ic: 'kanban', t: 'Tablero', fn: \(\) => irRes\('t11'\)/.test(lj) && /!\['t8', 't9', 't11'\]\.includes\(tabActual\(\)\)/.test(lj), 'el menú lateral tiene «Tablero» con el avance (hechas/total)');
   ok(/tareas: en\.tar && en\.tar\.length \? en\.tar : null/.test(ng) && /tareas: en\.tar && en\.tar\.length \? en\.tar : null/.test(np), 'el guardado automático incluye las tareas (en la nube y en el modo de prueba)');
   ok(/function tareasPub\(d\)/.test(rg) && /d\.tareas is list && d\.tareas\.size\(\) <= 120/.test(rg) && /'servicio', 'tareas', 'consultor'/.test(rg), 'las reglas permiten publicar hasta 120 tareas');
-  ok(/@media print\{#t11\{display:none!important\}\}/.test(cs) && /\.kb-tablero\{display:grid;grid-template-columns:repeat\(5,minmax\(230px,1fr\)\);gap:12px;overflow-x:auto/.test(cs), 'el tablero no sale en el PDF y en pantallas angostas se desplaza hacia el lado');
+  ok(/@media print\{#t11\{display:none!important\}\}/.test(cs) && /\.kb-grid\{min-width:960px/.test(cs) && /\.kb-tablero\{max-height:min\(78dvh,880px\);overflow:auto/.test(cs) && /@media\(max-width:760px\)\{[^]*\.kb-row\{grid-template-columns:1fr/.test(cs), 'el tablero no sale en el PDF, en pantallas anchas se ven las cinco columnas y en celular se apilan');
   ok(/id="tar-t" maxlength="120"/.test(tj) && /id="tar-eu" type="url"/.test(tj) && /El enlace debe empezar con https:\/\//.test(tj) && /Nota interna <span class="opc">\(no la ve el cliente\)/.test(tj) && /confirm\('¿Eliminar esta tarea\? No se puede deshacer\.'\)/.test(tj), 'el formulario valida el título y el enlace, avisa que la nota es interna y confirma antes de eliminar');
   ok(/El estado se puede cambiar cuando el servicio contratado sea D360° Acompaña o Implementa/.test(tj) && /<select id="tar-e"\$\{act \? '' : ' disabled'\}>/.test(tj), 'sin el servicio activo, el estado de la tarea no se puede cambiar');
   ok(/dragstart/.test(tj) && /dragover/.test(tj) && /drop/.test(tj) && /aria-label="Estado de la tarea/.test(tj), 'se puede arrastrar entre columnas y, para el teclado y los lectores de pantalla, usar el selector de estado');
   ok(/#tab-t11/.test(tourj) && /Tablero del plan/.test(tourj), 'los tours mencionan el tablero');
   // los nombres de clase nuevos no chocan con los de antes
-  const mk = '/* ── tablero kanban del plan ── */', bloque = cs.slice(cs.indexOf(mk)), previo = cs.slice(0, cs.indexOf(mk));
+  const mk = '/* ── tablero del plan (estilo Jira: columnas por estado y un carril por etapa) ── */', bloque = cs.slice(cs.indexOf(mk)), previo = cs.slice(0, cs.indexOf(mk));
   const nuevas = [...new Set([...bloque.matchAll(/\.(kb-[\w-]+)/g)].map((m2) => m2[1]))];
   ok(nuevas.length > 25 && nuevas.every((c2) => !new RegExp('\\.' + c2.replace(/-/g, '\\-') + '(?![\\w-])').test(previo)), 'ninguno de los ' + nuevas.length + ' nombres de clase nuevos ya existía');
+
+  // ── tablero estilo Jira: columnas por estado, un carril por etapa, tarjetas compactas y filtros ──
+  const jk_reset = () => { kbFil.q = ''; kbFil.o = 0; kbFil.r = ''; kbFil.v = false; kbFil.a = 'ola'; for (const k of Object.keys(kbCerr)) delete kbCerr[k]; };
+  jk_reset();
+  const jk_zA = sb.tarZona(act, 'auditor'), jk_zC = sb.tarZona(act, 'cliente');
+  const jk_olasHay = [...new Set(act.tar.map((t) => t.ola))];
+  ok((jk_zA.match(/class="kb-lane/g) || []).length === jk_olasHay.length && jk_olasHay.every((o) => jk_zA.includes('>Etapa ' + o + '</span>') && new RegExp('Etapa ' + o + '</span><span class="kb-lnom">' + OLAS[o - 1].t).test(jk_zA)), 'hay un carril por cada etapa que tiene tareas, con su nombre y su plazo');
+  ok((jk_zA.match(/class="kb-hd /g) || []).length === 5 && TAR_ORD.every((k) => jk_zA.includes('kb-hd-' + k)) && (jk_zA.match(/class="kb-col /g) || []).length === 5 * jk_olasHay.length, 'las cinco columnas (Backlog, Por hacer, En curso, En revisión y Hecho) se ven a la vez, una vez por etapa');
+  ok(jk_olasHay.every((o) => { const all = act.tar.filter((t) => t.ola === o); return new RegExp(all.filter((t) => t.e === 'hecha').length + ' de ' + all.length + ' hechas').test(jk_zA); }), 'cada carril muestra cuántas tareas de la etapa están hechas');
+  ok(jk_olasHay.every((o) => jk_zA.includes('data-o="' + o + '"')) && (jk_zA.match(/class="kb-add"/g) || []).length === jk_olasHay.length && !/kb-add|tarNueva/.test(jk_zC), 'el consultor puede crear una tarea en el backlog de cada etapa; el cliente no');
+  ok(!/tarMover|tarSig|draggable|tarEditar|data-edit/.test(jk_zC) && (jk_zC.match(/<article class="kb-t /g) || []).length === act.tar.length, 'el cliente ve todas las tarjetas pero no puede moverlas ni editarlas');
+  const tj0 = act.tar[0], jk_c0 = sb.kbTarjeta(tj0, 'auditor', true);
+  ok(jk_c0.includes('<span class="kb-key"') && jk_c0.includes('>' + tj0.qid + '</span>') && !new RegExp('class="kb-tit"[^>]*>' + tj0.qid + ' ·').test(jk_c0) && />AS<\/span>/.test(jk_c0), 'la tarjeta muestra la clave de la pregunta aparte (sin repetirla en el título) y el avatar con las iniciales del responsable');
+  ok(/onclick="tarSig\('[^']+',-1\)"/.test(jk_c0) && /onclick="tarSig\('[^']+',1\)"/.test(jk_c0) && /class="kb-mb"[^>]*aria-label="Mover «/.test(jk_c0) && /onchange="tarMover\(/.test(jk_c0), 'cada tarjeta tiene flechas para pasarla a la columna anterior o siguiente, con nombre accesible, y su selector de estado');
+  ok(/disabled/.test(sb.kbTarjeta({ ...tj0, e: 'backlog' }, 'auditor', true).split('tarSig')[1]) && /disabled/.test(sb.kbTarjeta({ ...tj0, e: 'hecha' }, 'auditor', true).split('tarSig')[2]), 'la flecha de la primera columna no retrocede y la de la última no avanza');
+  ok(sb.kbIni('Ana Soto') === 'AS' && sb.kbIni('carlos') === 'C' && sb.kbIni('') === '?' && sb.kbIni('  María   José  López') === 'MJ' && sb.kbHue('Ana') === sb.kbHue('Ana') && sb.kbHue('Ana') !== sb.kbHue('Luis'), 'las iniciales y el color del avatar salen del nombre del responsable');
+  const jk_dosR = act.tar.map((t, i) => ({ ...t, r: i % 3 === 0 ? 'Ana Soto' : i % 3 === 1 ? 'Luis Pérez' : '' })); const jk_eR = nuevo(S('acompana', 'activa')); jk_eR.tar = jk_dosR;
+  kbFil.o = 2; const jk_f2 = sb.tarZona(jk_eR, 'auditor'); const jk_n2 = jk_dosR.filter((t) => t.ola === 2).length;
+  ok((jk_f2.match(/<article class="kb-t /g) || []).length === jk_n2 && !/>Etapa 1<\/span>/.test(jk_f2) && new RegExp('Mostrando ' + jk_n2 + ' de ' + jk_dosR.length + ' tareas').test(jk_f2) && /Quitar filtros/.test(jk_f2), 'filtrar por etapa deja solo esa etapa y dice cuántas tareas se muestran');
+  jk_reset(); kbFil.r = 'Ana Soto'; const jk_fr = sb.tarZona(jk_eR, 'cliente');
+  ok((jk_fr.match(/<article class="kb-t /g) || []).length === jk_dosR.filter((t) => t.r === 'Ana Soto').length, 'filtrar por responsable deja solo sus tareas');
+  jk_reset(); kbFil.r = '__'; ok((sb.tarZona(jk_eR, 'cliente').match(/<article class="kb-t /g) || []).length === jk_dosR.filter((t) => !t.r).length, '«Sin asignar» deja las tareas sin responsable');
+  jk_reset(); kbFil.v = true; ok((sb.tarZona(act, 'auditor').match(/<article class="kb-t /g) || []).length === act.tar.filter((t) => sb.tarVencida(t)).length, '«Solo vencidas» deja las tareas con la fecha pasada');
+  jk_reset(); kbFil.q = tj0.qid.toLowerCase(); const jk_fq = sb.tarZona(act, 'auditor');
+  ok((jk_fq.match(/<article class="kb-t /g) || []).length >= 1 && jk_fq.includes('data-id="' + tj0.id + '"'), 'la búsqueda encuentra una tarea por su clave');
+  jk_reset(); kbFil.q = 'zzzz-no-existe'; ok(/Ninguna tarea coincide con los filtros/.test(sb.tarZona(act, 'auditor')) && !/class="kb-tablero"/.test(sb.tarZona(act, 'auditor')), 'sin coincidencias lo dice y ofrece quitar los filtros');
+  jk_reset(); kbFil.a = 'plano'; const jk_fp = sb.tarZona(act, 'auditor');
+  ok(!/class="kb-lane/.test(jk_fp) && (jk_fp.match(/class="kb-col /g) || []).length === 5 && (jk_fp.match(/<article class="kb-t /g) || []).length === act.tar.length && !/data-o=/.test(jk_fp), 'sin agrupar, hay una sola fila con las cinco columnas');
+  jk_reset(); kbCerr[1] = true; const jk_fc = sb.tarZona(act, 'auditor');
+  ok(/aria-expanded="false"/.test(jk_fc) && (jk_fc.match(/<article class="kb-t /g) || []).length === act.tar.filter((t) => t.ola !== 1).length, 'un carril plegado oculta sus tarjetas y lo indica (aria-expanded)');
+  jk_reset();
+  const qg = Q.find((q) => q.id === 'GOB-01'), metaG = qg.op.find((o) => o.v === 3).l;
+  ok(sb.kbTit({ qid: 'GOB-01', t: 'GOB-01 · ' + metaG }).t === qg.q && sb.kbTit({ qid: 'GOB-01', t: 'GOB-01 · ' + metaG }).sub === metaG && sb.kbTit({ qid: 'GOB-01', t: 'Nombrar al delegado esta semana' }).t === 'Nombrar al delegado esta semana' && sb.kbTit({ qid: '', t: 'Tarea propia' }).sub === '', 'una tarea generada muestra la pregunta como título y la meta debajo; si el consultor cambió el título, se respeta el suyo');
+  ok(/function tarSig\(id, dir\)/.test(tj) && /function tarFiltro\(k, v\)/.test(tj) && /function tarLimpiar\(\)/.test(tj) && /function tarLane\(o\)/.test(tj) && /tarNueva\(ola\)/.test(tj) && /ola: \[1, 2, 3, 4\]\.includes\(\+ola\)/.test(tj), 'las acciones del tablero (flechas, filtros, plegar y crear en una etapa) existen');
+  ok(/const destino = \(ev\) =>/.test(tj) && /c\.dataset\.o === carril/.test(tj) && /t\.e !== c\.dataset\.e/.test(tj) && /\.kb-t\[data-edit\]/.test(tj), 'una tarjeta solo se suelta en las columnas de su propia etapa, no cambia nada si se suelta donde estaba y pulsarla la abre para editarla');
+  ok(/id="kb-zona"/.test(sb.tarHtml(act, 'auditor')) && /oninput="tarFiltro\('q',this\.value\)"/.test(sb.tarHtml(act, 'auditor')) && /function tarZonaRefrescar\(\)/.test(tj), 'al escribir en la búsqueda solo se redibuja el tablero (no se pierde el foco)');
+}
+
+seccion('30. Icono «¿por qué?» junto al riesgo, salida del diálogo de nombre y barra de pestañas');
+{
+  const raiz22 = path.resolve(path.dirname(file), '..');
+  const leer22 = (f) => fs.readFileSync(path.join(raiz22, f), 'utf8').replace(/\r\n/g, '\n');
+  const pj = leer22('public/porque.js'), aj = leer22('public/app.js'), ih = leer22('public/index.html'), cs = leer22('public/styles.css'), pz = leer22('public/pizarra.js'), vj = leer22('public/vivo.js');
+  const sb = sandbox, guarda = { a: en.a, p: en.p };
+  const poner = (f) => { en.a = {}; en.p = { sector: 'salud', 'tamaño': '51-200' }; Q.filter((q) => !q.iS).forEach((q, i) => { en.a[q.id] = f(q, i); }); return en.sc(); };
+
+  // ── las reglas del icono son las mismas que las del modelo ──
+  const estados = [() => 0, (q, i) => (i * 7 + 1) % 4, () => 3, (q, i) => (i % 5 === 0 ? 3 : 1), (q, i) => (i % 3)];
+  ok(estados.every((f) => { const sc = poner(f); return en.pl().every((it) => sb.pqTramoDim(it.s).n.toUpperCase() === it.rk) && D.every((d) => (sc.d[d.id] >= 80) === (sb.pqTramoDim(sc.d[d.id]) === null)); }), 'el riesgo que explica el icono (crítico hasta 30 %, alto hasta 55 %, medio hasta 79 %) es el mismo que calcula el plan en todos los puntajes');
+  ok([0, 30, 31, 55, 56, 79].map((x) => sb.pqTramoDim(x).n).join() === 'Crítico,Crítico,Alto,Alto,Medio,Medio' && sb.pqTramoDim(80) === null && sb.pqTramoDim(100) === null, 'los límites son 30, 31, 55, 56, 79 y 80');
+
+  // ── explicación de una dimensión ──
+  const sc1 = poner((q, i) => (i * 7 + 1) % 4), peor = D.map((d) => ({ d, s: sc1.d[d.id] })).sort((a, b) => a.s - b.s)[0], tr = sb.pqTramoDim(peor.s), x1 = sb.pqDim(peor.d.id);
+  ok(x1 && x1.t === '¿Por qué «Riesgo ' + tr.n.toLowerCase() + '»?' && x1.h.includes('<strong>' + peor.s + '%</strong>') && x1.h.includes(peor.d.n) && /el objetivo es 80%/.test(x1.h), 'explica una dimensión con su puntaje, el objetivo y su nombre (' + peor.d.n + ' ' + peor.s + '%)');
+  ok(x1.h.split('class="pq-ahora"').length === 2 && /Crítico<\/strong> 30% o menos/.test(x1.h) && /Alto<\/strong> de 31% a 55%/.test(x1.h) && /Medio<\/strong> de 56% a 79%/.test(x1.h), 'muestra la escala de riesgo y marca en cuál está la dimensión');
+  ok(new RegExp('Para salir de «' + tr.n.toLowerCase() + '» debe llegar al menos a <strong>' + (tr.h === 79 ? 80 : tr.h + 1) + '%</strong>').test(x1.h), 'dice cuánto falta para salir de ese riesgo');
+  const pe = sb.pqPesan(peor.d.id, 3);
+  ok(pe.length > 0 && pe.length <= 3 && pe.every((q) => q.dm === peor.d.id && en.a[q.id] < 3 && x1.h.includes('<strong>' + q.id + '</strong>')) && pe.every((q, i, a) => i === 0 || (3 - en.a[a[i - 1].id]) * (a[i - 1].w || 1) >= (3 - en.a[q.id]) * (q.w || 1)), 'lista las respuestas que más bajan ese puntaje, de la que más pesa a la que menos');
+  poner(() => 3); const xa = sb.pqDim(D[0].id);
+  ok(xa && /alcanza el objetivo/.test(xa.h) && xa.t.includes('no es una brecha'), 'una dimensión sobre 80 % explica que no es una brecha');
+  ok(sb.pqDim('no-existe') === null && sb.pqContenido('otra', 'x') === null && sb.pqAlerta('NO-EXISTE') === null && sb.pqSem(999) === null, 'un icono sin datos no abre nada');
+
+  // ── nivel de madurez ──
+  const sc2 = poner((q, i) => (i * 7 + 1) % 4), mt2 = en.ml(sc2.g), n2 = sb.pqNivel();
+  ok(n2.t === '¿Por qué Nivel ' + mt2.n + ' — ' + mt2.nm + '?' && n2.h.includes('<strong>' + sc2.g + '%</strong>') && (n2.h.match(/<li/g) || []).length === 5 && n2.h.split('aria-current="true"').length === 2 && /meta de referencia es el <strong>nivel 3<\/strong>/.test(n2.h), 'el nivel muestra el puntaje, las cinco bandas con la actual marcada y la meta (nivel 3)');
+  ok(estados.every((f) => { const g = poner(f).g, m = en.ml(g), h = sb.pqNivel().h; return h.includes('Nivel ' + m.n + ' · ' + m.nm) && new RegExp('riesgo ' + m.ri + ' <em>← su empresa').test(h); }), 'la banda marcada y su riesgo coinciden con el nivel que calcula el modelo');
+  poner((q, i) => (i * 7 + 1) % 4);
+  ok(/Sin esos ajustes sería \d+%/.test(sb.pqNivel().h) === (en.sc().g !== en.sc().gb), 'si hay ajustes por rubro y tamaño, el puntaje sin ajustes se muestra');
+
+  // ── alerta crítica y semáforo ──
+  poner(() => 0);
+  const fl0 = en.fl(), al = fl0.length ? sb.pqAlerta(fl0[0].id) : null, qa = fl0.length ? Q.find((q) => q.id === fl0[0].id) : null;
+  ok(fl0.length > 5 && al && al.t === '¿Por qué es una alerta crítica?' && al.h.includes(fl0[0].id) && al.h.includes(sb.pqEsc(qa.cx)) && /no cambia el puntaje/.test(al.h) && /Deja de ser alerta si la respuesta pasa a/.test(al.h), 'la alerta crítica cita la pregunta, la respuesta, por qué importa y cómo deja de serlo');
+  poner(() => 0); delete en.a['GOB-01'];
+  ok(sb.pqAlerta('GOB-01') === null, 'una pregunta sin responder no tiene alerta que explicar');
+  ok(estados.every((f) => { poner(f); return en.cl2().every((c, i) => { const x = sb.pqSem(i); return x && x.t === '¿Por qué «' + c.lb + '»?' && x.h.includes(sb.pqEsc(c.ob)); }); }), 'cada obligación del semáforo se explica con su estado y su promedio');
+  en.a = {}; ok(sb.pqSem(0).h.includes('aún no tiene preguntas respondidas'), 'una obligación sin respuestas lo dice');
+  en.a = guarda.a; en.p = guarda.p;
+
+  // ── seguridad: nada del contenido entra sin escapar ──
+  ok(!/\$\{(q|d|c|o)\.(q|n|cx|ar|ob|l|id)\}/.test(pj.replace(/pqEsc\([^)]*\)/g, '')), 'el texto de preguntas, dimensiones y respuestas siempre pasa por el escapado');
+
+  // ── conexión: dónde aparece el icono ──
+  ok(/PQ\('dim',b\.d\.id,/.test(aj) && /PQ\('dim',it\.d\.id,/.test(aj) && /PQ\('sem',ci,/.test(aj) && /PQ\('alerta',f\.id,/.test(aj) && (aj.match(/PQ\('nivel'/g) || []).length === 2, 'el icono está en las brechas, el plan, el semáforo, las alertas críticas y el nivel (dos veces)');
+  ok(/<dialog class="dlg dlg-pq" id="dlg-pq" aria-labelledby="pq-t">/.test(ih) && /id="pq-c"/.test(ih) && ih.indexOf('src="tablero.js"') < ih.indexOf('src="porque.js"') && /aria-haspopup="dialog" aria-label=/.test(pj), 'el recuadro tiene título accesible y el icono avisa que abre un diálogo');
+  ok(/\.pq-i\{/.test(cs) && /@media print\{\.pq-i,\.dlg-pq\{display:none!important\}\}/.test(cs) && !/class="pq-i"/.test(aj), 'el icono tiene estilo y no sale en los PDF');
+  const previo2 = cs.slice(0, cs.indexOf('/* ── icono «¿por qué?»')); ok(previo2.length > 1000 && !/\.pq-/.test(previo2), 'ninguna clase pq- existía antes');
+
+  // ── el diálogo «¿Quién participa?» siempre tiene salida ──
+  ok(/id="nom-x" aria-label="Cerrar">×<\/button>/.test(ih) && !/id="nom-x"[^>]*hidden/.test(ih) && /id="nom-c2">Ahora no<\/button>/.test(ih) && /id="nom-s" hidden>[^]*Salir de la reunión/.test(ih), 'el diálogo del nombre tiene ×, «Ahora no» y, en la reunión en vivo, «Salir de la reunión»');
+  ok(/d\.oncancel = \(e\) => \{ e\.preventDefault\(\); cerrar\(\); \};/.test(pz) && !/if \(!puedeCerrar\) e\.preventDefault\(\)/.test(pz) && /x\.onclick = cerrar; ahora\.onclick = cerrar;/.test(pz) && /sal\.onclick = \(\) => \{[^}]*window\.salir\(\);/.test(pz), 'Esc, × y «Ahora no» cierran sin pedir el nombre, y «Salir de la reunión» sale');
+  ok(/const enVivo = window\.vivoInvitado === true && typeof window\.salir === 'function' && !\(PZS\.persona && PZS\.persona\.n\);/.test(pz) && /window\.vivoInvitado = true;/.test(vj) && /sal\.hidden = !enVivo; ahora\.hidden = enVivo;/.test(pz), '«Salir de la reunión» solo aparece en la reunión en vivo, para quien aún no ha dado su nombre');
+  ok(/const barra = \(\) => \{ if \(salio\) return; usuarioBarra\(/.test(vj), 'si el invitado sale desde el diálogo, la barra superior no reaparece');
+
+  // ── barra de pestañas ──
+  ok(/function tbVer\(b\)/.test(aj) && /document\.getElementById\(b\.dataset\.t\)\.classList\.add\('active'\);tbVer\(b\)\}/.test(aj) && /bar\.scrollBy\(\{left:/.test(aj), 'al activar una pestaña se trae a la vista (ya no queda cortada en el borde)');
+  ok(/\.tb\.mas-der\{/.test(cs) && /\.tb\.mas-izq\{/.test(cs) && /function tbBordes\(bar\)/.test(aj), 'los bordes se difuminan cuando hay más pestañas ocultas');
 }
 
 console.log('\n' + (fallos ? '✗ ' + fallos + ' problema(s)' : '✓ Todas las verificaciones pasaron'));

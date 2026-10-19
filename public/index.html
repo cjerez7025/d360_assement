@@ -326,11 +326,22 @@
   </div>
 </dialog>
 
+<dialog class="dlg dlg-pq" id="dlg-pq" aria-labelledby="pq-t">
+  <div class="dlg-in">
+    <div class="dlg-h">
+      <h2><i data-lucide="circle-help"></i> <span id="pq-t">¿Por qué?</span></h2>
+      <button type="button" class="dlg-x" onclick="document.getElementById('dlg-pq').close()" aria-label="Cerrar">×</button>
+    </div>
+    <div class="pq-c" id="pq-c"></div>
+    <div class="dlg-act"><button type="button" class="be" onclick="document.getElementById('dlg-pq').close()">Cerrar</button></div>
+  </div>
+</dialog>
+
 <dialog class="dlg" id="dlg-nombre" aria-labelledby="nom-t">
   <form class="dlg-in" id="nom-f" novalidate>
     <div class="dlg-h">
       <h2 id="nom-t"><i data-lucide="user-round"></i> ¿Quién participa?</h2>
-      <button type="button" class="dlg-x" id="nom-x" aria-label="Cerrar" hidden>×</button>
+      <button type="button" class="dlg-x" id="nom-x" aria-label="Cerrar">×</button>
     </div>
     <p>Su nombre aparecerá en los comentarios que escriba en la pizarra, para que todos sepan quién los hizo.</p>
     <label class="dlg-l" for="nom-n">Su nombre</label>
@@ -338,7 +349,7 @@
     <label class="dlg-l" for="nom-c">Su cargo (opcional)</label>
     <input class="dlg-inp" id="nom-c" type="text" maxlength="60" autocomplete="organization-title">
     <p class="dlg-warn" id="nom-e" role="alert" hidden><i data-lucide="triangle-alert"></i>Escriba su nombre para continuar.</p>
-    <div class="dlg-act"><button type="submit" class="be be-p"><i data-lucide="log-in"></i>Entrar a la reunión</button></div>
+    <div class="dlg-act"><button type="submit" class="be be-p"><i data-lucide="log-in"></i>Entrar a la reunión</button><button type="button" class="be" id="nom-c2">Ahora no</button><button type="button" class="be be-del" id="nom-s" hidden><i data-lucide="log-out"></i>Salir de la reunión</button></div>
   </form>
 </dialog>
 
@@ -354,6 +365,7 @@
     </div>
     <div class="ley-rel" id="ley-rel" role="group" aria-label="Artículos relacionados"></div>
     <div class="ley-rel ley-ir" id="ley-ir" role="group" aria-label="Ir a una letra del artículo" hidden></div>
+    <div class="ley-ej" id="ley-ej" hidden></div>
     <div class="ley-txt" id="ley-txt" tabindex="0" role="region" aria-label="Texto del artículo"></div>
     <div class="ley-pie" id="ley-pie"></div>
   </div>
@@ -377,6 +389,7 @@
 <script src="ruta.js"></script>
 <script src="servicio.js"></script>
 <script src="tablero.js"></script>
+<script src="porque.js"></script>
 <script src="pizarra.js"></script>
 <script src="sesiones.js"></script>
 <script src="vivo.js"></script>

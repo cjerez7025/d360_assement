@@ -1,24 +1,40 @@
 /* Popup con el texto oficial de la ley.
    Cada referencia «art. 14 ter a)» que genera refLey() (app.js) es un botón .ref: al pulsarlo se abre este diálogo con
    el texto literal del artículo, la letra citada resaltada, atajos a los demás artículos de la pregunta y a cada letra,
-   y enlaces directos a la BCN. El texto (ley-texto.js, ~150 KB) se descarga solo la primera vez que se abre. */
+   y enlaces directos a la BCN. Las menciones a otros artículos dentro del texto («el artículo 14 bis», «los artículos 14 bis y
+   14 quinquies») también son botones que abren ese artículo. El texto (ley-texto.js, ~150 KB) se descarga solo la primera vez
+   que se abre. */
 (function () {
   const $ = (id) => document.getElementById(id);
   const BCN = 'https://www.bcn.cl/leychile/navegar';
-  let cargando = null, ctx = null, copiado = null;
+  let cargando = null, ctx = null, copiado = null, ejAbierto = false;
 
+  function script(src) {
+    return new Promise((ok, ko) => {
+      const s = document.createElement('script');
+      s.src = src;
+      s.onload = ok;
+      s.onerror = () => ko(new Error(src));
+      document.head.appendChild(s);
+    });
+  }
+
+  // El texto es imprescindible; los ejemplos son un complemento: si no cargan, el recuadro funciona igual.
   function cargar() {
     if (window.LEY) return Promise.resolve();
     if (!cargando) {
-      cargando = new Promise((ok, ko) => {
-        const s = document.createElement('script');
-        s.src = 'ley-texto.js';
-        s.onload = ok;
-        s.onerror = () => { cargando = null; ko(new Error('ley-texto.js')); };
-        document.head.appendChild(s);
-      });
+      cargando = Promise.all([script('ley-texto.js'), script('ley-ejemplos.js').catch(() => {})]).then(() => {}, (e) => { cargando = null; throw e; });
     }
     return cargando;
+  }
+
+  // «Explicado con un ejemplo»: en palabras simples + un caso concreto, si el artículo lo tiene.
+  function ejemplo(k) {
+    const box = $('ley-ej'), x = window.LEY_EJ && window.LEY_EJ[k];
+    box.hidden = !x;
+    if (!x) { box.innerHTML = ''; return; }
+    box.innerHTML = `<details${ejAbierto ? ' open' : ''}><summary><i data-lucide="lightbulb"></i> Explicado con un ejemplo</summary><div class="ley-ej-c"><p><strong>En simple.</strong> ${esc(x.s)}</p><p><strong>Ejemplo.</strong> ${esc(x.e)}</p>${x.n ? `<p><strong>Ojo.</strong> ${esc(x.n)}</p>` : ''}<p class="ley-ej-av">Ejemplo ilustrativo de AlignData; no es asesoría legal.</p></div></details>`;
+    box.querySelector('details').addEventListener('toggle', (ev) => { ejAbierto = ev.target.open; });
   }
 
   const urlArt = (a) => `${BCN}?idNorma=${LEY.n}&idVersion=${LEY.v}&idParte=${a.id}`;
@@ -37,6 +53,32 @@
     return [...new Set(sal)];
   }
 
+  // Menciones a otros artículos dentro del texto de la ley: «artículo 14 bis», «artículos 14 bis y 14 quinquies», «44 a 46».
+  // Solo se enlazan los que existen en ley-texto.js y no son de otra norma («artículo 1º de la ley N° 18.…», «del Código …»).
+  const NUM = String.raw`\d+[º°]?(?:\s(?:bis|ter|quáter|quinquies|sexies|septies|octies|nonies|decies))?`;
+  const MENCION = new RegExp(String.raw`\b(art[íi]culos?)(\s+)(` + NUM + String.raw`(?:(?:,\s*|\s+(?:y|e|a)\s+)` + NUM + String.raw`)*)`, 'gi');
+  const PARTES = new RegExp('(' + NUM + ')', 'i');
+  const OTRA_NORMA = /^(?:,?\s*(?:inciso|letra|número|numeral|N°)[^,;.()]{0,30})?\s*(?:y siguientes\s+)?(?:de la|del|de)\s+(?:ley|código|constitución|decreto|d\.?f\.?l|convención)/i;
+  const claveDe = (n) => n.replace(/[º°]/g, '').replace(/\s+/g, ' ').trim().toLowerCase();
+
+  function enlazar(txt, actual) {
+    let sal = '', i = 0, m;
+    MENCION.lastIndex = 0;
+    while ((m = MENCION.exec(txt))) {
+      const fin = m.index + m[0].length, ini = m.index + m[1].length + m[2].length;
+      sal += esc(txt.slice(i, ini));
+      const otra = OTRA_NORMA.test(txt.slice(fin, fin + 90));
+      sal += m[3].split(PARTES).map((x, j) => {
+        const k = claveDe(x);
+        return j % 2 && !otra && k !== actual && window.LEY && LEY.a[k]
+          ? `<button type="button" class="ley-x" data-k="${esc(k)}" aria-label="Ver el artículo ${esc(k)}">${esc(x)}</button>` : esc(x);
+      }).join('');
+      i = fin;
+    }
+    return sal + esc(txt.slice(i));
+  }
+  window.leyEnlazar = enlazar;
+
   const movimientoReducido = () => window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   function irA(i) {
@@ -46,11 +88,17 @@
     p.classList.remove('ley-flash'); void p.offsetWidth; p.classList.add('ley-flash');
   }
 
+  function chips() {
+    $('ley-rel').innerHTML = ctx.lista.length < 2 ? '' : '<span class="ley-rel-l">Artículos relacionados:</span>' + ctx.lista.map((k) => `<button type="button" class="ley-chip" data-k="${k}" aria-label="Ver el artículo ${k}">Art. ${k}</button>`).join('');
+  }
+
   function mostrar(k, letras) {
     const art = LEY.a[k];
     ctx.k = k; ctx.letras = letras;
+    if (!ctx.lista.includes(k)) { ctx.lista.push(k); chips(); } // un artículo al que se llegó desde el texto queda en la fila de atajos
     $('ley-t').textContent = 'Artículo ' + k;
     $('ley-sub').textContent = art.t;
+    ejemplo(k);
 
     document.querySelectorAll('#ley-rel .ley-chip').forEach((b) => b.setAttribute('aria-current', b.dataset.k === k ? 'true' : 'false'));
 
@@ -61,7 +109,7 @@
     $('ley-txt').innerHTML = art.p.map((p, i) => {
       const l = letraDe(p), cita = citados.has(i);
       if (l && !letrasArt.some((x) => x.l === l)) letrasArt.push({ l, i });
-      const cuerpo = l ? '<strong class="ley-l">' + l + ')</strong> ' + esc(p.slice(3)) : esc(p);
+      const cuerpo = l ? '<strong class="ley-l">' + l + ')</strong> ' + enlazar(p.slice(3), k) : enlazar(p, k);
       return `<p class="ley-p${cita ? ' ley-cita' : ''}" id="lp${i}">${cita ? '<span class="ley-tag">Citado</span>' : ''}${cuerpo}</p>`;
     }).join('');
 
@@ -84,7 +132,7 @@
     const dlg = $('dlg-ley');
     const a = b.dataset.a, letras = (b.dataset.l || '').split('').filter(Boolean), rel = (b.dataset.r || '').split(',').filter(Boolean);
     $('ley-t').textContent = 'Artículo ' + a; $('ley-sub').textContent = '';
-    $('ley-rel').innerHTML = ''; $('ley-ir').hidden = true; $('ley-pie').innerHTML = '';
+    $('ley-rel').innerHTML = ''; $('ley-ir').hidden = true; $('ley-pie').innerHTML = ''; $('ley-ej').hidden = true;
     $('ley-txt').innerHTML = '<p class="ley-p" role="status">Cargando el texto de la ley…</p>';
     if (!dlg.open) dlg.showModal();
     cargar().then(() => {
@@ -92,7 +140,7 @@
       if (!LEY.a[a]) throw new Error('artículo sin texto: ' + a);
       if (!lista.includes(a)) lista.unshift(a);
       ctx = { lista };
-      $('ley-rel').innerHTML = lista.length < 2 ? '' : '<span class="ley-rel-l">Artículos relacionados:</span>' + lista.map((k) => `<button type="button" class="ley-chip" data-k="${k}" aria-label="Ver el artículo ${k}">Art. ${k}</button>`).join('');
+      chips();
       mostrar(a, letras);
     }).catch(() => {
       $('ley-txt').innerHTML = '<p class="ley-p" role="alert">No se pudo cargar el texto de la ley. Revise su conexión o ábralo directamente en la BCN.</p>';
@@ -102,7 +150,7 @@
   }
 
   document.addEventListener('click', (e) => {
-    const t = e.target.closest && e.target.closest('button.ref, #dlg-ley .ley-chip, #ley-cp');
+    const t = e.target.closest && e.target.closest('button.ref, #dlg-ley .ley-chip, #dlg-ley .ley-x, #ley-cp');
     if (!t) { if (e.target === $('dlg-ley')) $('dlg-ley').close(); return; }
     if (t.matches('button.ref')) return abrir(t);
     if (t.id === 'ley-cp') {

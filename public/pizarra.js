@@ -323,19 +323,25 @@ ${lectura ? '' : `<form class="pz-f" id="pzf${n}" novalidate>
     return new Promise((ok) => {
       const d = $('dlg-nombre');
       if (!d || (PZS.persona && PZS.persona.n && !forzar)) return ok(PZS.persona);
-      const f = $('nom-f'), n = $('nom-n'), c = $('nom-c'), er = $('nom-e'), x = $('nom-x');
+      const f = $('nom-f'), n = $('nom-n'), c = $('nom-c'), er = $('nom-e'), x = $('nom-x'), ahora = $('nom-c2'), sal = $('nom-s');
       n.value = (PZS.persona && PZS.persona.n) || ''; c.value = (PZS.persona && PZS.persona.c) || ''; er.hidden = true;
-      const puedeCerrar = !!(PZS.persona && PZS.persona.n);
-      x.hidden = !puedeCerrar;
-      d.oncancel = (e) => { if (!puedeCerrar) e.preventDefault(); };
-      x.onclick = () => { d.close(); ok(PZS.persona); };
+      // siempre hay salida: cerrar (×, «Ahora no» o Esc) deja las cosas como estaban; sin nombre, los avisos de la pantalla piden escribirlo cuando haga falta
+      let cerrado = false;
+      const cerrar = () => { if (cerrado) return; cerrado = true; if (d.open) d.close(); ok(PZS.persona); };
+      d.oncancel = (e) => { e.preventDefault(); cerrar(); };
+      d.onclose = cerrar;
+      x.onclick = cerrar; ahora.onclick = cerrar;
+      // en la reunión en vivo, quien aún no ha dado su nombre también puede salir de la reunión
+      const enVivo = window.vivoInvitado === true && typeof window.salir === 'function' && !(PZS.persona && PZS.persona.n);
+      sal.hidden = !enVivo; ahora.hidden = enVivo;
+      sal.onclick = () => { cerrado = true; if (d.open) d.close(); ok(PZS.persona); window.salir(); };
       f.onsubmit = (e) => {
         e.preventDefault();
         const nombre = n.value.trim().replace(/\s+/g, ' ');
         if (nombre.length < 2) { er.hidden = false; n.focus(); return; }
         PZS.persona = { n: nombre.slice(0, 60), c: c.value.trim().slice(0, 60) };
         try { localStorage.setItem(LS, JSON.stringify(PZS.persona)); } catch (x2) { /* sin almacenamiento: vale para esta visita */ }
-        d.close(); PZS.vistas.forEach((v) => v.quien && v.quien()); if (window.pzPersonaCambio) window.pzPersonaCambio(PZS.persona); ok(PZS.persona);
+        cerrado = true; d.close(); PZS.vistas.forEach((v) => v.quien && v.quien()); if (window.pzPersonaCambio) window.pzPersonaCambio(PZS.persona); ok(PZS.persona);
       };
       if (!d.open) d.showModal();
       n.focus();

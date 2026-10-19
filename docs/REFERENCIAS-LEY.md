@@ -56,3 +56,16 @@ Escriba la referencia con el formato habitual: «Art. 14 ter a)», «Arts. 3 a),
 ## Trampa de la vista previa local
 
 El servidor de vista previa del navegador integrado se cuelga con archivos de más de ~130 KB (el servidor en sí responde bien, p. ej. con `curl`). Por eso `ley-texto.js` se mantiene bajo ~120 KB. En Firebase Hosting no ocurre.
+
+## Menciones a otros artículos dentro del texto
+
+Cuando el texto oficial de un artículo menciona a otros («los artículos 14 bis y 14 quinquies», «el artículo 14 septies»), esas menciones son botones que abren ese artículo en el mismo recuadro (`enlazar()` en `public/ley.js`). El artículo al que se llegó queda en la fila «Artículos relacionados», para volver con un clic. No se enlazan: las menciones a otra norma («artículo 1º de la ley N° …», «del Código …»), «el artículo anterior», un artículo que no está en `ley-texto.js` ni el artículo que se está leyendo.
+
+## Explicaciones y ejemplos por artículo
+
+Cada artículo que el recuadro puede mostrar (47: los que citan las preguntas y el semáforo, con sus rangos) tiene un desplegable **«Explicado con un ejemplo»** con tres partes: *En simple* (la regla en palabras llanas), *Ejemplo* (un caso concreto de una empresa) y, si hace falta, *Ojo* (una salvedad). Está en `public/ley-ejemplos.js` (`window.LEY_EJ`, clave = número del artículo) y se descarga junto con `ley-texto.js` la primera vez que se abre el recuadro; si no carga, el recuadro funciona igual. El desplegable recuerda si estaba abierto al pasar de un artículo a otro.
+
+- Son ejemplos **ilustrativos redactados por AlignData** a partir del texto oficial; no son asesoría legal y así lo dice el recuadro.
+- Las pruebas (`verificar`, sección 12) exigen que todo artículo alcanzable tenga ejemplo y comprueban que las cifras de los ejemplos (multas, plazos, edades) coincidan con el texto oficial.
+- **Pendiente: revisión legal de Ale Yevilaf** antes de usarlos con clientes. Los más delicados: arts. 16 bis (datos de salud en el ámbito laboral, de seguros, etc.), 17 a 19 (deudas comerciales), 27 y 28 (transferencias internacionales), 35 (multas) y 41 (reclamo ante la Agencia).
+- Para agregar o corregir uno: editar la entrada en `ley-ejemplos.js` (campos `s`, `e` y opcional `n`, sin HTML).
