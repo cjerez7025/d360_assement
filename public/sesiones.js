@@ -44,6 +44,7 @@
   // el consultor conoce el enlace publicado de la sesión abierta (para recibir las solicitudes del cliente)
   window.srvCtx = () => ({ N, tk: act && act.compartido && act.compartido.token });
   async function arrancar() {
+    if (P.has('guia')) return; // la guía previa es pública: la dibuja guia.js sin sesión ni Firebase
     document.body.classList.add('nube');
     // en localhost se evita el caché de módulos; en producción lo resuelve la cabecera Cache-Control de firebase.json
     const sufijo = (location.hostname === 'localhost' || location.hostname === '127.0.0.1') ? '?t=' + Date.now() : '';
@@ -337,7 +338,7 @@ ${parcial}<div class="dlg-act"><a class="be" href="${esc(url)}" target="_blank" 
   window.vivoCopiar = async () => { const i = $('dv-url'), ok = $('dv-cp'); try { await navigator.clipboard.writeText(i.value); ok.textContent = 'Enlace copiado.'; } catch (e) { i.select(); ok.textContent = 'Seleccionado: use Ctrl+C para copiarlo.'; } };
   window.vivoTerminar = async () => {
     if (!confirmaVivo) { confirmaVivo = true; vivoRender(); return; }
-    try { await PZ.sincronizarVivo(); await N.pzVivoLimpiar(en.viv.token); if (N.vivoPresentesLimpiar) await N.vivoPresentesLimpiar(en.viv.token); await N.vivoCerrar(en.sid, en.viv.token); } catch (e) { $('dv-body').insertAdjacentHTML('afterbegin', '<p class="dlg-warn" role="alert">No se pudo cerrar (' + esc(e.code || e.message) + ').</p>'); return; }
+    try { await PZ.sincronizarVivo(); await N.pzVivoLimpiar(en.viv.token); if (N.vivoPresentesLimpiar) await N.vivoPresentesLimpiar(en.viv.token); if (N.pzEscribiendoLimpiar) await N.pzEscribiendoLimpiar(en.viv.token); await N.vivoCerrar(en.sid, en.viv.token); } catch (e) { $('dv-body').insertAdjacentHTML('afterbegin', '<p class="dlg-warn" role="alert">No se pudo cerrar (' + esc(e.code || e.message) + ').</p>'); return; }
     if (vivoOff) { vivoOff(); vivoOff = null; }
     if (presOff) { presOff(); presOff = null; } presentes = [];
     PZ.vivo(null); en.viv = null; en.prop = {}; en.clienteVisto = null; confirmaVivo = false; propUI(); vivoBtn(); vivoRender();

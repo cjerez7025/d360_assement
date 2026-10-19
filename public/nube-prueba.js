@@ -90,6 +90,16 @@ export function vivoPresentes(tk, cb) {
   return () => oyentes.delete(emitir);
 }
 export async function vivoPresentesLimpiar(tk) { const d = leerTodo(); if (d.vivo[tk]) { d.vivo[tk].presentes = {}; guardarTodo(d); } }
+// Escritura en vivo (misma interfaz que nube.js): el borrador de lo que alguien escribe en la pizarra
+export async function pzEscribiendo(tk, pid, dato) { const d = leerTodo(); if (!d.vivo[tk]) return; d.vivo[tk].escribiendo = { ...(d.vivo[tk].escribiendo || {}), [pid]: { a: dato.a, r: dato.r, c: dato.c || '', q: dato.q, x: dato.x, t: Date.now() } }; guardarTodo(d); }
+export async function pzEscribiendoQuitar(tk, pid) { const d = leerTodo(); if (d.vivo[tk] && d.vivo[tk].escribiendo) { delete d.vivo[tk].escribiendo[pid]; guardarTodo(d); } }
+export function pzEscribiendoEscuchar(tk, cb) {
+  let ultimo = null;
+  const emitir = () => { const p = (leerTodo().vivo[tk] || {}).escribiendo || {}, lst = Object.entries(p).map(([id, x]) => ({ id, ...x })), txt = JSON.stringify(lst); if (txt !== ultimo) { ultimo = txt; cb(lst); } };
+  oyentes.add(emitir); emitir();
+  return () => oyentes.delete(emitir);
+}
+export async function pzEscribiendoLimpiar(tk) { const d = leerTodo(); if (d.vivo[tk]) { d.vivo[tk].escribiendo = {}; guardarTodo(d); } }
 export async function vivoCerrar(sid, tk) { const d = leerTodo(); delete d.vivo[tk]; if (d.sesiones[sid]) d.sesiones[sid].vivo = null; guardarTodo(d); }
 
 // ── pizarra compartida (simulada): misma interfaz que nube.js; ses = registro de la sesión, vivo = reunión, comp = publicada ──

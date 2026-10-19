@@ -5,7 +5,7 @@ import vm from 'node:vm';
 
 const file = process.argv[2] || 'public/app.js';
 const code = fs.readFileSync(file, 'utf8');
-const codigoRuta = ['ruta.js', 'servicio.js', 'tablero.js', 'porque.js'].map((f) => fs.readFileSync(path.join(path.dirname(file), f), 'utf8')).join('\n'); // hoja de ruta, evolución, servicio y documentos (se cargan después de app.js)
+const codigoRuta = ['ruta.js', 'servicio.js', 'tablero.js', 'porque.js', 'guia.js'].map((f) => fs.readFileSync(path.join(path.dirname(file), f), 'utf8')).join('\n'); // hoja de ruta, evolución, servicio y documentos (se cargan después de app.js)
 
 // stubs mínimos del navegador
 const el = () => ({ textContent: '', innerHTML: '', value: '', style: {}, classList: { add() {}, remove() {}, toggle() {} }, addEventListener() {}, setAttribute() {}, getContext: () => ({}) });
@@ -1436,6 +1436,82 @@ seccion('30. Icono «¿por qué?» junto al riesgo, salida del diálogo de nombr
   // ── barra de pestañas ──
   ok(/function tbVer\(b\)/.test(aj) && /document\.getElementById\(b\.dataset\.t\)\.classList\.add\('active'\);tbVer\(b\)\}/.test(aj) && /bar\.scrollBy\(\{left:/.test(aj), 'al activar una pestaña se trae a la vista (ya no queda cortada en el borde)');
   ok(/\.tb\.mas-der\{/.test(cs) && /\.tb\.mas-izq\{/.test(cs) && /function tbBordes\(bar\)/.test(aj), 'los bordes se difuminan cuando hay más pestañas ocultas');
+}
+
+seccion('31. Guía previa a la sesión (enlace público para el cliente)');
+{
+  const raiz23 = path.resolve(path.dirname(file), '..');
+  const leer23 = (f) => fs.readFileSync(path.join(raiz23, f), 'utf8').replace(/\r\n/g, '\n');
+  const gj = leer23('public/guia.js'), ih = leer23('public/index.html'), sj = leer23('public/sesiones.js'), lj = leer23('public/lateral.js'), cs = leer23('public/styles.css');
+  const sb = sandbox, h = sb.guiaHtml();
+  const bases = Q.filter((q) => !q.iS), prof = Q.filter((q) => q.iS);
+
+  // ── contenido: sale del cuestionario vigente ──
+  ok((h.match(/<section class="gp-dim"/g) || []).length === D.length && D.every((d) => h.includes(sb.pqEsc(d.n))), 'la guía tiene un bloque por cada uno de los ' + D.length + ' temas, con su nombre');
+  ok(bases.every((q) => h.includes('<li>' + sb.pqEsc(q.q) + '</li>')) && (h.match(/<ol class="gp-q">/g) || []).length === D.length, 'muestra las ' + bases.length + ' preguntas del cuestionario, agrupadas por tema');
+  ok(prof.every((q) => !h.includes(sb.pqEsc(q.q))), 'no lista las preguntas de profundización (aparecen solo si una respuesta sale baja)');
+  ok(bases.every((q) => q.op.every((o) => !h.includes('>' + sb.pqEsc(o.l) + '<'))) && !/Optimizado|Inexistente|Reactivo/.test(h.split('Los temas, uno por uno')[1]), 'no muestra las opciones de respuesta (para que se responda lo que ocurre y no la respuesta ideal)');
+  ok(bases.every((q) => h.includes('<li>' + sb.pqEsc(q.ev) + '</li>')), 'incluye, por pregunta, qué conviene ir preparando («cómo comprobarlo»)');
+  ok(D.every((d) => h.includes('Conviene que participe:')) && (h.match(/Conviene que participe:/g) || []).length === D.length && /<table>/.test(h) && D.every((d, i) => h.includes((i + 1) + '. ' + sb.pqEsc(d.n))), 'dice quién conviene que participe en cada tema y lo resume en una tabla');
+  ok(D.every((d) => { const p = prof.filter((q) => q.dm === d.id).length; return !p || (p === 1 ? /una pregunta adicional/.test(h) : true); }) && /entra en vigencia el 1 de diciembre de 2026/.test(h) && /no constituye una auditoría ni asesoría legal/.test(h), 'avisa de las preguntas adicionales, la fecha de vigencia de la ley y que no es auditoría ni asesoría legal');
+  ok(/class="ref"|data-a=/.test(h), 'la base legal de cada tema abre el texto de la ley');
+  ok(!/<script|onerror=|javascript:/i.test(h) && !/Participa como|Resultado|Puntaje global/.test(h), 'la guía no lleva scripts ni datos de ninguna sesión');
+  const todasDim = [...gj.matchAll(/^\s+([a-z]+): \{ tema:/gm)].map((m) => m[1]);
+  ok(D.every((d) => todasDim.includes(d.id)) && todasDim.length === D.length, 'todos los temas tienen su descripción y a quién convocar');
+
+  // ── enlace público, sin sesión ni Firebase ──
+  ok(/return location\.origin \+ location\.pathname \+ '\?guia=1';/.test(gj) && /\/\(\^\|\[\?&\]\)guia=\/\.test\(location\.search\)/.test(gj), 'el enlace es la misma página con ?guia=1 y se reconoce al abrirla');
+  ok(/if \(P\.has\('guia'\)\) return;/.test(sj) && sj.indexOf("P.has('guia')") < sj.indexOf("import((MOCK"), 'con ?guia=1 la aplicación no pide ingreso ni conecta con Firebase');
+  ok(!/import\(|firebase|nube/i.test(gj.replace(/\/\*[^]*?\*\//, '')), 'guia.js no usa Firebase ni la capa de datos');
+  ok(/<div id="sg" class="screen"><div id="gp-c"><\/div><\/div>/.test(ih) && ih.indexOf('src="porque.js"') < ih.indexOf('src="guia.js"') && ih.indexOf('src="guia.js"') > ih.indexOf('src="app.js"'), 'la página tiene su pantalla y carga guia.js después de la aplicación (se dibuja al terminar de cargar, por encima de la pantalla de espera)');
+  ok(/body\.guia \.topbar,body\.guia \.nvbar,body\.guia #sb/.test(cs), 'la guía se ve limpia, sin la barra de la aplicación ni el menú');
+
+  // ── el consultor: solo el enlace, para mandarlo por WhatsApp u otro medio ──
+  ok(/id: 'gui', ic: 'book-open-check', t: 'Guía previa para el cliente', fn: \(\) => guiaDlg\(\)/.test(lj), 'el menú del consultor tiene «Guía previa para el cliente»');
+  ok(/id="dlg-guia"/.test(ih) && /id="gg-url" readonly/.test(ih) && /onclick="guiaCopiar\(\)"/.test(ih) && /id="gg-wa"/.test(ih) && !/textarea|Texto sugerido|Guardar como PDF/.test(ih.slice(ih.indexOf('id="dlg-guia"'), ih.indexOf('</dialog>', ih.indexOf('id="dlg-guia"')))), 'el diálogo da el enlace, un botón para copiarlo y otro para enviarlo por WhatsApp (sin textos de correo)');
+  ok(/'https:\/\/wa\.me\/\?text=' \+ encodeURIComponent\(guiaMensaje\(\)\)/.test(gj) && /function guiaMensaje\(\)/.test(gj) && /navigator\.clipboard\.writeText/.test(gj), 'WhatsApp se abre con un mensaje corto y el enlace; copiar usa el portapapeles');
+  const previo3 = cs.slice(0, cs.indexOf('/* ── guía previa a la sesión (guia.js) ── */'));
+  ok(previo3.length > 1000 && !/\.gp-|\.gg-/.test(previo3), 'ninguna clase gp- o gg- existía antes');
+}
+
+seccion('32. Pizarra: escritura en vivo (se ve lo que alguien escribe antes de publicarlo)');
+{
+  const raiz24 = path.resolve(path.dirname(file), '..');
+  const leer24 = (f) => fs.readFileSync(path.join(raiz24, f), 'utf8').replace(/\r\n/g, '\n');
+  const pz = leer24('public/pizarra.js'), ng = leer24('public/nube.js'), np = leer24('public/nube-prueba.js'), rg = leer24('firestore.d360.rules'), cs = leer24('public/styles.css'), sj = leer24('public/sesiones.js');
+  const sb = sandbox, B = sb.pzBorradorOk;
+
+  // ── lo que llega de la base de datos nunca se usa tal cual ──
+  const bien = { a: 'Marcela Rojas', r: 'cliente', c: 'Gerente', q: 'GOB-01', x: 'Estamos revisando' };
+  ok(B(bien) && B(bien).a === 'Marcela Rojas' && B(bien).r === 'cliente' && B(bien).c === 'Gerente' && B(bien).q === 'GOB-01' && B(bien).x === 'Estamos revisando', 'un borrador válido se acepta tal cual');
+  ok(B(null) === null && B('x') === null && B({ ...bien, x: '' }) === null && B({ ...bien, x: '   \n ' }) === null && B({ ...bien, a: '' }) === null && B({ ...bien, q: '' }) === null && B({ q: 'GOB-01', x: 'hola' }) === null, 'sin nombre, sin pregunta o sin texto no hay nada que mostrar');
+  const largo = B({ ...bien, a: 'N'.repeat(100), c: 'C'.repeat(100), q: 'Q'.repeat(60), x: 'x'.repeat(5000) });
+  ok(largo.a.length === 60 && largo.c.length === 60 && largo.q.length === 40 && largo.x.length === 2000, 'se recortan el nombre (60), el cargo (60), la pregunta (40) y el texto (2.000)');
+  ok(B({ ...bien, r: 'admin' }).r === 'cliente' && B({ ...bien, r: 'consultor' }).r === 'consultor' && B({ ...bien, c: 5 }).c === '' && B({ ...bien, a: '  Ana   Soto ' }).a === 'Ana Soto', 'un rol raro se trata como cliente, un cargo que no es texto se ignora y se limpian los espacios');
+
+  // ── la tarjeta «escribiendo…» ──
+  const f1 = sb.pzFantasma(B(bien), false), f2 = sb.pzFantasma(B({ ...bien, r: 'consultor' }), true), f3 = sb.pzFantasma(B({ ...bien, q: 'general' }), true);
+  ok(/class="pz-e pz-fan pz-cli"/.test(f1) && /Marcela Rojas/.test(f1) && /Gerente/.test(f1) && />escribiendo<i class="pz-pts"/.test(f1) && /Estamos revisando/.test(f1) && !/>en GOB-01</.test(f1), 'la tarjeta muestra quién escribe, su cargo, «escribiendo…» y el borrador (en el hilo de la pregunta no repite la pregunta)');
+  ok(/pz-fan pz-con/.test(f2) && />Consultor</.test(f2) && />en GOB-01</.test(f2) && />en la pizarra general</.test(f3), 'en la pizarra general dice en qué pregunta escribe, y distingue al consultor');
+  const xss = sb.pzFantasma(B({ ...bien, a: '<img src=x onerror=alert(1)>', x: '<script>alert(2)</script>', q: '"><b>' }), true);
+  ok(!/<img|<script/.test(xss) && /&lt;script&gt;/.test(xss) && /&quot;&gt;&lt;b&gt;/.test(xss), 'nada de lo que escriben los demás se dibuja sin escapar');
+
+  // ── cómo se comparte ──
+  ok(/PZS\.pid = nuevoId\(\);/.test(pz) && /Math\.max\(250, 900 - \(ahora\(\) - ultEnvio\)\)/.test(pz) && /enviado\.x === x && enviado\.q === q/.test(pz), 'cada dispositivo comparte su borrador con un pequeño retardo (no en cada tecla) y no repite lo ya enviado');
+  ok(/t - llegada\[b\.id\]\.t < 25000/.test(pz) && /setInterval\(\(\) => \{ if \(PZS\.borradores\.length\) pintarBorradores\(\); \}, 4000\)/.test(pz) && /d\.id === PZS\.pid/.test(pz), 'el borrador desaparece a los 25 s sin cambios (con la hora de este equipo) y uno no ve el suyo');
+  ok(/ta\.addEventListener\('input', \(\) => \{ borr\.texto = ta\.value; mostrarError\(''\); PZS\.emitirBorrador\(clv, ta\.value\); \}\)/.test(pz) && /ta\.addEventListener\('blur'/.test(pz) && /document\.activeElement !== ta\) PZS\.quitarBorrador\(\)/.test(pz) && /ta\.value = ''; PZS\.quitarBorrador\(\);/.test(pz) && /addEventListener\('pagehide', \(\) => PZS\.quitarBorrador\(\)\)/.test(pz), 'se comparte al escribir y se quita al publicar, al dejar el cuadro unos segundos o al cerrar la página');
+  ok(/if \(!x\.trim\(\)\) return PZS\.quitarBorrador\(\);/.test(pz) && /const a = autor\(\); if \(!a\.autor\) return;/.test(pz), 'si se borra el texto se quita el borrador, y el cliente que aún no escribió su nombre no comparte nada');
+  ok(/PZS\.rol === 'consultor' \? \(PZS\.vivoTk && typeof en !== 'undefined' && en\.viv \? PZS\.vivoTk : null\)/.test(pz) && /escucharEscribiendo\(tk\);\n  \};\n  \/\*\* Cliente en sus resultados/.test(pz) && /pararEscribiendo\(\);\n    if \(!tk \|\| !PZS\.N/.test(pz), 'solo funciona dentro de una reunión en vivo (consultor e invitados) y se detiene al cerrarla');
+  ok(/fantasmas\(\) \{/.test(pz) && /op\.todas \|\| b\.q === qid/.test(pz) && /vista\.pintar\(\); vista\.fantasmas\(\);/.test(pz) && /classList\.add\('pz-nuevo'\)/.test(pz) && /classList\.toggle\('pz-hay', hay\)/.test(pz), 'el hilo de cada pregunta muestra solo los borradores de esa pregunta, la general muestra todos, los comentarios nuevos se destacan y el botón Pizarra avisa');
+  ok(/Lo que se escribe aquí lo ven todos los participantes, incluso mientras lo escriben/.test(pz), 'el aviso de la pizarra dice que los demás ven lo que se escribe mientras se escribe');
+
+  // ── datos y reglas ──
+  const fns = ['pzEscribiendo', 'pzEscribiendoQuitar', 'pzEscribiendoEscuchar', 'pzEscribiendoLimpiar'];
+  ok(fns.every((f) => new RegExp('export (async )?function ' + f + '\\(').test(ng) && new RegExp('export (async )?function ' + f + '\\(').test(np)), 'la nube y la versión de prueba tienen las mismas funciones de escritura en vivo');
+  ok(/pzEscribiendoLimpiar\(tkV\)/.test(ng) && /N\.pzEscribiendoLimpiar\(en\.viv\.token\)/.test(sj), 'al terminar la reunión y al eliminar la sesión se borran los borradores');
+  const bl = rg.slice(rg.indexOf('match /escribiendo/{pid}'), rg.indexOf('// Pizarra en vivo: mientras'));
+  ok(/allow get, list: if esConsultor\(\) \|\| enlaceVigente\(\);/.test(bl) && /hasOnly\(\['a', 'r', 'c', 'q', 'x', 't'\]\)/.test(bl) && /x\.size\(\) <= 2000/.test(bl) && /\(request\.resource\.data\.r == 'cliente' \|\| esConsultor\(\)\)/.test(bl) && /request\.resource\.data\.t == request\.time/.test(bl) && /allow delete: if esConsultor\(\) \|\| enlaceVigente\(\);/.test(bl), 'las reglas dejan leer y escribir su borrador a quien está en la reunión (nadie puede hacerse pasar por consultor) y limitan los campos y los tamaños');
+  ok(/\.pz-fan\{opacity:\.82/.test(cs) && /prefers-reduced-motion:reduce\)\{\.pz-fan,\.pz-nuevo,\.pz-pts b,\.pz-hay::after\{animation:none\}/.test(cs) && /@media print\{\.pz-fans\{display:none!important\}\}/.test(cs), 'las animaciones respetan «reducir movimiento» y los borradores no salen en los PDF');
 }
 
 console.log('\n' + (fallos ? '✗ ' + fallos + ' problema(s)' : '✓ Todas las verificaciones pasaron'));

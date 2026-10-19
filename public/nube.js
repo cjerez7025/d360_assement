@@ -156,6 +156,22 @@ export async function vivoPresentesLimpiar(tk) {
   const s = await F.getDocs(F.collection(db, 'en_vivo', tk, 'presentes'));
   await Promise.all(s.docs.map((d) => F.deleteDoc(d.ref)));
 }
+// Escritura en vivo: el borrador de lo que alguien está escribiendo en la pizarra (un documento por dispositivo) para que los
+// demás lo vean antes de que lo publique. Se actualiza mientras escribe y se borra al publicar o al cerrar la reunión.
+export async function pzEscribiendo(tk, pid, d) {
+  try { await F.setDoc(F.doc(db, 'en_vivo', tk, 'escribiendo', pid), { a: d.a, r: d.r, ...(d.c ? { c: d.c } : {}), q: d.q, x: d.x, t: F.serverTimestamp() }); } catch (e) { /* enlace cerrado */ }
+}
+export async function pzEscribiendoQuitar(tk, pid) {
+  try { await F.deleteDoc(F.doc(db, 'en_vivo', tk, 'escribiendo', pid)); } catch (e) { /* ya no estaba */ }
+}
+export function pzEscribiendoEscuchar(tk, cb, err) {
+  return F.onSnapshot(F.collection(db, 'en_vivo', tk, 'escribiendo'),
+    (s) => cb(s.docs.map((d) => { const x = d.data({ serverTimestamps: 'estimate' }); return { id: d.id, a: x.a, r: x.r, c: x.c || '', q: x.q, x: x.x, t: x.t && x.t.toMillis ? x.t.toMillis() : 0 }; })), err || (() => cb([])));
+}
+export async function pzEscribiendoLimpiar(tk) {
+  const s = await F.getDocs(F.collection(db, 'en_vivo', tk, 'escribiendo'));
+  await Promise.all(s.docs.map((d) => F.deleteDoc(d.ref)));
+}
 export async function vivoCerrar(sid, tk) {
   await F.deleteDoc(vivoRef(tk));
   if (sid) await F.updateDoc(F.doc(db, 'sesiones', sid), { vivo: F.deleteField() });
@@ -258,7 +274,7 @@ const borrarSolicitudes = async (tk) => { const s = await F.getDocs(F.collection
 export async function eliminarSesion(sid, d) {
   const tkC = d && d.compartido && d.compartido.token, tkV = d && d.vivo && d.vivo.token;
   if (tkC) { await borrarTodoPz(rutaComp(tkC)); await borrarSolicitudes(tkC); await F.deleteDoc(F.doc(db, 'compartidos', tkC)); }
-  if (tkV) { await borrarTodoPz(rutaVivo(tkV)); await vivoPresentesLimpiar(tkV); await F.deleteDoc(vivoRef(tkV)); }
+  if (tkV) { await borrarTodoPz(rutaVivo(tkV)); await vivoPresentesLimpiar(tkV); await pzEscribiendoLimpiar(tkV); await F.deleteDoc(vivoRef(tkV)); }
   await borrarTodoPz(rutaSes(sid));
   await F.deleteDoc(F.doc(db, 'sesiones', sid));
 }

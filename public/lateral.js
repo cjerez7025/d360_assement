@@ -30,7 +30,8 @@
   const MENU = [
     { sec: 'Menú', items: [
       { id: 'ses', ic: 'layout-list', t: 'Sesiones', fn: () => dash(), act: () => pantalla() === 'sd' },
-      { id: 'new', ic: 'file-plus', t: 'Nueva sesión', fn: () => nueva(), act: () => pantalla() === 's1' && !(typeof en !== 'undefined' && en.sid) }
+      { id: 'new', ic: 'file-plus', t: 'Nueva sesión', fn: () => nueva(), act: () => pantalla() === 's1' && !(typeof en !== 'undefined' && en.sid) },
+      { id: 'gui', ic: 'book-open-check', t: 'Guía previa para el cliente', fn: () => guiaDlg(), act: () => false }
     ] },
     { sec: 'sesion', si: enSesion, items: [
       { id: 'preg', ic: 'clipboard-list', t: 'Preguntas', fn: irPreguntas, act: () => pantalla() === 's2', badge: () => { try { const p = en.pg(); return p.d + '/' + p.t; } catch (e) { return ''; } } },

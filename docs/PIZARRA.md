@@ -18,6 +18,19 @@ El consultor y los integrantes del cliente escriben **comentarios** (con texto e
 
 La pizarra **reemplaza** al antiguo cuadro «Notas de la reunión» de cada pregunta: ya no hay dos lugares para anotar. Las notas que existían en sesiones anteriores se pasan solas a la pizarra de su pregunta la primera vez que el consultor abre la sesión (mismo autor, fecha de la sesión, sin duplicarse) y se borran del campo antiguo; si un enlace ya publicado todavía las trae, salen en la pestaña **Pizarra** bajo «Notas anteriores».
 
+## Escritura en vivo (se ve lo que alguien escribe, sin publicar)
+
+Durante la **reunión en vivo**, mientras alguien escribe en la pizarra, los demás ven su borrador al instante como una tarjeta tenue con «escribiendo…» y tres puntos animados, en la pregunta que corresponde. No hace falta pulsar «Publicar» para que se vea.
+
+- **Quién lo ve:** el consultor y todos los invitados de la reunión. En el hilo de una pregunta se ven los borradores de esa pregunta; en la pizarra general se ven todos, con la pregunta a la que se refieren.
+- **Cuándo se ve:** con un pequeño retardo (≈ 1 s) para no enviar cada tecla. Desaparece al publicar (queda el comentario, destacado un momento), al borrar el texto, a los 4 s de salir del cuadro de texto, al cerrar la página o a los **25 s sin cambios**.
+- **Qué se comparte:** solo el texto (hasta 2.000 caracteres), el nombre y el cargo. Las imágenes y los documentos se comparten al publicar.
+- **El botón «Pizarra»** pulsa suavemente cuando alguien está escribiendo.
+- **Lo que escribe aquí lo ven todos mientras lo escriben**, aunque después lo borre sin publicar. El aviso de la pizarra lo dice. Los borradores no se guardan: se borran al publicar, al cerrar la reunión y al eliminar la sesión.
+- Solo funciona dentro de la reunión en vivo; con el consultor solo, no se comparte nada. Los comentarios nuevos que llegan se destacan un momento.
+
+Datos: `en_vivo/{token}/escribiendo/{pid}` con `{a: nombre, r: rol, c?: cargo, q: pregunta o «general», x: texto, t: hora del servidor}`; un documento por dispositivo. Reglas: leen y escriben quienes están en la reunión (el consultor con su cuenta; nadie puede hacerse pasar por consultor), con límites de campos y tamaños; ver `firestore.d360.rules`. **Al publicar este cambio hay que desplegar primero `firestore:d360`.** Pruebas: sección 32 de `verificar` y 29 casos nuevos en `probar-reglas` (204 en total).
+
 ## Dónde vive cada dato
 
 ```

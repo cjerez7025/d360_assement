@@ -249,6 +249,9 @@
   </div>
 
   <!-- ══════ SCREEN 3: RESULTS ══════ -->
+  <!-- ══════ GUÍA PREVIA A LA SESIÓN (pública, ?guia=1) ══════ -->
+  <div id="sg" class="screen"><div id="gp-c"></div></div>
+
   <div id="s3" class="screen">
     <h1 class="sr-only">Resultados del diagnóstico D360°</h1>
     <div id="rc"></div>
@@ -326,6 +329,20 @@
   </div>
 </dialog>
 
+<dialog class="dlg dlg-guia" id="dlg-guia" aria-labelledby="gg-t">
+  <div class="dlg-in">
+    <div class="dlg-h">
+      <h2 id="gg-t"><i data-lucide="book-open-check"></i> Guía previa para el cliente</h2>
+      <button type="button" class="dlg-x" onclick="document.getElementById('dlg-guia').close()" aria-label="Cerrar">×</button>
+    </div>
+    <p>Enlace a una página con los temas y las preguntas de la sesión, para que el cliente la lea antes de la reunión. Se abre sin cuenta y no lleva datos de ninguna empresa. Envíelo por WhatsApp, correo u otro medio.</p>
+    <label class="dlg-l" for="gg-url">Enlace</label>
+    <div class="gg-fila"><input class="dlg-inp" id="gg-url" readonly><button type="button" class="be be-p" onclick="guiaCopiar()"><i data-lucide="copy"></i>Copiar</button></div>
+    <p class="gg-ok" id="gg-ok" role="status"></p>
+    <div class="dlg-act"><a id="gg-wa" class="be" href="#" target="_blank" rel="noopener"><i data-lucide="message-circle"></i>Enviar por WhatsApp</a><a id="gg-abrir" class="be" href="#" target="_blank" rel="noopener"><i data-lucide="external-link"></i>Ver la guía</a><button type="button" class="be" onclick="document.getElementById('dlg-guia').close()">Cerrar</button></div>
+  </div>
+</dialog>
+
 <dialog class="dlg dlg-pq" id="dlg-pq" aria-labelledby="pq-t">
   <div class="dlg-in">
     <div class="dlg-h">
@@ -390,6 +407,7 @@
 <script src="servicio.js"></script>
 <script src="tablero.js"></script>
 <script src="porque.js"></script>
+<script src="guia.js"></script>
 <script src="pizarra.js"></script>
 <script src="sesiones.js"></script>
 <script src="vivo.js"></script>

@@ -209,6 +209,25 @@ service cloud.firestore {
         allow delete: if esConsultor() || enlaceVigente();
       }
 
+      // Escritura en vivo: lo que alguien está escribiendo en la pizarra, para que los demás lo vean antes de que lo publique.
+      // Un documento por dispositivo: a = nombre, r = rol, c = cargo, q = pregunta o «general», x = texto del borrador,
+      // t = hora del servidor. Todos los de la reunión leen; cada uno escribe el suyo y lo borra al publicar. Se borran al cerrar la reunión.
+      match /escribiendo/{pid} {
+        allow get, list: if esConsultor() || enlaceVigente();
+        allow create, update: if esIdPz(pid)
+          && (esConsultor() || enlaceVigente())
+          && request.resource.data.keys().hasOnly(['a', 'r', 'c', 'q', 'x', 't'])
+          && request.resource.data.keys().hasAll(['a', 'r', 'q', 'x', 't'])
+          && request.resource.data.a is string && request.resource.data.a.size() >= 1 && request.resource.data.a.size() <= 60
+          && request.resource.data.r in ['consultor', 'cliente']
+          && (request.resource.data.r == 'cliente' || esConsultor())
+          && (!('c' in request.resource.data) || (request.resource.data.c is string && request.resource.data.c.size() <= 60))
+          && request.resource.data.q is string && request.resource.data.q.size() >= 1 && request.resource.data.q.size() <= 40
+          && request.resource.data.x is string && request.resource.data.x.size() <= 2000
+          && request.resource.data.t == request.time;
+        allow delete: if esConsultor() || enlaceVigente();
+      }
+
       // Pizarra en vivo: mientras el enlace está vigente, cualquiera con el token ve los comentarios y puede AGREGAR
       // los suyos (con su nombre). No puede editar ni borrar; el consultor puede borrar cualquiera.
       match /pizarra/{eid} {

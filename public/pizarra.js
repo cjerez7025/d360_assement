@@ -12,7 +12,7 @@
 
   const PZS = window.PZ = {
     entries: [], N: null, rol: null, sid: null, tk: null, vivoTk: null,
-    vistas: [], borr: {}, ids: new Set(), espejando: new Set(), off: null, offVivo: null, foco: null, persona: null
+    vistas: [], borr: {}, ids: new Set(), espejando: new Set(), off: null, offVivo: null, offEsc: null, foco: null, persona: null, borradores: []
   };
 
   const guardado = () => { try { return JSON.parse(localStorage.getItem(LS)); } catch (e) { return null; } };
@@ -32,6 +32,7 @@
   PZS.parar = function () {
     if (PZS.off) { PZS.off(); PZS.off = null; }
     if (PZS.offVivo) { PZS.offVivo(); PZS.offVivo = null; }
+    PZS.quitarBorrador(); pararEscribiendo();
     PZS.rol = null; PZS.sid = null; PZS.tk = null; PZS.vivoTk = null; fijar([]);
   };
   /** Consultor: abre la pizarra permanente de una sesión. */
@@ -44,8 +45,10 @@
   PZS.vivo = function (tk) {
     if (PZS.offVivo) { PZS.offVivo(); PZS.offVivo = null; }
     PZS.vivoTk = tk || null;
+    pararEscribiendo();
     if (!tk || !PZS.N || PZS.rol !== 'consultor') return;
     PZS.offVivo = PZS.N.pzVivoEscuchar(tk, (lista) => lista.forEach(espejar), () => {});
+    escucharEscribiendo(tk);
   };
   function espejar(e) {
     if (e.rol !== 'cliente' || PZS.ids.has(e.id) || PZS.espejando.has(e.id) || !PZS.sid) return Promise.resolve();
@@ -64,10 +67,58 @@
   PZS.cliente = function (N, tk) {
     PZS.parar(); PZS.N = N; PZS.rol = 'cliente'; PZS.tk = tk;
     PZS.off = N.pzVivoEscuchar(tk, fijar, () => {});
+    escucharEscribiendo(tk);
   };
   /** Cliente en sus resultados: solo lectura. */
   PZS.lectura = function (lista, ctk, N) { PZS.parar(); PZS.N = N || PZS.N; PZS.rol = 'lectura'; PZS.ctk = ctk || null; fijar(lista || []); };
   PZS.ultimo = () => PZS.entries.reduce((m, e) => Math.max(m, e.creadoEn || 0), 0);
+
+  // ───────── escritura en vivo: se ve lo que alguien escribe antes de que lo publique ─────────
+  // Cada dispositivo comparte su borrador (un documento por dispositivo, con retardo para no saturar) y los demás lo ven como una
+  // tarjeta tenue «escribiendo…» en la pregunta correspondiente. Desaparece al publicar, al dejar de escribir o a los 25 s sin cambios.
+  PZS.pid = nuevoId();
+  const llegada = {}; // id del borrador → { x, q, t: cuándo cambió en ESTE equipo } (así no importa el reloj de cada dispositivo)
+  let tEsc = null, ultEnvio = 0, enviado = null, tQuitar = null;
+  const tkVivo = () => PZS.rol === 'consultor' ? (PZS.vivoTk && typeof en !== 'undefined' && en.viv ? PZS.vivoTk : null) : PZS.rol === 'cliente' ? PZS.tk : null;
+  const activos = () => { const t = ahora(); return PZS.borradores.filter((b) => llegada[b.id] && t - llegada[b.id].t < 25000); };
+  function pintarBorradores() {
+    PZS.vistas = PZS.vistas.filter((v) => document.body.contains(v.el));
+    PZS.vistas.forEach((v) => v.fantasmas && v.fantasmas());
+    const hay = activos().length > 0;
+    document.querySelectorAll('.pz-cnt').forEach((c) => { if (c.parentElement) c.parentElement.classList.toggle('pz-hay', hay); });
+  }
+  function fijarBorradores(lista) {
+    const t = ahora(), vivos = [];
+    for (const d of lista || []) {
+      const b = pzBorradorOk(d); if (!b || d.id === PZS.pid) continue;
+      const l = llegada[d.id]; if (!l || l.x !== b.x || l.q !== b.q) llegada[d.id] = { x: b.x, q: b.q, t };
+      vivos.push({ ...b, id: d.id });
+    }
+    for (const id of Object.keys(llegada)) if (!vivos.some((v) => v.id === id)) delete llegada[id];
+    PZS.borradores = vivos; pintarBorradores();
+  }
+  function escucharEscribiendo(tk) { if (PZS.N && PZS.N.pzEscribiendoEscuchar) PZS.offEsc = PZS.N.pzEscribiendoEscuchar(tk, fijarBorradores, () => {}); }
+  function pararEscribiendo() { if (PZS.offEsc) { PZS.offEsc(); PZS.offEsc = null; } for (const k of Object.keys(llegada)) delete llegada[k]; PZS.borradores = []; pintarBorradores(); }
+  /** Comparte (con un pequeño retardo) lo que la persona lleva escrito; texto vacío = quitarlo. */
+  PZS.emitirBorrador = function (q, texto) {
+    clearTimeout(tEsc); clearTimeout(tQuitar);
+    const tk = tkVivo(), x = String(texto || '').slice(0, 2000);
+    if (!tk || !PZS.N || !PZS.N.pzEscribiendo) return;
+    if (!x.trim()) return PZS.quitarBorrador();
+    tEsc = setTimeout(() => {
+      if (enviado && enviado.x === x && enviado.q === q) return;
+      const a = autor(); if (!a.autor) return; // el cliente aún no escribió su nombre
+      ultEnvio = ahora(); enviado = { x, q };
+      PZS.N.pzEscribiendo(tk, PZS.pid, { a: a.autor, r: a.rol, c: a.cargo, q, x });
+    }, Math.max(250, 900 - (ahora() - ultEnvio)));
+  };
+  PZS.quitarBorrador = function () {
+    clearTimeout(tEsc); clearTimeout(tQuitar);
+    const tk = tkVivo(), hubo = !!enviado; enviado = null;
+    if (tk && hubo && PZS.N && PZS.N.pzEscribiendoQuitar) PZS.N.pzEscribiendoQuitar(tk, PZS.pid);
+  };
+  setInterval(() => { if (PZS.borradores.length) pintarBorradores(); }, 4000); // hace desaparecer los que dejaron de cambiar
+  window.addEventListener('pagehide', () => PZS.quitarBorrador());
 
   function autor() {
     if (PZS.rol === 'consultor') {
@@ -154,8 +205,9 @@
     const n = ++seq, clave = op.clave || qid, lectura = PZS.rol === 'lectura' || !PZS.rol;
     const borr = PZS.borr[clave] = PZS.borr[clave] || { texto: '', imgs: [], docs: [] }; borr.docs = borr.docs || [];
     el.innerHTML = `<section class="pz${op.todas ? ' pz-dlg' : ''}" aria-labelledby="pzt${n}">
-<div class="pz-top"><h3 id="pzt${n}"><i data-lucide="messages-square"></i> ${op.todas ? 'Pizarra de la reunión' : 'Pizarra de esta pregunta'}</h3><span class="pz-sub">Lo que se escribe aquí lo ven todos los participantes</span></div>
+<div class="pz-top"><h3 id="pzt${n}"><i data-lucide="messages-square"></i> ${op.todas ? 'Pizarra de la reunión' : 'Pizarra de esta pregunta'}</h3><span class="pz-sub">Lo que se escribe aquí lo ven todos los participantes, incluso mientras lo escriben</span></div>
 <div class="pz-l" id="pzl${n}" aria-live="polite" aria-label="Comentarios"></div>
+<div class="pz-fans" id="pzfn${n}"></div>
 ${lectura ? '' : `<form class="pz-f" id="pzf${n}" novalidate>
 <label class="sr-only" for="pzx${n}">Escriba un comentario para todos los participantes</label>
 <textarea class="pz-x" id="pzx${n}" data-clave="${esc(clave)}" rows="2" maxlength="2000" placeholder="${op.todas ? 'Comentario general de la reunión…' : 'Escriba un comentario, una duda o un acuerdo…'}"></textarea>
@@ -176,10 +228,20 @@ ${lectura ? '' : `<form class="pz-f" id="pzf${n}" novalidate>
         lista.innerHTML = !es.length ? `<p class="pz-vacio">${op.todas ? 'Todavía no hay comentarios en la reunión.' : 'Todavía no hay comentarios en esta pregunta.'}${lectura ? '' : ' Sea el primero en escribir.'}</p>`
           : op.todas ? pzHtml(es, { borrar }) : `<ol class="pz-ol">${es.map((e) => pzTarjeta(e, { borrar })).join('')}</ol>`;
         lucide.createIcons();
+        // los comentarios que llegan se destacan un momento (el primer dibujo no cuenta)
+        if (vista.vistos) es.forEach((e) => { if (!vista.vistos.has(e.id)) { const li = lista.querySelector('[data-e="' + CSS.escape(e.id) + '"]'); if (li) li.classList.add('pz-nuevo'); } });
+        vista.vistos = new Set(es.map((e) => e.id));
         if (!op.todas && (antes || es.length > prev)) lista.scrollTop = lista.scrollHeight;
+      },
+      // tarjetas tenues «escribiendo…» de los demás (en la pizarra general se ven todas, con la pregunta a la que se refieren)
+      fantasmas() {
+        const fn = $('pzfn' + n); if (!fn) return;
+        const bs = activos().filter((b) => op.todas || b.q === qid), antes = fn.innerHTML;
+        const html = bs.length ? `<ol class="pz-ol pz-fl" aria-label="Escribiendo ahora">${bs.map((b) => pzFantasma(b, !!op.todas)).join('')}</ol>` : '';
+        if (html !== antes) { fn.innerHTML = html; if (bs.length && !op.todas && lista.scrollHeight - lista.clientHeight - lista.scrollTop < 120) fn.scrollIntoView({ block: 'nearest' }); }
       }
     };
-    PZS.vistas = PZS.vistas.filter((v) => document.body.contains(v.el)); PZS.vistas.push(vista); vista.pintar();
+    PZS.vistas = PZS.vistas.filter((v) => document.body.contains(v.el)); PZS.vistas.push(vista); vista.pintar(); vista.fantasmas();
     if (lectura) { lucide.createIcons(); return; }
     // ── formulario ──
     const f = $('pzf' + n), ta = $('pzx' + n), err = $('pze' + n), prev = $('pzp' + n), file = $('pzi' + n), como = $('pzo' + n), prog = $('pzg' + n), enviarBtn = $('pzs' + n);
@@ -193,7 +255,10 @@ ${lectura ? '' : `<form class="pz-f" id="pzf${n}" novalidate>
     };
     vista.quien = quien; // para refrescar «Comentando como…» cuando el cliente termina de escribir su nombre
     ta.value = borr.texto; pintarPrev(); quien();
-    ta.addEventListener('input', () => { borr.texto = ta.value; mostrarError(''); });
+    const clv = op.todas ? 'general' : qid;
+    ta.addEventListener('input', () => { borr.texto = ta.value; mostrarError(''); PZS.emitirBorrador(clv, ta.value); });
+    ta.addEventListener('focus', () => { if (ta.value.trim()) PZS.emitirBorrador(clv, ta.value); });
+    ta.addEventListener('blur', () => { clearTimeout(tQuitar); tQuitar = setTimeout(() => { if (document.activeElement !== ta) PZS.quitarBorrador(); }, 4000); });
     ta.addEventListener('keydown', (e) => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); f.requestSubmit(); } });
     prev.addEventListener('click', (e) => { const b = e.target.closest('.pz-quitar'), d = e.target.closest('.pz-quitar-doc'); if (b) { borr.imgs.splice(+b.dataset.i, 1); pintarPrev(); } else if (d) { borr.docs.splice(+d.dataset.i, 1); pintarPrev(); } });
     como.addEventListener('click', (e) => { if (e.target.closest('.pz-cambiar')) PZS.pedirPersona(true).then(quien); });
@@ -246,7 +311,7 @@ ${lectura ? '' : `<form class="pz-f" id="pzf${n}" novalidate>
       if (!c.cargo) delete c.cargo; if (!c.email) delete c.email; if (!c.foto) delete c.foto;
       const motivo = pzValidar(c); if (motivo) return mostrarError(motivo);
       mostrarError('');
-      const limpiar = () => { borr.texto = ''; borr.imgs = []; borr.docs = []; ta.value = ''; pintarPrev(); ta.focus(); };
+      const limpiar = () => { borr.texto = ''; borr.imgs = []; borr.docs = []; ta.value = ''; PZS.quitarBorrador(); pintarPrev(); ta.focus(); };
       const restaurar = (x) => {
         borr.texto = c.texto; borr.imgs = c.imgs; borr.docs = docs; if (document.body.contains(ta)) { ta.value = c.texto; pintarPrev(); }
         mostrarError('No se pudo publicar el comentario (' + (x && (x.code || x.message) || 'error') + '). Su texto y sus archivos se conservaron: intente de nuevo.');
