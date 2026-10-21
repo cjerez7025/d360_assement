@@ -7,7 +7,7 @@ Una página pública con enlace propio, `https://d360-assessment.web.app/?guia=1
 - **Qué vamos a hacer** (3 pasos), la fecha de vigencia de la ley (1-dic-2026) y que es una autoevaluación orientativa, no una auditoría ni asesoría legal.
 - **Cómo participan las personas:** con el enlace de la reunión, sin cuenta, escribiendo su nombre; pueden participar varias personas con el mismo enlace.
 - **Quiénes conviene que participen**, en una tabla por tema.
-- **Los 9 temas, uno por uno:** de qué trata, quién conviene que esté, las preguntas que se conversarán (41), qué conviene **ir preparando** (el «cómo comprobarlo» de cada pregunta) y la base legal, que abre el texto de la ley.
+- **Los 8 temas, uno por uno** (las 8 dimensiones del sitio): de qué trata, quién conviene que esté, las preguntas que se conversarán (41), qué conviene **ir preparando** (el «cómo comprobarlo» de cada pregunta) y la base legal, que abre el texto de la ley.
 
 ## Qué no muestra (a propósito)
 

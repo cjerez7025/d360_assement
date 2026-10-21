@@ -557,7 +557,7 @@ seccion('16. Metodología y ponderación sectorial: la explicación coincide con
   const mult = (r) => sb.secMult(r);
   ok(Object.keys(SEC).every((k) => D.every((d) => { const x = mult(k)[d.id]; return x >= 1 && x <= 1 + SEC_K + 1e-9; })), 'el ajuste de cada dimensión va de 1,00 a 1,25 para todos los rubros');
   ok(['otro', '', undefined, 'inexistente'].every((r) => D.every((d) => mult(r)[d.id] === 1)), '«Otro», sin rubro o un rubro desconocido no llevan ajuste (todo × 1,00)');
-  ok(Math.abs(mult('fintech').terceros - 1.25) < 1e-9 && Math.abs(mult('salud').sensibles - 1.1875) < 1e-9 && Math.abs(mult('alimentos').gobernanza - 1.125) < 1e-9 && mult('alimentos').seguridad === 1.0625, 'ejemplos calculados a mano: fintech·terceros 1,25; salud·sensibles 1,1875; alimentos·gobernanza 1,125 y seguridad 1,0625');
+  ok(Math.abs(mult('fintech').terceros - 1.25) < 1e-9 && Math.abs(mult('salud').cumplimiento - 1.125) < 1e-9 && Math.abs(mult('alimentos').gobernanza - 1.125) < 1e-9 && mult('alimentos').seguridad === 1.0625, 'ejemplos calculados a mano: fintech·terceros 1,25; salud·cumplimiento 1,125; alimentos·gobernanza 1,125 y seguridad 1,0625');
 
   // ── 3) el puntaje coincide con una recomputación independiente de la fórmula ──
   const indep = (e) => {
@@ -575,7 +575,7 @@ seccion('16. Metodología y ponderación sectorial: la explicación coincide con
   ok(sectores.every((r) => armar({ sector: r }, () => 3).sc().g === 100 && armar({ sector: r }, () => 0).sc().g === 0), 'todo en 3 vale 100 y todo en 0 vale 0 en cualquier rubro');
   // el efecto va en la dirección que dice el texto: una brecha donde el rubro está más expuesto resta más
   const debilEn = (dim) => (q) => (q.dm === dim ? 0 : 3);
-  ok(armar({ sector: 'fintech' }, debilEn('terceros')).sc().g < armar({ sector: 'otro' }, debilEn('terceros')).sc().g && armar({ sector: 'fintech' }, debilEn('sensibles')).sc().g > armar({ sector: 'otro' }, debilEn('sensibles')).sc().g, 'en fintech, una brecha en terceros (muy expuesta) baja el puntaje y una en datos sensibles (la menos expuesta) lo sube respecto de sin ajuste');
+  ok(armar({ sector: 'fintech' }, debilEn('terceros')).sc().g < armar({ sector: 'otro' }, debilEn('terceros')).sc().g && armar({ sector: 'fintech' }, debilEn('cumplimiento')).sc().g > armar({ sector: 'otro' }, debilEn('cumplimiento')).sc().g, 'en fintech, una brecha en terceros (muy expuesta) baja el puntaje y una en cumplimiento normativo (la menos expuesta) lo sube respecto de sin ajuste');
   // lo que NO cambia con el rubro
   const e1 = armar({ sector: 'salud', 'tamaño': 'micro' }, mixto), e2 = armar({ sector: 'fintech', 'tamaño': 'grande' }, mixto);
   const sinGlobal = (e) => JSON.stringify([e.sc().d, e.fl(), e.cl2(), e.pl().map((p) => [p.d.id, p.s, p.rk]), e.ga().map((q) => q.id)]);
@@ -892,19 +892,25 @@ seccion('20. Hoja de ruta por etapas, evolución en el tiempo, informe ejecutivo
   ok(/\.dc-fir/.test(css) && /\.dc h2/.test(css), 'el documento tiene sus estilos de impresión');
 }
 
-seccion('21. Novena dimensión: Cultura y Formación');
+seccion('21. Dimensión Cultura y formación y las ocho dimensiones del sitio');
 {
   const raiz13 = path.resolve(path.dirname(file), '..');
   const leer13 = (f) => fs.readFileSync(path.join(raiz13, f), 'utf8').replace(/\r\n/g, '\n');
   const ih = leer13('public/index.html'), sb = sandbox;
   const cul = Q.filter((q) => q.dm === 'cultura');
-  ok(D.length === 9 && D[8].id === 'cultura' && D[8].n === 'Cultura y Formación' && D[8].ic === 'graduation-cap' && D.every((d) => d.w >= 1 && d.w <= 1.2), 'hay nueve dimensiones y la novena es Cultura y Formación, con peso dentro del rango del modelo');
+  ok(D.length === 8 && D[7].id === 'cultura' && D[7].n === 'Cultura y formación' && D[7].ic === 'graduation-cap' && D.filter((d) => d.id !== 'cumplimiento').every((d) => d.w >= 1 && d.w <= 1.2), 'hay ocho dimensiones y la octava es Cultura y formación, con peso dentro del rango del modelo');
+  // las ocho del sitio de AlignData: mismo nombre, mismo subtítulo y mismo orden
+  const SITIO = [['gobernanza', 'Gobierno y liderazgo', 'DPO, roles y comité de privacidad'], ['registro', 'Ciclo de vida del dato', 'Mapeo y registro de tratamientos'], ['seguridad', 'Seguridad tecnológica', 'Cifrado, accesos y respaldos'], ['cumplimiento', 'Cumplimiento normativo', 'Ley 21.719 artículo por artículo'], ['riesgo', 'Gestión de riesgos', 'DPIA y mapa de riesgos'], ['arcop', 'Derechos del titular', 'Flujos, plazos y evidencia'], ['terceros', 'Gestión de terceros', 'Contratos y subprocesadores'], ['cultura', 'Cultura y formación', 'Capacitación y mejora continua']];
+  ok(SITIO.every(([id, n, st], i) => D[i].id === id && D[i].n === n && D[i].s === st), 'las dimensiones tienen el nombre, el subtítulo y el orden de las ocho del sitio de AlignData');
+  const hist = D.find((d) => d.id === 'cumplimiento'), qc = Q.filter((q) => q.dm === 'cumplimiento').sort((a, b) => a.o - b.o);
+  ok(hist.w === 2.2 && qc.filter((q) => !q.iS).length === 10 && qc.map((q) => q.id.slice(0, 3)).join('').replace(/(LEG)+(SEN)+/, 'OK') === 'OK' && Q.every((q) => D.some((d) => d.id === q.dm)) && Q.filter((q) => !q.iS).length === 41, 'Cumplimiento normativo reúne las preguntas de legitimación y de datos sensibles (las de legitimación primero), con el peso de ambas sumado (2,2); siguen siendo 41 preguntas base');
+  ok(A.cumplimiento && A.cumplimiento.ac.length === 10 && !A.legitimacion && !A.sensibles && Object.keys(A).length === 8 && SEC_DIM.cumplimiento.join() === 'vuln,fin,auto,sens' && !SEC_DIM.sensibles && !SEC_DIM.legitimacion, 'el plan de acción y la ponderación por rubro también se fusionaron (los factores de ambas dimensiones)');
   ok(cul.map((q) => q.id).sort().join() === 'CUL-01,CUL-02,CUL-03,CUL-04,GOB-03' && cul.every((q) => !q.iS) && cul.length === 5, 'Cultura tiene 5 preguntas base: la capacitación (GOB-03, que conserva su código para no perder respuestas guardadas) y 4 nuevas');
   ok(Q.length === 49 && Q.filter((q) => !q.iS).length === 41 && Q.filter((q) => q.iS).length === 8, 'quedan 49 preguntas (45 + 4 nuevas): 41 base y las 8 de profundización de antes');
   ok(cul.every((q) => q.op.length === 4 && q.ex.length === 4 && q.ev && q.cx && q.s && q.ar && q.w >= 0.8 && q.w <= 1.3 && Array.isArray(q.fl)), 'cada pregunta de Cultura tiene cuatro respuestas, cuatro ejemplos, cómo comprobarlo, contexto legal y peso válido');
   ok(cul.every((q) => /Art/.test(q.ar) && (q.id === 'GOB-03' || /buena práctica|14 sexies/.test(q.ar))) && cul.every((q) => /no exige|voluntari|exige/.test(q.cx)), 'las preguntas nuevas dicen si la ley lo exige o es buena práctica (el modelo de prevención es voluntario)');
   ok(cul.every((q) => !q.fl.length) && Q.find((q) => q.id === 'GOB-03').dm === 'cultura', 'ninguna pregunta de Cultura genera alerta crítica (la ley no exige capacitar)');
-  ok(Array.isArray(A.cultura.ac) && A.cultura.ac.length >= 4 && A.cultura.ac.every((a) => a.t && a.p && a.r) && A.cultura.e && !A.gobernanza.ac.some((a) => /capacitación periódica/.test(a.t)) && A.gobernanza.ac.length >= 4, 'Cultura tiene su plan de acción y la acción de capacitación salió de Gobernanza');
+  ok(Array.isArray(A.cultura.ac) && A.cultura.ac.length >= 4 && A.cultura.ac.every((a) => a.t && a.p && a.r) && A.cultura.e && !A.gobernanza.ac.some((a) => /capacitación periódica/.test(a.t)) && A.gobernanza.ac.length >= 4, 'Cultura tiene su plan de acción y la acción de capacitación salió de Gobierno y liderazgo');
   ok(CL.some((c2) => c2.qs.includes('CUL-01') && c2.qs.includes('CUL-02') && c2.qs.includes('GOB-03')) && CL.some((c2) => c2.qs.includes('CUL-03') && c2.qs.includes('CUL-04') && /voluntario/.test(c2.ob)), 'las preguntas de Cultura alimentan el semáforo de obligaciones (el modelo de prevención se marca como voluntario)');
   ok(SEC_DIM.cultura && SEC_DIM.cultura.length > 0 && EF['CUL-01'] && EF['CUL-04'], 'Cultura entra en la ponderación sectorial y en la hoja de ruta');
   // el puntaje
@@ -912,7 +918,7 @@ seccion('21. Novena dimensión: Cultura y Formación');
   ok(arm(() => 3).sc().g === 100 && arm(() => 0).sc().g === 0 && arm((q) => (q.dm === 'cultura' ? 0 : 3)).sc().g < 100 && arm((q) => (q.dm === 'cultura' ? 0 : 3)).sc().d.cultura === 0, 'todo en 3 vale 100; sin Cultura el puntaje baja y la dimensión vale 0');
   const antes = new E2(); antes.cargar({ perfil: {}, respuestas: Object.fromEntries(Q.filter((q) => !q.iS && q.dm !== 'cultura').map((q) => [q.id, 3]).concat([['GOB-03', 3]])) });
   ok(antes.a['GOB-03'] === 3 && antes.sc().d.cultura === 100 && antes.sc().d.gobernanza === 100 && antes.nx().dm === 'cultura' && antes.pg().d < antes.pg().t, 'una sesión guardada conserva su respuesta de capacitación (ahora en Cultura) y queda pendiente lo nuevo');
-  ok(new RegExp('en ' + D.length + ' dimensiones').test(ih) && /<strong>9<\/strong> dimensiones/.test(ih) && !/\b8 dimensiones/.test(ih), 'la portada dice nueve dimensiones');
+  ok(new RegExp('en ' + D.length + ' dimensiones').test(ih) && /<strong>8<\/strong> dimensiones/.test(ih) && !/\b9 dimensiones/.test(ih), 'la portada dice ocho dimensiones');
   ok(/\$\{D\.length\} dimensione/.test(leer13('public/app.js')) && !/las 8 dimensiones/.test(leer13('public/app.js')), 'el texto de resultados cuenta las dimensiones en vez de decir 8');
 }
 

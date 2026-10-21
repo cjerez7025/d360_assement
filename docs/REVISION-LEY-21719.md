@@ -38,7 +38,7 @@ Las preguntas condicionales "¿Sabe que…?" medían conocimiento y no cumplimie
 | SEN-04 | Niños, niñas y adolescentes | 16 quáter |
 | SEN-05 | Biometría y geolocalización | 16 ter, 16 sexies |
 
-La app pasa de 32 a **45 preguntas** (37 base + 8 de profundización). Las dimensiones siguen siendo 8; se renombraron tres para reflejar su contenido: *Derechos del Titular*, *Registro y Transparencia* y *Terceros y Transferencias*.
+La app pasa de 32 a **45 preguntas** (37 base + 8 de profundización). Las dimensiones siguen siendo 8; se renombraron tres para reflejar su contenido: *Derechos del Titular*, *Registro y Transparencia* y *Terceros y Transferencias*. (Registro histórico: desde el 2026-10-21 las dimensiones y sus nombres son los del sitio, ver `METODOLOGIA.md`.)
 
 ## 3. Cambios de comportamiento
 

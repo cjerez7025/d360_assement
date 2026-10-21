@@ -10,15 +10,14 @@
 const GUIA_V = '1.0';
 // Por dimensión: de qué trata en palabras llanas y quién de la organización conviene que esté. Es una propuesta de AlignData.
 const GUIA_DIM = {
-  gobernanza: { tema: 'Quién lidera la protección de datos en la organización y qué políticas la respaldan.', quien: 'Gerencia general o dirección, y quien sea (o haría de) responsable de privacidad o legal.' },
-  legitimacion: { tema: 'Con qué fundamento legal se usan los datos personales, qué se informa a las personas y cómo pueden retirar su consentimiento.', quien: 'Legal o cumplimiento, marketing o comercial, y quien administra el sitio web y los formularios.' },
-  arcop: { tema: 'Cómo atiende la organización las solicitudes de las personas sobre sus datos: acceso, rectificación, supresión, oposición, portabilidad y bloqueo.', quien: 'Atención al cliente, legal y TI (para ubicar y entregar los datos).' },
-  registro: { tema: 'Qué datos se tratan, para qué, quién accede a ellos, por cuánto tiempo se conservan y qué se informa públicamente.', quien: 'Quien conoce los procesos y los sistemas (operaciones, TI) y legal.' },
-  seguridad: { tema: 'Las medidas técnicas y organizativas que protegen los datos y cómo se actuaría ante un incidente.', quien: 'TI o seguridad de la información, y quien administra los sistemas.' },
-  terceros: { tema: 'Los proveedores y socios que acceden a datos, qué contratos tienen y si algún dato sale del país.', quien: 'Compras o contratos, TI, legal y las áreas que usan herramientas externas.' },
-  sensibles: { tema: 'Si se tratan datos especialmente protegidos (salud, afiliación sindical, biométricos, datos de menores, entre otros) y con qué resguardos.', quien: 'Recursos humanos, legal y las áreas que manejan esos datos.' },
-  riesgo: { tema: 'Cómo se evalúan los riesgos, qué se sabe de las sanciones y si existe un programa de cumplimiento.', quien: 'Gerencia y legal o cumplimiento.' },
-  cultura: { tema: 'Si las personas que trabajan con datos saben qué pueden y qué no pueden hacer con ellos.', quien: 'Recursos humanos, jefaturas y quien capacita al personal.' }
+  gobernanza: { tema: 'Quién lidera la protección de datos en la organización (DPO, roles y comité de privacidad) y qué políticas la respaldan.', quien: 'Gerencia general o dirección, y quien sea (o haría de) responsable de privacidad o legal.' },
+  registro: { tema: 'Qué datos se tratan, para qué, quién accede a ellos y por cuánto tiempo se conservan: el mapeo y el registro de los tratamientos, y lo que se informa públicamente.', quien: 'Quien conoce los procesos y los sistemas (operaciones, TI) y legal.' },
+  seguridad: { tema: 'Las medidas técnicas y organizativas que protegen los datos (cifrado, accesos y respaldos) y cómo se actuaría ante un incidente.', quien: 'TI o seguridad de la información, y quien administra los sistemas.' },
+  cumplimiento: { tema: 'Cómo se aplica la Ley 21.719 artículo por artículo: con qué fundamento legal se usan los datos, qué se informa a las personas, cómo se retira el consentimiento y qué resguardos hay para datos sensibles, de niños, de biometría y de deudas comerciales.', quien: 'Legal o cumplimiento, marketing o comercial, recursos humanos y quien administra el sitio web y los formularios.' },
+  riesgo: { tema: 'Cómo se evalúan los riesgos (evaluación de impacto y mapa de riesgos), qué se sabe de las sanciones y si existe un programa de cumplimiento.', quien: 'Gerencia y legal o cumplimiento.' },
+  arcop: { tema: 'Cómo atiende la organización las solicitudes de las personas sobre sus datos: acceso, rectificación, supresión, oposición, portabilidad y bloqueo, con sus plazos y su evidencia.', quien: 'Atención al cliente, legal y TI (para ubicar y entregar los datos).' },
+  terceros: { tema: 'Los proveedores y socios que acceden a datos, qué contratos y subprocesadores tienen y si algún dato sale del país.', quien: 'Compras o contratos, TI, legal y las áreas que usan herramientas externas.' },
+  cultura: { tema: 'Si las personas que trabajan con datos saben qué pueden y qué no pueden hacer con ellos: capacitación y mejora continua.', quien: 'Recursos humanos, jefaturas y quien capacita al personal.' }
 };
 
 function guiaEnlace() { return location.origin + location.pathname + '?guia=1'; }
@@ -33,6 +32,7 @@ function guiaHtml() {
     const qs = bases(d), p = prof(d), g = GUIA_DIM[d.id] || { tema: '', quien: '' };
     return `<section class="gp-dim" aria-labelledby="gp-d${i}">
 <h3 id="gp-d${i}"><span class="gp-n">${i + 1}</span><i data-lucide="${esc(d.ic)}"></i>${esc(d.n)}</h3>
+${d.s ? `<p class="gp-sub">${esc(d.s)}</p>` : ''}
 <p class="gp-tema">${esc(g.tema)}</p>
 <p class="gp-quien"><i data-lucide="users"></i><span><strong>Conviene que participe:</strong> ${esc(g.quien)}</span></p>
 <h4>Lo que conversaremos (${qs.length} ${qs.length === 1 ? 'pregunta' : 'preguntas'})</h4>
