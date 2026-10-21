@@ -12,6 +12,12 @@ Una página **privada** (`https://d360-assessment.web.app/?guia=1`) para que el 
 - **Ingreso por enlace al correo:** requiere habilitarlo una vez en Firebase: consola → proyecto `aligndata-arcop` → Authentication → Método de acceso → **Correo electrónico/contraseña** → activar **«Vínculo del correo electrónico (acceso sin contraseña)»**. Si no está habilitado, la pantalla dice «El ingreso por correo aún no está habilitado». El enlace lo envía Firebase desde `noreply@aligndata-arcop.firebaseapp.com`; puede caer en la carpeta de correo no deseado de una empresa (la pantalla lo avisa). Si el enlace se abre en otro equipo que el que lo pidió, se pide escribir el correo para confirmar.
 - El correo que se autoriza debe ser **el mismo** con el que la persona ingresa (Google o enlace).
 
+## Freno a copiar e imprimir (solo para las personas del cliente)
+
+Para las personas invitadas (no para los consultores) la guía **no deja seleccionar el texto, copiar, cortar, arrastrar, abrir el menú del clic derecho ni usar los atajos de copiar, seleccionar todo, imprimir, guardar y ver código**; y al imprimir o guardar como PDF solo sale el aviso «Esta guía es confidencial: no se puede imprimir ni guardar como PDF». Está en `guiaProteger()` de `guia.js`.
+
+**Es un freno, no una garantía.** No impide capturas de pantalla, fotos con el celular ni grabar la pantalla, y quien sepa usar las herramientas del navegador lo salta. La protección que realmente vale es contractual (que el NDA y el Acuerdo traten expresamente la guía y el cuestionario como confidenciales y propiedad de AlignData). Otras medidas posibles, aún sin hacer: marca de agua con el correo de quien mira, vencimiento del acceso por persona y registro de quién abrió la guía.
+
 ## Qué ve la persona autorizada
 
 - **Qué vamos a hacer** (3 pasos), la fecha de vigencia de la ley (1-dic-2026) y que es una autoevaluación orientativa, no una auditoría ni asesoría legal.

@@ -80,6 +80,22 @@ ${dims}
 </div>`;
 }
 
+// Freno para las personas del cliente: no se puede seleccionar, copiar, cortar, arrastrar, abrir el menú del clic derecho ni
+// imprimir o guardar como PDF. Es un freno, NO una garantía: no impide capturas de pantalla ni fotos, y se salta con las
+// herramientas del navegador. Los consultores no lo tienen (necesitan copiar y revisar la guía).
+const guiaBloqueo = { on: false, fns: [] };
+function guiaProteger(si) {
+  si = !!si;
+  document.body.classList.toggle('gp-protegida', si);
+  if (si === guiaBloqueo.on) return;
+  guiaBloqueo.on = si;
+  if (!si) { guiaBloqueo.fns.forEach(([t, f]) => document.removeEventListener(t, f, true)); guiaBloqueo.fns = []; return; }
+  const bloquear = (e) => { if (e.target && e.target.closest && e.target.closest('input,textarea')) return; e.preventDefault(); };
+  const teclas = (e) => { const k = String(e.key || '').toLowerCase(); if ((e.ctrlKey || e.metaKey) && ['c', 'x', 'a', 'p', 's', 'u'].includes(k)) e.preventDefault(); };
+  guiaBloqueo.fns = [['contextmenu', bloquear], ['copy', bloquear], ['cut', bloquear], ['dragstart', bloquear], ['selectstart', bloquear], ['keydown', teclas]];
+  guiaBloqueo.fns.forEach(([t, f]) => document.addEventListener(t, f, true));
+}
+
 // Pantalla de la guía (?guia=1): primero se pide el ingreso con Google y se comprueba que el correo esté autorizado
 let guiaN = null;
 function guiaPantalla(html) {
@@ -138,11 +154,13 @@ async function guiaPrevia() {
   if (enlace && enlace.pedirCorreo) guiaConfirmarCorreo();
   else if (enlace && enlace.error) guiaLogin('El enlace no sirve (ya se usó o venció). Pida uno nuevo.');
   guiaN.alCambiarUsuario(async (u) => {
+    guiaProteger(false);
     if (!u) { if (!(enlace && enlace.pedirCorreo)) guiaLogin(enlace && enlace.error ? 'El enlace no sirve (ya se usó o venció). Pida uno nuevo.' : ''); return; }
     guiaPantalla(guiaCaja('Guía previa a la sesión', 'Comprobando su acceso…'));
     let a = { ok: false };
     try { a = await guiaN.guiaMiAcceso(u.email); } catch (e) { a = { ok: false }; }
     if (!a.ok) return guiaSinAcceso(u);
+    guiaProteger(a.rol === 'invitado'); // las personas del cliente no pueden copiar ni imprimir la guía
     guiaPantalla(guiaHtml(u)); window.scrollTo(0, 0);
   });
 }

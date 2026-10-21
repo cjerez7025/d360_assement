@@ -1551,3 +1551,6 @@ dialog.dlg-guia{max-width:600px}
 .gp-enlace-f{display:flex;flex-wrap:wrap;gap:8px}
 .gp-enlace-f input{flex:1 1 240px;min-width:0;min-height:44px;padding:8px 14px;border-radius:var(--rs);border:1.5px solid var(--field);background:var(--glass-bg);font:inherit;color:var(--text)}
 .gp-aviso{flex:1 1 100%;margin:4px 0 0;min-height:1.2em;font-size:var(--fs-sm);color:var(--on-navy)}
+/* guía previa: freno a copiar e imprimir para las personas del cliente (guiaProteger en guia.js) */
+body.gp-protegida .gp,body.gp-protegida .gp *{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+@media print{body.gp-protegida .screen{display:none!important}body.gp-protegida::before{content:'Esta guía es confidencial: no se puede imprimir ni guardar como PDF.';display:block;padding:40px;font:700 18px sans-serif;color:#000}}
