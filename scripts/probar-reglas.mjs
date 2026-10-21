@@ -144,6 +144,22 @@ c('guía: sin nombre no vale', 'DENY', 'create', GA, { auth: consultor, data: { 
 c('guía: el consultor quita a una persona', 'ALLOW', 'delete', GA, { auth: consultor });
 c('guía: la persona no puede borrar su acceso ni el de otros', 'DENY', 'delete', GA, { auth: ana });
 c('guía: sin cuenta no borra', 'DENY', 'delete', GA, {});
+
+// ── comprobación previa «¿está registrado este correo?» (guia_registro/{sha256}) ──
+const GR = '/guia_registro/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+c('registro: sin cuenta puede preguntar por un correo concreto (documento por su hash)', 'ALLOW', 'get', GR, { existente: { t: '2026-10-11T12:00:00Z' } });
+c('registro: nadie puede listar quiénes están registrados', 'DENY', 'list', GR, {});
+c('registro: ni siquiera un consultor lista desde el cliente por esta vía', 'DENY', 'list', GR, { auth: consultor });
+c('registro: un nombre que no es un hash no se puede leer', 'DENY', 'get', '/guia_registro/ana@empresa.cl', { existente: { t: '2026-10-11T12:00:00Z' } });
+c('registro: un hash de largo incorrecto no se puede leer', 'DENY', 'get', '/guia_registro/abc123', { existente: { t: '2026-10-11T12:00:00Z' } });
+c('registro: el consultor marca a una persona como registrada', 'ALLOW', 'create', GR, { auth: consultor, data: { t: '2026-10-11T12:00:00Z' } });
+c('registro: con un campo de más no vale', 'DENY', 'create', GR, { auth: consultor, data: { t: '2026-10-11T12:00:00Z', n: 'Ana' } });
+c('registro: sin cuenta no marca a nadie', 'DENY', 'create', GR, { data: { t: '2026-10-11T12:00:00Z' } });
+c('registro: una persona autorizada no se marca sola', 'DENY', 'create', GR, { auth: ana, data: { t: '2026-10-11T12:00:00Z' } });
+c('registro: el nombre del documento debe ser un hash', 'DENY', 'create', '/guia_registro/ana@empresa.cl', { auth: consultor, data: { t: '2026-10-11T12:00:00Z' } });
+c('registro: el consultor quita la marca', 'ALLOW', 'delete', GR, { auth: consultor });
+c('registro: sin cuenta no quita la marca', 'DENY', 'delete', GR, {});
+c('registro: una persona autorizada no quita marcas', 'DENY', 'delete', GR, { auth: ana });
 const SOL = `/compartidos/${CT}/solicitudes/${ID}`, T0 = '2026-10-11T12:00:00Z';
 const existeCompartido = { function: 'exists', args: [{ anyValue: {} }], result: { value: true } };
 const noExisteCompartido = { function: 'exists', args: [{ anyValue: {} }], result: { value: false } };

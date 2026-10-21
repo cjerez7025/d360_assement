@@ -1472,7 +1472,9 @@ seccion('31. Guía previa a la sesión (enlace público para el cliente)');
   ok(/guiaN = await import\(MOCK \? '\.\/nube-prueba\.js' : '\.\/nube\.js'\);/.test(gj) && /guiaN\.iniciar\(\{ persistente: false, conCuenta: true \}\)/.test(gj) && !/gstatic\.com\/firebasejs/.test(gj), 'la guía usa la misma capa de datos que la aplicación (con cuenta, sin guardar nada en el equipo)');
   // ── acceso privado ──
   ok(/if \(!u\) \{ if \(!\(enlace && enlace\.pedirCorreo\)\) guiaLogin\(/.test(gj) && /a = await guiaN\.guiaMiAcceso\(u\.email\)/.test(gj) && /if \(!a\.ok\) return guiaSinAcceso\(u\);/.test(gj) && gj.indexOf('guiaSinAcceso(u);') < gj.indexOf('guiaPantalla(guiaHtml(u))'), 'sin ingreso o sin autorización la guía no se dibuja: solo se pide el ingreso con Google o se dice que la cuenta no tiene acceso');
-  ok(/Pida a su consultor de AlignData que agregue ese correo, o ingrese con otra cuenta/.test(gj) && /Usar otra cuenta/.test(gj) && /guiaSalirSesion/.test(gj), 'quien no está autorizado lo ve claro y puede probar con otra cuenta o salir');
+  ok(/\$\{guiaPedirAcceso\(\)\} También puede ingresar con otra cuenta/.test(gj) && /Usar otra cuenta/.test(gj) && /guiaSalirSesion/.test(gj), 'quien no está autorizado lo ve claro, se le dice a quién pedir acceso y puede probar con otra cuenta o salir');
+  ok(/const GUIA_CONTACTOS = \['patricio\.oliva@aligndata\.cl', 'carlos\.jerez@aligndata\.cl', 'ricardo\.carmona@aligndata\.cl'\];/.test(gj) && /Para solicitar acceso, escriba a /.test(gj), 'quien no está registrado debe pedir acceso a Patricio, Carlos o Ricardo');
+  ok(/e && e\.code === 'guia\/no-registrado' \? 'Ese correo no está autorizado, por lo que no se envió ningún correo\. ' \+ guiaPedirAcceso\(\)/.test(gj), 'si el correo no está registrado lo dice y aclara que no se envió ningún correo');
   ok(/Limitación conocida: el banco de preguntas sigue estando en el código público/.test(gj), 'queda escrito que el control decide quién ve la guía, no oculta el código de la aplicación');
   ok(/match \/guia_acceso\/\{correo\}/.test(rg) && /allow list: if esConsultor\(\);/.test(rg.slice(rg.indexOf('match /guia_acceso/'), rg.indexOf('match /sesiones/{id}'))) && /request\.auth\.token\.email\.lower\(\) == correo/.test(rg) && /request\.resource\.data\.por == request\.auth\.token\.email/.test(rg), 'las reglas dejan a cada persona leer solo su acceso y solo a los consultores autorizar, listar y quitar');
   const fnsG = ['guiaMiAcceso', 'guiaSalir', 'guiaAccesoEscuchar', 'guiaAccesoAgregar', 'guiaAccesoQuitar'];
@@ -1510,6 +1512,34 @@ seccion('31. Guía previa a la sesión (enlace público para el cliente)');
   ok(['contextmenu', 'copy', 'cut', 'dragstart', 'selectstart', 'keydown'].every((t) => gj.includes("['" + t + "'")) && /\['c', 'x', 'a', 'p', 's', 'u'\]/.test(gj) && /e\.target\.closest\('input,textarea'\)\) return;/.test(gj), 'bloquea el menú del clic derecho, copiar, cortar, arrastrar, seleccionar y los atajos de copiar, seleccionar todo, imprimir, guardar y ver código (sin molestar a los campos de texto)');
   ok(/body\.gp-protegida \.gp,body\.gp-protegida \.gp \*\{-webkit-user-select:none;user-select:none/.test(cs) && /@media print\{body\.gp-protegida \.screen\{display:none!important\}body\.gp-protegida::before\{content:'Esta guía es confidencial: no se puede imprimir ni guardar como PDF\.'/.test(cs), 'no se puede seleccionar el texto y al imprimir o guardar como PDF solo sale un aviso de confidencialidad');
   ok(/Es un freno, NO una garantía: no impide capturas de pantalla ni fotos/.test(gj), 'queda escrito que es un freno y no una garantía');
+  // ── no se envía nada a quien no está registrado ──
+  {
+    const ng = leer23('public/nube.js'), np2 = leer23('public/nube-prueba.js');
+    ok(/if \(!\(await guiaCorreoRegistrado\(correo\)\)\) \{ const e = new Error\('correo no registrado'\); e\.code = 'guia\/no-registrado'; throw e; \}/.test(ng) && ng.indexOf("e.code = 'guia/no-registrado'") < ng.indexOf('A.sendSignInLinkToEmail(auth, correo'), 'antes de enviar el enlace se comprueba que el correo esté registrado: si no lo está, no se envía nada');
+    ok(/const hashCorreo = async \(c\) =>/.test(ng) && /crypto\.subtle\.digest\('SHA-256'/.test(ng) && /await F\.setDoc\(F\.doc\(db, 'guia_registro', await hashCorreo\(correo\)\)/.test(ng) && /await F\.deleteDoc\(F\.doc\(db, 'guia_registro', await hashCorreo\(correo\)\)\)/.test(ng) && /export async function guiaAccesoSincronizar\(lista\)/.test(ng), 'al autorizar se marca el correo como registrado (por su hash), al quitarlo se desmarca, y las personas ya autorizadas se marcan solas');
+    ok(['guiaCorreoRegistrado', 'guiaAccesoSincronizar'].every((x) => new RegExp('export (async )?function ' + x + '\\(').test(ng) && new RegExp('export (async )?function ' + x + '\\(').test(np2)), 'la nube y la versión de prueba tienen las mismas funciones de la comprobación');
+    const rg2 = rg.slice(rg.indexOf('match /guia_registro/'), rg.indexOf('match /sesiones/{id}'));
+    ok(/allow get: if h\.matches\('\^\[0-9a-f\]\{64\}\$'\);/.test(rg2) && /allow list: if false;/.test(rg2) && /allow create, update: if esConsultor\(\)/.test(rg2) && /allow delete: if esConsultor\(\);/.test(rg2), 'las reglas dejan preguntar por un correo concreto (su hash) pero no listar, y solo los consultores marcan y desmarcan');
+    // el hash del navegador coincide con SHA-256 de verdad
+    const nodeHash = (await import('node:crypto')).createHash('sha256').update('ana@empresa.cl').digest('hex');
+    const navHash = Array.from(new Uint8Array(await globalThis.crypto.subtle.digest('SHA-256', new TextEncoder().encode('ana@empresa.cl'))), (b) => b.toString(16).padStart(2, '0')).join('');
+    ok(nodeHash === navHash && nodeHash.length === 64 && /^[0-9a-f]{64}$/.test(nodeHash), 'el nombre del documento es el SHA-256 del correo (64 caracteres hexadecimales)');
+    // prueba real de la versión de prueba: a quien no está registrado no se le envía nada; al registrado sí
+    const url = (await import('node:url')).pathToFileURL(path.join(raiz23, 'public/nube-prueba.js')).href;
+    const antes2 = { w: globalThis.window, ls: globalThis.localStorage, ce: globalThis.CustomEvent, lo: globalThis.location }, mem2 = {};
+    globalThis.window = { addEventListener() {}, dispatchEvent() {} }; globalThis.CustomEvent = class {};
+    globalThis.localStorage = { getItem: (k) => (k in mem2 ? mem2[k] : null), setItem: (k, v) => { mem2[k] = String(v); }, removeItem: (k) => { delete mem2[k]; } };
+    try {
+      globalThis.location = { search: '?yo=intruso@otra.cl' };
+      const M = await import(url + '?r=' + Date.now());
+      let codigo = null; try { await M.guiaEnviarEnlace('intruso@otra.cl'); } catch (e) { codigo = e.code; }
+      ok(codigo === 'guia/no-registrado' && !(await M.guiaMiAcceso('intruso@otra.cl')).ok, 'a un correo no registrado no se le envía el enlace ni se le da acceso');
+      globalThis.location = { search: '' };
+      const K2 = await import(url + '?s=' + Date.now());
+      await K2.guiaAccesoAgregar({ correo: 'Valeria.Ferrada@Contabilizate.cl', n: 'Valeria', e: 'Contabilízate' });
+      ok(await K2.guiaCorreoRegistrado(' valeria.ferrada@contabilizate.cl ') && !(await K2.guiaCorreoRegistrado('otra@x.cl')), 'un correo registrado se reconoce (sin importar mayúsculas ni espacios) y uno que no lo está, no');
+    } finally { globalThis.window = antes2.w; globalThis.localStorage = antes2.ls; globalThis.CustomEvent = antes2.ce; globalThis.location = antes2.lo; if (antes2.w === undefined) delete globalThis.window; if (antes2.ls === undefined) delete globalThis.localStorage; if (antes2.ce === undefined) delete globalThis.CustomEvent; if (antes2.lo === undefined) delete globalThis.location; }
+  }
   ok(/id="gg-f"/.test(ih) && /onsubmit="guiaAgregar\(event\)"/.test(ih) && /id="gg-lista"/.test(ih) && /Es privada:<\/strong> solo la ven las personas que usted autorice/.test(ih) && /function guiaAgregar\(ev\)/.test(gj) && /Nube\.guiaAccesoQuitar\(b\.dataset\.c\)/.test(gj) && /ingrese con su cuenta de Google/.test(gj), 'el diálogo del consultor tiene la lista de personas autorizadas (agregar y quitar) y el mensaje de WhatsApp avisa que se ingresa con Google');
   ok(/<div id="sg" class="screen"><div id="gp-c"><\/div><\/div>/.test(ih) && ih.indexOf('src="porque.js"') < ih.indexOf('src="guia.js"') && ih.indexOf('src="guia.js"') > ih.indexOf('src="app.js"'), 'la página tiene su pantalla y carga guia.js después de la aplicación (se dibuja al terminar de cargar, por encima de la pantalla de espera)');
   ok(/body\.guia \.topbar,body\.guia \.nvbar,body\.guia #sb/.test(cs), 'la guía se ve limpia, sin la barra de la aplicación ni el menú');

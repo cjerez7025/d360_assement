@@ -55,6 +55,21 @@ export async function salir() {
 
 // ── guía previa: acceso privado por lista de correos autorizados (guia_acceso/{correo}) ──
 const claveCorreo = (c) => String(c || '').trim().toLowerCase();
+// SHA-256 del correo en minúsculas (64 caracteres hexadecimales): nombre del documento de guia_registro
+const hashCorreo = async (c) => Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(claveCorreo(c)))), (b) => b.toString(16).padStart(2, '0')).join('');
+/** ¿Está registrado este correo? Se pregunta antes de enviar el enlace, para no enviar nada a quien no esté en la lista. */
+export async function guiaCorreoRegistrado(email) {
+  try { return (await F.getDoc(F.doc(db, 'guia_registro', await hashCorreo(email)))).exists(); } catch (e) { return false; }
+}
+const sincronizados = new Set();
+/** Consultor: asegura la marca de «registrado» de cada persona de la lista (también las que se autorizaron antes de existir esta marca). */
+export async function guiaAccesoSincronizar(lista) {
+  for (const x of lista || []) {
+    if (sincronizados.has(x.correo)) continue;
+    sincronizados.add(x.correo);
+    try { await F.setDoc(F.doc(db, 'guia_registro', await hashCorreo(x.correo)), { t: F.serverTimestamp() }); } catch (e) { sincronizados.delete(x.correo); }
+  }
+}
 /** ¿Esta cuenta puede ver la guía? Una persona autorizada lee su propio documento; un consultor puede listar la colección. */
 export async function guiaMiAcceso(email) {
   const correo = claveCorreo(email);
@@ -69,6 +84,7 @@ export async function guiaSalir() { await A.signOut(auth); }
 const LS_ENLACE = 'd360_correo_enlace';
 export async function guiaEnviarEnlace(email) {
   const correo = claveCorreo(email);
+  if (!(await guiaCorreoRegistrado(correo))) { const e = new Error('correo no registrado'); e.code = 'guia/no-registrado'; throw e; } // no se envía nada a quien no está en la lista
   await A.sendSignInLinkToEmail(auth, correo, { url: location.origin + location.pathname + '?guia=1', handleCodeInApp: true });
   try { localStorage.setItem(LS_ENLACE, correo); } catch (e) { /* sin almacenamiento: se pedirá el correo al abrir el enlace */ }
 }
@@ -91,8 +107,14 @@ export function guiaAccesoEscuchar(cb, err) {
 }
 export async function guiaAccesoAgregar({ correo, n, e }) {
   await F.setDoc(F.doc(db, 'guia_acceso', claveCorreo(correo)), { n: String(n).trim().slice(0, 80), ...(e && String(e).trim() ? { e: String(e).trim().slice(0, 80) } : {}), por: usuario.email, t: F.serverTimestamp() });
+  await F.setDoc(F.doc(db, 'guia_registro', await hashCorreo(correo)), { t: F.serverTimestamp() });
+  sincronizados.add(claveCorreo(correo));
 }
-export async function guiaAccesoQuitar(correo) { await F.deleteDoc(F.doc(db, 'guia_acceso', claveCorreo(correo))); }
+export async function guiaAccesoQuitar(correo) {
+  await F.deleteDoc(F.doc(db, 'guia_acceso', claveCorreo(correo)));
+  await F.deleteDoc(F.doc(db, 'guia_registro', await hashCorreo(correo)));
+  sincronizados.delete(claveCorreo(correo));
+}
 
 // ── sesiones ──
 const col = () => F.collection(db, 'sesiones');

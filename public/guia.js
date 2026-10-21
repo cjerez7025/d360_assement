@@ -21,6 +21,10 @@ const GUIA_DIM = {
   cultura: { tema: 'Si las personas que trabajan con datos saben qué pueden y qué no pueden hacer con ellos: capacitación y mejora continua.', quien: 'Recursos humanos, jefaturas y quien capacita al personal.' }
 };
 
+// A quién pedirle acceso (las personas que autorizan la guía)
+const GUIA_CONTACTOS = ['patricio.oliva@aligndata.cl', 'carlos.jerez@aligndata.cl', 'ricardo.carmona@aligndata.cl'];
+const guiaPedirAcceso = () => 'Para solicitar acceso, escriba a ' + GUIA_CONTACTOS.slice(0, -1).join(', ') + ' o ' + GUIA_CONTACTOS[GUIA_CONTACTOS.length - 1] + '.';
+
 function guiaEnlace() { return location.origin + location.pathname + '?guia=1'; }
 
 // Mensaje corto para acompañar el enlace (WhatsApp u otro medio)
@@ -106,7 +110,7 @@ function guiaPantalla(html) {
 }
 const guiaCaja = (t, p, acc) => `<div class="gp"><header class="gp-cab"><p class="gp-sup">AlignData · D360° Privacy Assessment</p><h1>${t}</h1><p class="gp-lead">${p}</p>${acc ? `<div class="gp-acc">${acc}</div>` : ''}</header></div>`;
 function guiaLogin(aviso) {
-  guiaPantalla(guiaCaja('Guía previa a la sesión', 'Esta guía es privada: es para las personas que su consultor de AlignData invitó. Ingrese con el correo que le autorizaron: con su cuenta de Google o, si no tiene una, recibiendo un enlace en su correo.',
+  guiaPantalla(guiaCaja('Guía previa a la sesión', 'Esta guía es privada: es para las personas que su consultor de AlignData invitó. Ingrese con el correo que le autorizaron: con su cuenta de Google o, si no tiene una, recibiendo un enlace en su correo. ' + guiaPedirAcceso(),
     `<button type="button" class="be be-p" onclick="guiaIngresar()"><i data-lucide="log-in"></i>Ingresar con Google</button>
 <form class="gp-enlace" onsubmit="guiaEnlaceCorreo(event)" novalidate><label for="gp-em">¿No tiene cuenta de Google? Reciba un enlace de acceso en su correo</label><div class="gp-enlace-f"><input id="gp-em" type="email" placeholder="su.correo@empresa.cl" autocomplete="email" maxlength="120"><button type="submit" class="be"><i data-lucide="mail"></i>Enviarme el enlace</button></div></form>
 <p class="gp-aviso" id="gp-aviso" role="status">${aviso || ''}</p>`));
@@ -124,7 +128,7 @@ window.guiaEnlaceCorreo = async (ev) => {
   if (!guiaCorreoOk(c)) return guiaAv('Escriba un correo válido, por ejemplo nombre@empresa.cl.');
   guiaAv('Enviando…');
   try { await guiaN.guiaEnviarEnlace(c); guiaAv('Le enviamos un enlace a ' + c + '. Ábralo en este mismo equipo para ingresar; si no lo ve, revise la carpeta de correo no deseado.'); }
-  catch (e) { guiaAv(e && e.code === 'auth/operation-not-allowed' ? 'El ingreso por correo aún no está habilitado. Avise a su consultor de AlignData.' : 'No se pudo enviar el enlace. Intente de nuevo o avise a su consultor de AlignData.'); }
+  catch (e) { guiaAv(e && e.code === 'guia/no-registrado' ? 'Ese correo no está autorizado, por lo que no se envió ningún correo. ' + guiaPedirAcceso() : e && e.code === 'auth/operation-not-allowed' ? 'El ingreso por correo aún no está habilitado. Avise a su consultor de AlignData.' : 'No se pudo enviar el enlace. Intente de nuevo o avise a su consultor de AlignData.'); }
 };
 window.guiaConfirmar = async (ev) => {
   ev.preventDefault();
@@ -134,7 +138,7 @@ window.guiaConfirmar = async (ev) => {
   if (r && r.error) guiaConfirmarCorreo('No se pudo ingresar con ese correo. Revise que sea el mismo al que llegó el enlace, o pida uno nuevo.');
 };
 function guiaSinAcceso(u) {
-  guiaPantalla(guiaCaja('Su cuenta no tiene acceso a esta guía', `La cuenta <strong>${esc(u.email)}</strong> no está en la lista de personas autorizadas. Pida a su consultor de AlignData que agregue ese correo, o ingrese con otra cuenta.`, '<button type="button" class="be be-p" onclick="guiaSalirSesion(true)"><i data-lucide="user-round"></i>Usar otra cuenta</button> <button type="button" class="be" onclick="guiaSalirSesion()">Salir</button>'));
+  guiaPantalla(guiaCaja('Su cuenta no tiene acceso a esta guía', `La cuenta <strong>${esc(u.email)}</strong> no está en la lista de personas autorizadas. ${guiaPedirAcceso()} También puede ingresar con otra cuenta.`, '<button type="button" class="be be-p" onclick="guiaSalirSesion(true)"><i data-lucide="user-round"></i>Usar otra cuenta</button> <button type="button" class="be" onclick="guiaSalirSesion()">Salir</button>'));
 }
 window.guiaIngresar = async () => { try { await guiaN.ingresar(); } catch (e) { guiaPantalla(guiaCaja('No se pudo ingresar', 'Intente de nuevo. Si el problema sigue, avise a su consultor de AlignData.', '<button type="button" class="be be-p" onclick="guiaIngresar()">Reintentar</button>')); } };
 window.guiaSalirSesion = async (otra) => { try { await guiaN.guiaSalir(); } catch (e) { /* ya estaba cerrada */ } guiaLogin(); if (otra) setTimeout(() => window.guiaIngresar(), 50); };
@@ -169,6 +173,7 @@ async function guiaPrevia() {
 let guiaOffLista = null;
 function guiaPintarLista(l) {
   const ul = document.getElementById('gg-lista'); if (!ul) return;
+  if (typeof Nube !== 'undefined' && Nube && Nube.guiaAccesoSincronizar) Nube.guiaAccesoSincronizar(l);
   ul.innerHTML = l.length ? l.map((x) => `<li><span><strong>${esc(x.n)}</strong>${x.e ? ' · ' + esc(x.e) : ''}<small>${esc(x.correo)}</small></span><button type="button" class="gg-q" data-c="${esc(x.correo)}" aria-label="Quitar a ${esc(x.n)}"><i data-lucide="trash-2"></i></button></li>`).join('') : '<li class="gg-vacio">Todavía no hay personas autorizadas: solo los consultores pueden ver la guía.</li>';
   if (window.lucide) lucide.createIcons();
 }

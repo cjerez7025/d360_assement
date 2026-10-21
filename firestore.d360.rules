@@ -122,6 +122,17 @@ service cloud.firestore {
       allow delete: if esConsultor();
     }
 
+    // Comprobación previa para el ingreso por enlace al correo: antes de enviar nada se pregunta si el correo está registrado.
+    // El documento se llama como el SHA-256 del correo (64 caracteres): cualquiera puede preguntar por UN correo que ya conoce,
+    // pero no se puede listar ni leer qué personas hay. Lo crean y lo borran los consultores junto con guia_acceso.
+    match /guia_registro/{h} {
+      allow get: if h.matches('^[0-9a-f]{64}$');
+      allow list: if false;
+      allow create, update: if esConsultor() && h.matches('^[0-9a-f]{64}$')
+        && request.resource.data.keys().hasOnly(['t']) && request.resource.data.t == request.time;
+      allow delete: if esConsultor();
+    }
+
     match /sesiones/{id} {
       allow read, write: if esConsultor();
 

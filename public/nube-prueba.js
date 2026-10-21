@@ -27,7 +27,9 @@ export async function guiaMiAcceso(email) {
   return x ? { ok: true, rol: 'invitado', n: x.n || '', e: x.e || '' } : { ok: false };
 }
 // el «enlace al correo» se simula: se ingresa de inmediato con ese correo
-export async function guiaEnviarEnlace(email) { YOX = String(email).trim().toLowerCase(); USUARIO = { uid: 'prueba-enlace', email: YOX, nombre: YOX, foto: null }; setTimeout(() => cbUsuario && cbUsuario(USUARIO), 0); }
+export async function guiaCorreoRegistrado(email) { return !!(leerTodo().guiaAcceso || {})[String(email).trim().toLowerCase()]; }
+export async function guiaAccesoSincronizar() {}
+export async function guiaEnviarEnlace(email) { if (!(await guiaCorreoRegistrado(email))) { const e = new Error('correo no registrado'); e.code = 'guia/no-registrado'; throw e; } YOX = String(email).trim().toLowerCase(); USUARIO = { uid: 'prueba-enlace', email: YOX, nombre: YOX, foto: null }; setTimeout(() => cbUsuario && cbUsuario(USUARIO), 0); }
 export async function guiaCompletarEnlace() { return null; }
 export async function guiaSalir() { try { localStorage.removeItem('d360mock_yo'); } catch (e) { /* sin almacenamiento */ } cbUsuario && cbUsuario(null); }
 export function guiaAccesoEscuchar(cb) {
