@@ -37,6 +37,7 @@ const consultor = { uid: 'c1', token: { email: 'carlos.jerez@aligndata.cl', emai
 const patricio = { uid: 'p1', token: { email: 'patricio.oliva@aligndata.cl', email_verified: true } };
 const ricardo = { uid: 'r1', token: { email: 'ricardo.carmona@aligndata.cl', email_verified: true } };
 const ale = { uid: 'a1', token: { email: 'aleyevilafr@gmail.com', email_verified: true } };
+const aleEmpresa = { uid: 'a3', token: { email: 'ale.yevilaf@aligndata.cl', email_verified: true } };
 const aleSinVerificar = { uid: 'a2', token: { email: 'aleyevilafr@gmail.com', email_verified: false } };
 const otro = { uid: 'x1', token: { email: 'alguien@gmail.com', email_verified: true } };
 const noVerificado = { uid: 'c2', token: { email: 'carlos.jerez@aligndata.cl', email_verified: false } };
@@ -224,6 +225,7 @@ c('sesión: el consultor copia un comentario de cliente', 'ALLOW', 'create', SES
 c('sesión: Patricio Oliva lee y escribe', 'ALLOW', 'create', SES, { auth: patricio, data: con() });
 c('sesión: Ricardo Carmona lee y escribe', 'ALLOW', 'get', SES, { auth: ricardo, existente: cli() });
 c('sesión: Ale Yevilaf (aleyevilafr@gmail.com) lee', 'ALLOW', 'get', SES, { auth: ale, existente: cli() });
+c('sesión: Ale Yevilaf con su correo de empresa (ale.yevilaf@aligndata.cl) lee', 'ALLOW', 'get', SES, { auth: aleEmpresa, existente: cli() });
 c('sesión: Ale Yevilaf con el correo sin verificar no entra', 'DENY', 'get', SES, { auth: aleSinVerificar, existente: cli() });
 c('sesión: un correo parecido al de Ale no entra', 'DENY', 'get', SES, { auth: { uid: 'x9', token: { email: 'aleyevilafr@gmail.co', email_verified: true } }, existente: cli() });
 c('sesión: Patricio sin correo verificado no entra', 'DENY', 'get', SES, { auth: { ...patricio, token: { ...patricio.token, email_verified: false } }, existente: cli() });

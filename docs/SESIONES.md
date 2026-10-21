@@ -134,7 +134,7 @@ Agregar su correo a la lista `esConsultor()` en `firestore.d360.rules` y publica
 npx firebase-tools deploy --only firestore:d360 --project aligndata-arcop
 ```
 
-Hoy están autorizados `carlos.jerez@aligndata.cl`, `jerezcarlos70@gmail.com`, `patricio.oliva@aligndata.cl`, `ricardo.carmona@aligndata.cl` y `aleyevilafr@gmail.com` (Ale Yevilaf, revisora legal).
+Hoy están autorizados `carlos.jerez@aligndata.cl`, `jerezcarlos70@gmail.com`, `patricio.oliva@aligndata.cl`, `ricardo.carmona@aligndata.cl` `aleyevilafr@gmail.com` y `ale.yevilaf@aligndata.cl` (Ale Yevilaf, revisora legal, con sus dos correos).
 
 ## Límites conocidos
 
