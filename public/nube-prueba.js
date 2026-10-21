@@ -16,15 +16,19 @@ window.addEventListener('storage', (e) => { if (e.key === K) oyentes.forEach((f)
 let cbUsuario = null;
 // con ?yo=correo en la guía previa se simula a una persona del cliente (sin ?yo= se actúa como consultor)
 const YO = (() => { try { return (new URLSearchParams(location.search).get('yo') || '').trim().toLowerCase(); } catch (e) { return ''; } })();
-const USUARIO = YO ? { uid: 'prueba-yo', email: YO, nombre: YO, foto: null } : { uid: 'prueba-1', email: 'modo prueba (este navegador)', nombre: 'Modo de prueba', foto: null };
+let USUARIO = YO ? { uid: 'prueba-yo', email: YO, nombre: YO, foto: null } : { uid: 'prueba-1', email: 'modo prueba (este navegador)', nombre: 'Modo de prueba', foto: null };
 
 export function iniciar() {}
 // ── guía previa: acceso privado por lista de correos autorizados (misma interfaz que nube.js) ──
+let YOX = YO; // quien ingresó con un «enlace» simulado
 export async function guiaMiAcceso(email) {
-  if (!YO) return { ok: true, rol: 'consultor', n: '', e: '' };
+  if (!YOX) return { ok: true, rol: 'consultor', n: '', e: '' };
   const x = (leerTodo().guiaAcceso || {})[String(email).trim().toLowerCase()];
   return x ? { ok: true, rol: 'invitado', n: x.n || '', e: x.e || '' } : { ok: false };
 }
+// el «enlace al correo» se simula: se ingresa de inmediato con ese correo
+export async function guiaEnviarEnlace(email) { YOX = String(email).trim().toLowerCase(); USUARIO = { uid: 'prueba-enlace', email: YOX, nombre: YOX, foto: null }; setTimeout(() => cbUsuario && cbUsuario(USUARIO), 0); }
+export async function guiaCompletarEnlace() { return null; }
 export async function guiaSalir() { try { localStorage.removeItem('d360mock_yo'); } catch (e) { /* sin almacenamiento */ } cbUsuario && cbUsuario(null); }
 export function guiaAccesoEscuchar(cb) {
   let ultimo = null;

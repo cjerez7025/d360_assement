@@ -4,12 +4,13 @@ Una página **privada** (`https://d360-assessment.web.app/?guia=1`) para que el 
 
 ## Acceso: ingreso con Google y lista de personas autorizadas
 
-- Al abrir el enlace se pide **ingresar con Google**. Solo ve la guía quien tenga su correo en la lista de personas autorizadas; los **consultores entran siempre**.
+- Al abrir el enlace se pide ingresar de una de dos formas: **con Google** o, para quien **no tiene cuenta Google**, **recibiendo un enlace en su correo** (se escribe el correo, llega un enlace y al abrirlo se ingresa; no hace falta ninguna cuenta ni contraseña). Solo ve la guía quien tenga su correo en la lista de personas autorizadas; los **consultores entran siempre**.
 - El consultor administra la lista en el menú lateral, **«Guía previa para el cliente»**: nombre, correo (de la cuenta Google) y empresa opcional; se pueden quitar en cualquier momento (la persona pierde el acceso).
 - Quien ingresa con una cuenta que no está en la lista ve «Su cuenta no tiene acceso a esta guía», con la opción de usar otra cuenta o salir.
 - La lista vive en Firestore, `guia_acceso/{correo en minúsculas}` con `{n: nombre, e?: empresa, por: consultor que autorizó, t: hora}`. Las reglas dejan a cada persona leer **solo su propio** documento (con el correo verificado por Google); solo los consultores crean, listan y borran. Hay 27 casos de prueba en `probar-reglas.mjs`.
 - **Limitación conocida:** el banco de preguntas (textos, ejemplos, «por qué») está dentro del código público de la app (`app.js`). Este control decide quién ve la guía en pantalla; no oculta el código. Ocultarlo de verdad exigiría mover el banco de preguntas al servidor (toca toda la app).
-- Las personas necesitan una cuenta de Google con ese correo (Gmail o un correo de empresa con cuenta Google).
+- **Ingreso por enlace al correo:** requiere habilitarlo una vez en Firebase: consola → proyecto `aligndata-arcop` → Authentication → Método de acceso → **Correo electrónico/contraseña** → activar **«Vínculo del correo electrónico (acceso sin contraseña)»**. Si no está habilitado, la pantalla dice «El ingreso por correo aún no está habilitado». El enlace lo envía Firebase desde `noreply@aligndata-arcop.firebaseapp.com`; puede caer en la carpeta de correo no deseado de una empresa (la pantalla lo avisa). Si el enlace se abre en otro equipo que el que lo pidió, se pide escribir el correo para confirmar.
+- El correo que se autoriza debe ser **el mismo** con el que la persona ingresa (Google o enlace).
 
 ## Qué ve la persona autorizada
 

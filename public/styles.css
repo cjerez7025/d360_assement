@@ -1546,3 +1546,8 @@ dialog.dlg-guia{max-width:600px}
 .gg-q svg{width:16px;height:16px}
 @media(max-width:640px){.gg-f{grid-template-columns:1fr}.gp-d,.gp-pq-s,.gp-pq .gp-ev{margin-left:0}}
 @media print{.gp-d{border:0}}
+.gp-enlace{flex:1 1 100%;margin-top:6px;padding-top:14px;border-top:1px solid #3A4A6A;color:var(--on-navy-2)}
+.gp-enlace label{display:block;margin-bottom:8px;font-size:var(--fs-sm)}
+.gp-enlace-f{display:flex;flex-wrap:wrap;gap:8px}
+.gp-enlace-f input{flex:1 1 240px;min-width:0;min-height:44px;padding:8px 14px;border-radius:var(--rs);border:1.5px solid var(--field);background:var(--glass-bg);font:inherit;color:var(--text)}
+.gp-aviso{flex:1 1 100%;margin:4px 0 0;min-height:1.2em;font-size:var(--fs-sm);color:var(--on-navy)}

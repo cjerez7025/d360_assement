@@ -335,7 +335,7 @@
       <h2 id="gg-t"><i data-lucide="book-open-check"></i> Guía previa para el cliente</h2>
       <button type="button" class="dlg-x" onclick="document.getElementById('dlg-guia').close()" aria-label="Cerrar">×</button>
     </div>
-    <p>Página con los temas y las preguntas de la sesión, con el «¿por qué se pregunta esto?» y ejemplos por nivel, para que el cliente la lea antes de la reunión. <strong>Es privada:</strong> solo la ven las personas que usted autorice abajo, ingresando con su cuenta de Google.</p>
+    <p>Página con los temas y las preguntas de la sesión, con el «¿por qué se pregunta esto?» y ejemplos por nivel, para que el cliente la lea antes de la reunión. <strong>Es privada:</strong> solo la ven las personas que usted autorice abajo. Ingresan con su cuenta de Google o, si no tienen una, con un enlace que reciben en su correo.</p>
     <label class="dlg-l" for="gg-url">Enlace</label>
     <div class="gg-fila"><input class="dlg-inp" id="gg-url" readonly><button type="button" class="be be-p" onclick="guiaCopiar()"><i data-lucide="copy"></i>Copiar</button></div>
     <p class="gg-ok" id="gg-ok" role="status"></p>
@@ -343,7 +343,7 @@
     <h3 class="gg-h">Personas autorizadas</h3>
     <form class="gg-f" id="gg-f" novalidate onsubmit="guiaAgregar(event)">
       <input class="dlg-inp" id="gg-n" placeholder="Nombre" maxlength="80" autocomplete="off" aria-label="Nombre de la persona">
-      <input class="dlg-inp" id="gg-c" type="email" placeholder="Correo de su cuenta Google" maxlength="120" autocomplete="off" aria-label="Correo de la persona">
+      <input class="dlg-inp" id="gg-c" type="email" placeholder="Correo de la persona" maxlength="120" autocomplete="off" aria-label="Correo de la persona">
       <input class="dlg-inp" id="gg-e" placeholder="Empresa (opcional)" maxlength="80" autocomplete="off" aria-label="Empresa de la persona">
       <button type="submit" class="be be-p"><i data-lucide="user-plus"></i>Autorizar</button>
     </form>

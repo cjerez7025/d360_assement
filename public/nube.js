@@ -64,6 +64,27 @@ export async function guiaMiAcceso(email) {
   catch (e) { return { ok: false }; }
 }
 export async function guiaSalir() { await A.signOut(auth); }
+// Ingreso sin cuenta Google: Firebase envía un enlace al correo y, al abrirlo, la persona ingresa (el correo queda verificado).
+// Requiere habilitar «Vínculo del correo electrónico» en Firebase Authentication → Método de acceso → Correo/contraseña.
+const LS_ENLACE = 'd360_correo_enlace';
+export async function guiaEnviarEnlace(email) {
+  const correo = claveCorreo(email);
+  await A.sendSignInLinkToEmail(auth, correo, { url: location.origin + location.pathname + '?guia=1', handleCodeInApp: true });
+  try { localStorage.setItem(LS_ENLACE, correo); } catch (e) { /* sin almacenamiento: se pedirá el correo al abrir el enlace */ }
+}
+/** Si la página se abrió desde el enlace del correo, completa el ingreso. null = no venía de un enlace; {pedirCorreo} = hay que escribir el correo (otro equipo); {ok}; {error}. */
+export async function guiaCompletarEnlace(correoEscrito) {
+  if (!A.isSignInWithEmailLink(auth, location.href)) return null;
+  let correo = claveCorreo(correoEscrito);
+  if (!correo) { try { correo = localStorage.getItem(LS_ENLACE) || ''; } catch (e) { correo = ''; } }
+  if (!correo) return { pedirCorreo: true };
+  try {
+    await A.signInWithEmailLink(auth, correo, location.href);
+    try { localStorage.removeItem(LS_ENLACE); } catch (e) { /* nada */ }
+    try { history.replaceState(null, '', location.pathname + '?guia=1'); } catch (e) { /* nada */ }
+    return { ok: true };
+  } catch (e) { return { error: e.code || e.message }; }
+}
 export function guiaAccesoEscuchar(cb, err) {
   return F.onSnapshot(F.collection(db, 'guia_acceso'),
     (s) => cb(s.docs.map((d) => { const x = d.data({ serverTimestamps: 'estimate' }); return { correo: d.id, n: x.n || '', e: x.e || '', por: x.por || '', t: x.t && x.t.toMillis ? x.t.toMillis() : 0 }; }).sort((a, b) => a.n.localeCompare(b.n, 'es'))), err || (() => cb([])));

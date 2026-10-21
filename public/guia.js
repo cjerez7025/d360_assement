@@ -24,7 +24,7 @@ const GUIA_DIM = {
 function guiaEnlace() { return location.origin + location.pathname + '?guia=1'; }
 
 // Mensaje corto para acompañar el enlace (WhatsApp u otro medio)
-function guiaMensaje() { return 'Hola, para que nuestra reunión del D360° Privacy Assessment sea más ágil, revise esta guía con los temas y las preguntas que veremos, y lo que conviene tener a mano (ingrese con su cuenta de Google): ' + guiaEnlace(); }
+function guiaMensaje() { return 'Hola, para que nuestra reunión del D360° Privacy Assessment sea más ágil, revise esta guía con los temas y las preguntas que veremos, y lo que conviene tener a mano (ingrese con su cuenta de Google o pida un enlace a su correo): ' + guiaEnlace(); }
 
 // Una pregunta con lo mismo que ve el consultor: por qué se pregunta, ejemplos por nivel y qué preparar
 function guiaPregunta(q, n) {
@@ -88,10 +88,35 @@ function guiaPantalla(html) {
   if (typeof ss === 'function') ss('sg');
   if (window.lucide) lucide.createIcons();
 }
-const guiaCaja = (t, p, acc) => `<div class="gp"><header class="gp-cab"><p class="gp-sup">AlignData · D360° Privacy Assessment</p><h1>${t}</h1><p class="gp-lead">${p}</p>${acc ? `<p class="gp-acc">${acc}</p>` : ''}</header></div>`;
-function guiaLogin() {
-  guiaPantalla(guiaCaja('Guía previa a la sesión', 'Esta guía es privada: es para las personas que su consultor de AlignData invitó. Ingrese con la cuenta de Google del correo que le autorizaron.', '<button type="button" class="be be-p" onclick="guiaIngresar()"><i data-lucide="log-in"></i>Ingresar con Google</button>'));
+const guiaCaja = (t, p, acc) => `<div class="gp"><header class="gp-cab"><p class="gp-sup">AlignData · D360° Privacy Assessment</p><h1>${t}</h1><p class="gp-lead">${p}</p>${acc ? `<div class="gp-acc">${acc}</div>` : ''}</header></div>`;
+function guiaLogin(aviso) {
+  guiaPantalla(guiaCaja('Guía previa a la sesión', 'Esta guía es privada: es para las personas que su consultor de AlignData invitó. Ingrese con el correo que le autorizaron: con su cuenta de Google o, si no tiene una, recibiendo un enlace en su correo.',
+    `<button type="button" class="be be-p" onclick="guiaIngresar()"><i data-lucide="log-in"></i>Ingresar con Google</button>
+<form class="gp-enlace" onsubmit="guiaEnlaceCorreo(event)" novalidate><label for="gp-em">¿No tiene cuenta de Google? Reciba un enlace de acceso en su correo</label><div class="gp-enlace-f"><input id="gp-em" type="email" placeholder="su.correo@empresa.cl" autocomplete="email" maxlength="120"><button type="submit" class="be"><i data-lucide="mail"></i>Enviarme el enlace</button></div></form>
+<p class="gp-aviso" id="gp-aviso" role="status">${aviso || ''}</p>`));
 }
+// Correo para confirmar el ingreso cuando el enlace se abrió en otro equipo
+function guiaConfirmarCorreo(aviso) {
+  guiaPantalla(guiaCaja('Confirme su correo', 'Abrió el enlace en un equipo distinto de donde lo pidió. Escriba el correo al que llegó el enlace para terminar de ingresar.',
+    `<form class="gp-enlace" onsubmit="guiaConfirmar(event)" novalidate><div class="gp-enlace-f"><input id="gp-em" type="email" placeholder="su.correo@empresa.cl" autocomplete="email" maxlength="120" aria-label="Su correo"><button type="submit" class="be be-p">Continuar</button></div></form><p class="gp-aviso" id="gp-aviso" role="status">${aviso || ''}</p>`));
+}
+const guiaCorreoOk = (c) => /^[^@\s/]+@[^@\s/]+\.[^@\s/]+$/.test(c) && c.length <= 120;
+const guiaAv = (t) => { const e = document.getElementById('gp-aviso'); if (e) e.textContent = t; };
+window.guiaEnlaceCorreo = async (ev) => {
+  ev.preventDefault();
+  const c = (document.getElementById('gp-em') || {}).value.trim().toLowerCase();
+  if (!guiaCorreoOk(c)) return guiaAv('Escriba un correo válido, por ejemplo nombre@empresa.cl.');
+  guiaAv('Enviando…');
+  try { await guiaN.guiaEnviarEnlace(c); guiaAv('Le enviamos un enlace a ' + c + '. Ábralo en este mismo equipo para ingresar; si no lo ve, revise la carpeta de correo no deseado.'); }
+  catch (e) { guiaAv(e && e.code === 'auth/operation-not-allowed' ? 'El ingreso por correo aún no está habilitado. Avise a su consultor de AlignData.' : 'No se pudo enviar el enlace. Intente de nuevo o avise a su consultor de AlignData.'); }
+};
+window.guiaConfirmar = async (ev) => {
+  ev.preventDefault();
+  const c = (document.getElementById('gp-em') || {}).value.trim().toLowerCase();
+  if (!guiaCorreoOk(c)) return guiaAv('Escriba un correo válido.');
+  const r = await guiaN.guiaCompletarEnlace(c);
+  if (r && r.error) guiaConfirmarCorreo('No se pudo ingresar con ese correo. Revise que sea el mismo al que llegó el enlace, o pida uno nuevo.');
+};
 function guiaSinAcceso(u) {
   guiaPantalla(guiaCaja('Su cuenta no tiene acceso a esta guía', `La cuenta <strong>${esc(u.email)}</strong> no está en la lista de personas autorizadas. Pida a su consultor de AlignData que agregue ese correo, o ingrese con otra cuenta.`, '<button type="button" class="be be-p" onclick="guiaSalirSesion(true)"><i data-lucide="user-round"></i>Usar otra cuenta</button> <button type="button" class="be" onclick="guiaSalirSesion()">Salir</button>'));
 }
@@ -107,8 +132,13 @@ async function guiaPrevia() {
     guiaN = await import(MOCK ? './nube-prueba.js' : './nube.js');
     guiaN.iniciar({ persistente: false, conCuenta: true });
   } catch (e) { guiaPantalla(guiaCaja('No se pudo cargar la guía', 'Revise su conexión e intente de nuevo.', '<button type="button" class="be be-p" onclick="location.reload()">Reintentar</button>')); return; }
+  // si se abrió desde el enlace del correo, se completa el ingreso (o se pide confirmar el correo en otro equipo)
+  let enlace = null;
+  try { enlace = await guiaN.guiaCompletarEnlace(); } catch (e) { enlace = null; }
+  if (enlace && enlace.pedirCorreo) guiaConfirmarCorreo();
+  else if (enlace && enlace.error) guiaLogin('El enlace no sirve (ya se usó o venció). Pida uno nuevo.');
   guiaN.alCambiarUsuario(async (u) => {
-    if (!u) return guiaLogin();
+    if (!u) { if (!(enlace && enlace.pedirCorreo)) guiaLogin(enlace && enlace.error ? 'El enlace no sirve (ya se usó o venció). Pida uno nuevo.' : ''); return; }
     guiaPantalla(guiaCaja('Guía previa a la sesión', 'Comprobando su acceso…'));
     let a = { ok: false };
     try { a = await guiaN.guiaMiAcceso(u.email); } catch (e) { a = { ok: false }; }
