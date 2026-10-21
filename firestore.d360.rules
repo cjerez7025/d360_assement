@@ -102,6 +102,25 @@ service cloud.firestore {
     }
 
     // Sesiones de diagnóstico (respuestas, notas de la reunión, datos del cliente): solo consultores.
+    // Guía previa a la sesión: solo la ven las personas cuyo correo autorizó un consultor. El documento se llama como el correo
+    // (en minúsculas): cada persona solo puede leer el suyo (con el correo verificado por Google) y solo los consultores
+    // lo crean, lo listan y lo borran. n = nombre, e = empresa, por = consultor que lo autorizó, t = hora del servidor.
+    match /guia_acceso/{correo} {
+      allow get: if esConsultor()
+        || (request.auth != null && request.auth.token.email_verified == true && request.auth.token.email.lower() == correo);
+      allow list: if esConsultor();
+      allow create, update: if esConsultor()
+        && correo.size() >= 5 && correo.size() <= 120
+        && correo.matches('^[^@ /]+@[^@ /]+[.][^@ /]+$') && correo == correo.lower()
+        && request.resource.data.keys().hasOnly(['n', 'e', 'por', 't'])
+        && request.resource.data.keys().hasAll(['n', 'por', 't'])
+        && request.resource.data.n is string && request.resource.data.n.size() >= 1 && request.resource.data.n.size() <= 80
+        && (!('e' in request.resource.data) || (request.resource.data.e is string && request.resource.data.e.size() <= 80))
+        && request.resource.data.por == request.auth.token.email
+        && request.resource.data.t == request.time;
+      allow delete: if esConsultor();
+    }
+
     match /sesiones/{id} {
       allow read, write: if esConsultor();
 

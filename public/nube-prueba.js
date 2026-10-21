@@ -14,9 +14,26 @@ const oyentes = new Set();
 // otra pestaña del mismo navegador escribió: se avisa a quienes escuchan (así se prueba la reunión en vivo con dos pestañas)
 window.addEventListener('storage', (e) => { if (e.key === K) oyentes.forEach((f) => f()); });
 let cbUsuario = null;
-const USUARIO = { uid: 'prueba-1', email: 'modo prueba (este navegador)', nombre: 'Modo de prueba', foto: null };
+// con ?yo=correo en la guía previa se simula a una persona del cliente (sin ?yo= se actúa como consultor)
+const YO = (() => { try { return (new URLSearchParams(location.search).get('yo') || '').trim().toLowerCase(); } catch (e) { return ''; } })();
+const USUARIO = YO ? { uid: 'prueba-yo', email: YO, nombre: YO, foto: null } : { uid: 'prueba-1', email: 'modo prueba (este navegador)', nombre: 'Modo de prueba', foto: null };
 
 export function iniciar() {}
+// ── guía previa: acceso privado por lista de correos autorizados (misma interfaz que nube.js) ──
+export async function guiaMiAcceso(email) {
+  if (!YO) return { ok: true, rol: 'consultor', n: '', e: '' };
+  const x = (leerTodo().guiaAcceso || {})[String(email).trim().toLowerCase()];
+  return x ? { ok: true, rol: 'invitado', n: x.n || '', e: x.e || '' } : { ok: false };
+}
+export async function guiaSalir() { try { localStorage.removeItem('d360mock_yo'); } catch (e) { /* sin almacenamiento */ } cbUsuario && cbUsuario(null); }
+export function guiaAccesoEscuchar(cb) {
+  let ultimo = null;
+  const emitir = () => { const g = leerTodo().guiaAcceso || {}, lst = Object.entries(g).map(([correo, x]) => ({ correo, ...x })).sort((a, b) => a.n.localeCompare(b.n, 'es')), txt = JSON.stringify(lst); if (txt !== ultimo) { ultimo = txt; cb(lst); } };
+  oyentes.add(emitir); emitir();
+  return () => oyentes.delete(emitir);
+}
+export async function guiaAccesoAgregar({ correo, n, e }) { const d = leerTodo(); d.guiaAcceso = { ...(d.guiaAcceso || {}), [String(correo).trim().toLowerCase()]: { n: String(n).trim().slice(0, 80), e: e ? String(e).trim().slice(0, 80) : '', por: USUARIO.email, t: Date.now() } }; guardarTodo(d); }
+export async function guiaAccesoQuitar(correo) { const d = leerTodo(); if (d.guiaAcceso) { delete d.guiaAcceso[String(correo).trim().toLowerCase()]; guardarTodo(d); } }
 export function alCambiarUsuario(cb) { cbUsuario = cb; setTimeout(() => cb(USUARIO), 0); return () => {}; }
 export async function ingresar() { const d = leerTodo(); d.sesion = USUARIO.uid; guardarTodo(d); cbUsuario(USUARIO); }
 export async function resultadoRedireccion() { return null; }

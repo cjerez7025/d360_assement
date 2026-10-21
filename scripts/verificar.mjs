@@ -1448,16 +1448,17 @@ seccion('31. Guía previa a la sesión (enlace público para el cliente)');
 {
   const raiz23 = path.resolve(path.dirname(file), '..');
   const leer23 = (f) => fs.readFileSync(path.join(raiz23, f), 'utf8').replace(/\r\n/g, '\n');
-  const gj = leer23('public/guia.js'), ih = leer23('public/index.html'), sj = leer23('public/sesiones.js'), lj = leer23('public/lateral.js'), cs = leer23('public/styles.css');
+  const gj = leer23('public/guia.js'), ih = leer23('public/index.html'), sj = leer23('public/sesiones.js'), lj = leer23('public/lateral.js'), cs = leer23('public/styles.css'), rg = leer23('firestore.d360.rules');
   const sb = sandbox, h = sb.guiaHtml();
   const bases = Q.filter((q) => !q.iS), prof = Q.filter((q) => q.iS);
 
   // ── contenido: sale del cuestionario vigente ──
   ok((h.match(/<section class="gp-dim"/g) || []).length === D.length && D.every((d) => h.includes(sb.pqEsc(d.n))), 'la guía tiene un bloque por cada uno de los ' + D.length + ' temas, con su nombre');
-  ok(bases.every((q) => h.includes('<li>' + sb.pqEsc(q.q) + '</li>')) && (h.match(/<ol class="gp-q">/g) || []).length === D.length, 'muestra las ' + bases.length + ' preguntas del cuestionario, agrupadas por tema');
+  ok(bases.every((q) => h.includes(sb.pqEsc(q.q) + '</h5>')) && (h.match(/<article class="gp-pq">/g) || []).length === bases.length, 'muestra las ' + bases.length + ' preguntas del cuestionario, agrupadas por tema');
   ok(prof.every((q) => !h.includes(sb.pqEsc(q.q))), 'no lista las preguntas de profundización (aparecen solo si una respuesta sale baja)');
-  ok(bases.every((q) => q.op.every((o) => !h.includes('>' + sb.pqEsc(o.l) + '<'))) && !/Optimizado|Inexistente|Reactivo/.test(h.split('Los temas, uno por uno')[1]), 'no muestra las opciones de respuesta (para que se responda lo que ocurre y no la respuesta ideal)');
-  ok(bases.every((q) => h.includes('<li>' + sb.pqEsc(q.ev) + '</li>')), 'incluye, por pregunta, qué conviene ir preparando («cómo comprobarlo»)');
+  ok(bases.every((q) => q.op.every((o) => h.includes('<strong>' + sb.pqEsc(o.l) + '</strong>') && h.includes(sb.pqEsc((q.ex.find((e) => e.v === o.v) || {}).t))) && h.includes('<p>' + sb.pqEsc(q.cx) + '</p>')) && (h.match(/¿Por qué se pregunta esto\?/g) || []).length === bases.length && (h.match(/Ejemplos de cada nivel de respuesta/g) || []).length === bases.length, 'cada pregunta lleva «¿por qué se pregunta esto?» y los ejemplos de cada nivel de respuesta, como en el cuestionario');
+  ok(/no son una respuesta que haya que elegir, y el consultor confirma cada respuesta con la evidencia/.test(h), 'avisa que los ejemplos no son una respuesta que elegir y que el consultor confirma con evidencia');
+  ok(bases.every((q) => h.includes('<strong>Puede ir preparando:</strong> ' + sb.pqEsc(q.ev))), 'incluye, por pregunta, qué conviene ir preparando («cómo comprobarlo»)');
   ok(D.every((d) => h.includes('Conviene que participe:')) && (h.match(/Conviene que participe:/g) || []).length === D.length && /<table>/.test(h) && D.every((d, i) => h.includes((i + 1) + '. ' + sb.pqEsc(d.n))), 'dice quién conviene que participe en cada tema y lo resume en una tabla');
   ok(D.every((d) => { const p = prof.filter((q) => q.dm === d.id).length; return !p || (p === 1 ? /una pregunta adicional/.test(h) : true); }) && /entra en vigencia el 1 de diciembre de 2026/.test(h) && /no constituye una auditoría ni asesoría legal/.test(h), 'avisa de las preguntas adicionales, la fecha de vigencia de la ley y que no es auditoría ni asesoría legal');
   ok(/class="ref"|data-a=/.test(h), 'la base legal de cada tema abre el texto de la ley');
@@ -1468,7 +1469,37 @@ seccion('31. Guía previa a la sesión (enlace público para el cliente)');
   // ── enlace público, sin sesión ni Firebase ──
   ok(/return location\.origin \+ location\.pathname \+ '\?guia=1';/.test(gj) && /\/\(\^\|\[\?&\]\)guia=\/\.test\(location\.search\)/.test(gj), 'el enlace es la misma página con ?guia=1 y se reconoce al abrirla');
   ok(/if \(P\.has\('guia'\)\) return;/.test(sj) && sj.indexOf("P.has('guia')") < sj.indexOf("import((MOCK"), 'con ?guia=1 la aplicación no pide ingreso ni conecta con Firebase');
-  ok(!/import\(|firebase|nube/i.test(gj.replace(/\/\*[^]*?\*\//, '')), 'guia.js no usa Firebase ni la capa de datos');
+  ok(/guiaN = await import\(MOCK \? '\.\/nube-prueba\.js' : '\.\/nube\.js'\);/.test(gj) && /guiaN\.iniciar\(\{ persistente: false, conCuenta: true \}\)/.test(gj) && !/gstatic\.com\/firebasejs/.test(gj), 'la guía usa la misma capa de datos que la aplicación (con cuenta, sin guardar nada en el equipo)');
+  // ── acceso privado ──
+  ok(/if \(!u\) return guiaLogin\(\);/.test(gj) && /a = await guiaN\.guiaMiAcceso\(u\.email\)/.test(gj) && /if \(!a\.ok\) return guiaSinAcceso\(u\);/.test(gj) && gj.indexOf('guiaSinAcceso(u);') < gj.indexOf('guiaPantalla(guiaHtml(u))'), 'sin ingreso o sin autorización la guía no se dibuja: solo se pide el ingreso con Google o se dice que la cuenta no tiene acceso');
+  ok(/Pida a su consultor de AlignData que agregue ese correo, o ingrese con otra cuenta/.test(gj) && /Usar otra cuenta/.test(gj) && /guiaSalirSesion/.test(gj), 'quien no está autorizado lo ve claro y puede probar con otra cuenta o salir');
+  ok(/Limitación conocida: el banco de preguntas sigue estando en el código público/.test(gj), 'queda escrito que el control decide quién ve la guía, no oculta el código de la aplicación');
+  ok(/match \/guia_acceso\/\{correo\}/.test(rg) && /allow list: if esConsultor\(\);/.test(rg.slice(rg.indexOf('match /guia_acceso/'), rg.indexOf('match /sesiones/{id}'))) && /request\.auth\.token\.email\.lower\(\) == correo/.test(rg) && /request\.resource\.data\.por == request\.auth\.token\.email/.test(rg), 'las reglas dejan a cada persona leer solo su acceso y solo a los consultores autorizar, listar y quitar');
+  const fnsG = ['guiaMiAcceso', 'guiaSalir', 'guiaAccesoEscuchar', 'guiaAccesoAgregar', 'guiaAccesoQuitar'];
+  ok(fnsG.every((x) => new RegExp('export (async )?function ' + x + '\\(').test(leer23('public/nube.js')) && new RegExp('export (async )?function ' + x + '\\(').test(leer23('public/nube-prueba.js'))) && /iniciar\(\{ persistente, conCuenta \}\)/.test(leer23('public/nube.js')), 'la nube y la versión de prueba tienen las mismas funciones de acceso a la guía');
+  // prueba real de la versión de prueba: un consultor autoriza y una persona entra o no
+  {
+    const url = (await import('node:url')).pathToFileURL(path.join(raiz23, 'public/nube-prueba.js')).href;
+    const antes = { w: globalThis.window, ls: globalThis.localStorage, ce: globalThis.CustomEvent, lo: globalThis.location }, mem = {};
+    globalThis.window = { addEventListener() {}, dispatchEvent() {} }; globalThis.CustomEvent = class {};
+    globalThis.localStorage = { getItem: (k) => (k in mem ? mem[k] : null), setItem: (k, v) => { mem[k] = String(v); }, removeItem: (k) => { delete mem[k]; } };
+    try {
+      globalThis.location = { search: '' };
+      const C = await import(url + '?c=' + Date.now());
+      ok((await C.guiaMiAcceso('cualquiera@x.cl')).rol === 'consultor', 'sin ?yo= la versión de prueba actúa como consultor');
+      await C.guiaAccesoAgregar({ correo: ' Ana@Empresa.cl ', n: 'Ana Pérez', e: 'Contabilízate' });
+      let lista = null; const off = C.guiaAccesoEscuchar((l) => { lista = l; }); off();
+      ok(lista && lista.length === 1 && lista[0].correo === 'ana@empresa.cl' && lista[0].n === 'Ana Pérez' && lista[0].e === 'Contabilízate', 'el consultor autoriza a una persona (el correo se guarda en minúsculas y sin espacios)');
+      globalThis.location = { search: '?yo=Ana@Empresa.cl' };
+      const I = await import(url + '?i=' + Date.now());
+      const a1 = await I.guiaMiAcceso('Ana@Empresa.cl'), a2 = await (async () => { globalThis.location = { search: '?yo=otra@x.cl' }; const J = await import(url + '?j=' + Date.now()); return J.guiaMiAcceso('otra@x.cl'); })();
+      ok(a1.ok && a1.rol === 'invitado' && a1.n === 'Ana Pérez' && !a2.ok, 'la persona autorizada entra como invitada y quien no está en la lista no entra');
+      await C.guiaAccesoQuitar('ANA@empresa.cl');
+      globalThis.location = { search: '?yo=ana@empresa.cl' };
+      ok(!(await (await import(url + '?k=' + Date.now())).guiaMiAcceso('ana@empresa.cl')).ok, 'al quitarla, la persona pierde el acceso');
+    } finally { globalThis.window = antes.w; globalThis.localStorage = antes.ls; globalThis.CustomEvent = antes.ce; globalThis.location = antes.lo; if (antes.w === undefined) delete globalThis.window; if (antes.ls === undefined) delete globalThis.localStorage; if (antes.ce === undefined) delete globalThis.CustomEvent; if (antes.lo === undefined) delete globalThis.location; }
+  }
+  ok(/id="gg-f"/.test(ih) && /onsubmit="guiaAgregar\(event\)"/.test(ih) && /id="gg-lista"/.test(ih) && /Es privada:<\/strong> solo la ven las personas que usted autorice/.test(ih) && /function guiaAgregar\(ev\)/.test(gj) && /Nube\.guiaAccesoQuitar\(b\.dataset\.c\)/.test(gj) && /ingrese con su cuenta de Google/.test(gj), 'el diálogo del consultor tiene la lista de personas autorizadas (agregar y quitar) y el mensaje de WhatsApp avisa que se ingresa con Google');
   ok(/<div id="sg" class="screen"><div id="gp-c"><\/div><\/div>/.test(ih) && ih.indexOf('src="porque.js"') < ih.indexOf('src="guia.js"') && ih.indexOf('src="guia.js"') > ih.indexOf('src="app.js"'), 'la página tiene su pantalla y carga guia.js después de la aplicación (se dibuja al terminar de cargar, por encima de la pantalla de espera)');
   ok(/body\.guia \.topbar,body\.guia \.nvbar,body\.guia #sb/.test(cs), 'la guía se ve limpia, sin la barra de la aplicación ni el menú');
 

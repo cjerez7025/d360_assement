@@ -335,11 +335,21 @@
       <h2 id="gg-t"><i data-lucide="book-open-check"></i> Guía previa para el cliente</h2>
       <button type="button" class="dlg-x" onclick="document.getElementById('dlg-guia').close()" aria-label="Cerrar">×</button>
     </div>
-    <p>Enlace a una página con los temas y las preguntas de la sesión, para que el cliente la lea antes de la reunión. Se abre sin cuenta y no lleva datos de ninguna empresa. Envíelo por WhatsApp, correo u otro medio.</p>
+    <p>Página con los temas y las preguntas de la sesión, con el «¿por qué se pregunta esto?» y ejemplos por nivel, para que el cliente la lea antes de la reunión. <strong>Es privada:</strong> solo la ven las personas que usted autorice abajo, ingresando con su cuenta de Google.</p>
     <label class="dlg-l" for="gg-url">Enlace</label>
     <div class="gg-fila"><input class="dlg-inp" id="gg-url" readonly><button type="button" class="be be-p" onclick="guiaCopiar()"><i data-lucide="copy"></i>Copiar</button></div>
     <p class="gg-ok" id="gg-ok" role="status"></p>
-    <div class="dlg-act"><a id="gg-wa" class="be" href="#" target="_blank" rel="noopener"><i data-lucide="message-circle"></i>Enviar por WhatsApp</a><a id="gg-abrir" class="be" href="#" target="_blank" rel="noopener"><i data-lucide="external-link"></i>Ver la guía</a><button type="button" class="be" onclick="document.getElementById('dlg-guia').close()">Cerrar</button></div>
+    <div class="dlg-act"><a id="gg-wa" class="be" href="#" target="_blank" rel="noopener"><i data-lucide="message-circle"></i>Enviar por WhatsApp</a><a id="gg-abrir" class="be" href="#" target="_blank" rel="noopener"><i data-lucide="external-link"></i>Ver la guía</a></div>
+    <h3 class="gg-h">Personas autorizadas</h3>
+    <form class="gg-f" id="gg-f" novalidate onsubmit="guiaAgregar(event)">
+      <input class="dlg-inp" id="gg-n" placeholder="Nombre" maxlength="80" autocomplete="off" aria-label="Nombre de la persona">
+      <input class="dlg-inp" id="gg-c" type="email" placeholder="Correo de su cuenta Google" maxlength="120" autocomplete="off" aria-label="Correo de la persona">
+      <input class="dlg-inp" id="gg-e" placeholder="Empresa (opcional)" maxlength="80" autocomplete="off" aria-label="Empresa de la persona">
+      <button type="submit" class="be be-p"><i data-lucide="user-plus"></i>Autorizar</button>
+    </form>
+    <p class="dlg-warn" id="gg-er" role="alert" hidden></p>
+    <ul class="gg-lista" id="gg-lista" aria-label="Personas autorizadas"></ul>
+    <div class="dlg-act"><button type="button" class="be" onclick="document.getElementById('dlg-guia').close()">Cerrar</button></div>
   </div>
 </dialog>
 

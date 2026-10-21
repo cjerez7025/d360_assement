@@ -16,7 +16,7 @@ window.LEY_EJ = {
   "4": {
     s: "Reconoce seis derechos: acceso, rectificación, supresión, oposición, portabilidad y bloqueo. Son personales, no se pueden renunciar y ningún contrato puede limitarlos.",
     e: "Un gimnasio incluye en su contrato la cláusula «el socio renuncia a pedir la eliminación de sus datos». Esa cláusula no vale: estos derechos son irrenunciables y no pueden limitarse por ningún acto o convención.",
-    n: "Si la persona fallece, sus herederos pueden ejercer los derechos, salvo que ella lo haya prohibido expresamente o lo establezca una ley."
+    n: "Si la persona fallece, sus herederos pueden ejercer los derechos, salvo que ella lo haya prohibido expresamente o lo establezca una ley. Aparte de estos seis, la ley reconoce el derecho a oponerse y a no ser objeto de decisiones automatizadas (art. 8 bis) y el de retirar el consentimiento (art. 12)."
   },
   "5": {
     s: "La persona puede preguntar si usted trata sus datos y, si es así, pedir verlos, junto con su origen, para qué se usan, a quiénes se comunicaron y por cuánto tiempo se guardan.",

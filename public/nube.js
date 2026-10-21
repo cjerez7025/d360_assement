@@ -18,11 +18,11 @@ let db = null, auth = null, usuario = null;
 const aviso = (estado, err) => window.dispatchEvent(new CustomEvent('nube:estado', { detail: { estado, codigo: err && (err.code || err.message) } }));
 
 /** persistente = consultor (guarda en el equipo para trabajar sin conexión); cliente = solo memoria */
-export function iniciar({ persistente }) {
+export function iniciar({ persistente, conCuenta }) {
   db = F.initializeFirestore(app, {
     localCache: persistente ? F.persistentLocalCache({ tabManager: F.persistentMultipleTabManager() }) : F.memoryLocalCache()
   }, C.databaseId);
-  if (persistente) auth = A.getAuth(app);
+  if (persistente || conCuenta) auth = A.getAuth(app); // conCuenta: el cliente que entra a la guía previa se identifica con Google
 }
 
 // ── sesión del consultor ──
@@ -52,6 +52,26 @@ export async function salir() {
   // no dejar datos de clientes en el equipo después de cerrar sesión
   try { await F.terminate(db); await F.clearIndexedDbPersistence(db); } catch (e) { /* ya cerrado */ }
 }
+
+// ── guía previa: acceso privado por lista de correos autorizados (guia_acceso/{correo}) ──
+const claveCorreo = (c) => String(c || '').trim().toLowerCase();
+/** ¿Esta cuenta puede ver la guía? Una persona autorizada lee su propio documento; un consultor puede listar la colección. */
+export async function guiaMiAcceso(email) {
+  const correo = claveCorreo(email);
+  try { const d = await F.getDoc(F.doc(db, 'guia_acceso', correo)); if (d.exists()) { const x = d.data(); return { ok: true, rol: 'invitado', n: x.n || '', e: x.e || '' }; } }
+  catch (e) { return { ok: false }; }
+  try { await F.getDocs(F.query(F.collection(db, 'guia_acceso'), F.limit(1))); return { ok: true, rol: 'consultor', n: '', e: '' }; }
+  catch (e) { return { ok: false }; }
+}
+export async function guiaSalir() { await A.signOut(auth); }
+export function guiaAccesoEscuchar(cb, err) {
+  return F.onSnapshot(F.collection(db, 'guia_acceso'),
+    (s) => cb(s.docs.map((d) => { const x = d.data({ serverTimestamps: 'estimate' }); return { correo: d.id, n: x.n || '', e: x.e || '', por: x.por || '', t: x.t && x.t.toMillis ? x.t.toMillis() : 0 }; }).sort((a, b) => a.n.localeCompare(b.n, 'es'))), err || (() => cb([])));
+}
+export async function guiaAccesoAgregar({ correo, n, e }) {
+  await F.setDoc(F.doc(db, 'guia_acceso', claveCorreo(correo)), { n: String(n).trim().slice(0, 80), ...(e && String(e).trim() ? { e: String(e).trim().slice(0, 80) } : {}), por: usuario.email, t: F.serverTimestamp() });
+}
+export async function guiaAccesoQuitar(correo) { await F.deleteDoc(F.doc(db, 'guia_acceso', claveCorreo(correo))); }
 
 // ── sesiones ──
 const col = () => F.collection(db, 'sesiones');
