@@ -106,6 +106,7 @@ let guiaN = null;
 function guiaPantalla(html) {
   const c = document.getElementById('gp-c'); if (!c) return;
   c.innerHTML = html;
+  if (typeof glosarioMarcarGuia === 'function') glosarioMarcarGuia(c); // subraya las palabras del glosario
   if (typeof ss === 'function') ss('sg');
   if (window.lucide) lucide.createIcons();
 }
