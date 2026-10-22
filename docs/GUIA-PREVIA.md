@@ -41,3 +41,7 @@ Menú lateral, **«Guía previa para el cliente»**: copiar el enlace, **enviarl
 - `GUIA_DIM` (en `guia.js`) tiene, por tema, la descripción y a quién convocar. **Es una propuesta de AlignData, por revisar.**
 - Pruebas: sección 31 de `scripts/verificar.mjs`; en modo de prueba local (`?mock=1`), `?yo=correo@x.cl` simula a una persona del cliente (sin `yo` se actúa como consultor).
 - Al publicar este cambio hay que desplegar **primero `firestore:d360`** (colección nueva) y luego el hosting.
+
+## Glosario
+
+La guía enlaza al [glosario público](GLOSARIO.md) (`?glosario=1`) para los términos que el cliente no conozca, como «DPO» o «EIPD».

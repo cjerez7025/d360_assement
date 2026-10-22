@@ -69,7 +69,8 @@ ${usuario ? `<p class="gp-quien-sesion">Sesión: <strong>${esc(usuario.email)}</
 <ol class="gp-pasos"><li><strong>Conversamos juntos, tema por tema.</strong> Son ${D.length} temas y ${total} preguntas sobre cómo se tratan hoy los datos personales en su organización.</li>
 <li><strong>Usted responde con lo que realmente ocurre.</strong> No hay respuestas buenas ni malas, y no se evalúa a personas: es una fotografía de hoy para armar un plan. Los ejemplos de esta guía muestran cómo se ve cada nivel; no son una respuesta que haya que elegir, y el consultor confirma cada respuesta con la evidencia en el taller.</li>
 <li><strong>Al final recibe un resultado.</strong> Un puntaje, las brechas respecto de la Ley 21.719 y una hoja de ruta ordenada por etapas.</li></ol>
-<p>La Ley 21.719, que moderniza la protección de datos personales en Chile, entra en vigencia el 1 de diciembre de 2026. Este diagnóstico es una autoevaluación orientativa: no constituye una auditoría ni asesoría legal.</p></section>
+<p>La Ley 21.719, que moderniza la protección de datos personales en Chile, entra en vigencia el 1 de diciembre de 2026. Este diagnóstico es una autoevaluación orientativa: no constituye una auditoría ni asesoría legal.</p>
+<p>¿Hay un término que no conoce, como «DPO» o «EIPD»? El <a href="?glosario=1" target="_blank" rel="noopener">glosario de protección de datos</a> los explica en palabras simples.</p></section>
 <section class="gp-bl" aria-labelledby="gp-como"><h2 id="gp-como">Cómo participan las personas</h2>
 <ul><li>Su consultor de AlignData le enviará un enlace para seguir la reunión desde su computador o celular. <strong>No necesita crear una cuenta.</strong></li>
 <li>Cada persona escribe su <strong>nombre</strong> (y, si quiere, su cargo) al entrar. Pueden participar varias personas con el mismo enlace.</li>

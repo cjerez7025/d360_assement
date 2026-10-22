@@ -44,7 +44,7 @@
   // el consultor conoce el enlace publicado de la sesión abierta (para recibir las solicitudes del cliente)
   window.srvCtx = () => ({ N, tk: act && act.compartido && act.compartido.token });
   async function arrancar() {
-    if (P.has('guia')) return; // la guía previa es pública: la dibuja guia.js sin sesión ni Firebase
+    if (P.has('guia') || P.has('glosario')) return; // la guía previa y el glosario se dibujan solos (guia.js, glosario.js), sin sesión ni Firebase
     document.body.classList.add('nube');
     // en localhost se evita el caché de módulos; en producción lo resuelve la cabecera Cache-Control de firebase.json
     const sufijo = (location.hostname === 'localhost' || location.hostname === '127.0.0.1') ? '?t=' + Date.now() : '';

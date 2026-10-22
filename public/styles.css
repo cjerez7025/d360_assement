@@ -1554,3 +1554,47 @@ dialog.dlg-guia{max-width:600px}
 /* guía previa: freno a copiar e imprimir para las personas del cliente (guiaProteger en guia.js) */
 body.gp-protegida .gp,body.gp-protegida .gp *{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 @media print{body.gp-protegida .screen{display:none!important}body.gp-protegida::before{content:'Esta guía es confidencial: no se puede imprimir ni guardar como PDF.';display:block;padding:40px;font:700 18px sans-serif;color:#000}}
+/* glosario (?glosario=1, glosario.js) */
+.gl{max-width:900px}
+.gl-acc{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.gl-acc .gl-q{flex:1 1 280px;min-width:0}
+.gl-cats{display:flex;gap:8px;flex-wrap:wrap}
+.gl-chip{display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:6px 14px;border-radius:999px;border:1px solid var(--border);background:var(--surface);color:var(--text-2);font:600 var(--fs-sm) var(--font-b);cursor:pointer}
+.gl-chip svg{width:16px;height:16px}
+.gl-chip:hover{border-color:var(--brand-ink);color:var(--text)}
+.gl-chip.on{background:var(--brand-ink);border-color:var(--brand-ink);color:var(--on-ink)}
+.gl-n{margin:0;font-size:var(--fs-sm);font-weight:600;color:var(--muted)}
+.gl-c{display:grid;gap:14px;margin-bottom:26px}
+.gl-c[hidden],.gl-t[hidden],.gl-vacio[hidden]{display:none}
+.gl-c>h2{display:flex;align-items:center;gap:10px;margin:8px 0 0;font-family:var(--font-d);font-size:1.3rem}
+.gl-c>h2 svg{width:22px;height:22px;color:var(--brand-ink)}
+.gl-nc{display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:22px;padding:0 8px;border-radius:999px;background:var(--sunk);font:700 var(--fs-xs) var(--font-b);color:var(--muted)}
+.gl-t{padding:20px 22px;border-radius:var(--r);background:var(--surface);border:1px solid var(--border);box-shadow:var(--shadow-sm);scroll-margin-top:18px}
+.gl-t:focus{outline:none}
+.gl-t.gl-sel{border-color:var(--brand-ink);box-shadow:0 0 0 3px color-mix(in srgb,var(--brand) 30%,transparent)}
+.gl-th{display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+.gl-th h3{margin:0;flex:1 1 260px;min-width:0;font-family:var(--font-d);font-size:1.15rem;line-height:1.3;text-wrap:balance}
+.gl-s{display:inline-block;margin-left:6px;padding:1px 8px;border-radius:999px;background:var(--brand-soft);font:700 var(--fs-xs) var(--font-b);letter-spacing:.04em;color:var(--brand-ink);vertical-align:2px}
+.gl-bp{padding:2px 10px;border-radius:999px;border:1px dashed var(--border);font:600 var(--fs-xs) var(--font-b);color:var(--muted)}
+.gl-cp{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:4px 10px;border-radius:var(--rs);border:1px solid transparent;background:none;color:var(--muted);font:600 var(--fs-xs) var(--font-b);cursor:pointer}
+.gl-cp svg{width:15px;height:15px}
+.gl-cp:hover{border-color:var(--border);color:var(--brand-ink)}
+.gl-d{margin:0 0 12px;line-height:1.65;color:var(--text)}
+.gl-l,.gl-ej{margin:0 0 10px;padding:10px 12px;border-radius:var(--rs);font-size:var(--fs-sm);line-height:1.65;color:var(--text-2)}
+.gl-l{background:var(--sunk)}
+.gl-l p{margin:6px 0 0}
+.gl-l strong,.gl-ej strong,.gl-rel strong{display:block;font-size:var(--fs-xs);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.gl-ej{background:var(--brand-soft);color:var(--text)}
+.gl-ej strong{display:inline;margin-right:6px}
+.gl-rel{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:0}
+.gl-rel strong{display:inline;margin-right:4px}
+.gl-rel a{padding:3px 10px;border-radius:999px;border:1px solid var(--border);font:600 var(--fs-xs) var(--font-b);color:var(--brand-ink);text-decoration:none}
+.gl-rel a:hover{border-color:var(--brand-ink)}
+.gl-vacio{padding:24px;text-align:center;color:var(--muted)}
+.gl-qt{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:var(--fs-sm);color:var(--muted)}
+.gl-qt svg{width:16px;height:16px}
+.gl-qt a{font-weight:700;color:var(--brand-ink)}
+dialog.dlg-glo{max-width:560px}
+@media(max-width:560px){.gl-t{padding:16px 14px}.gl-cp span{display:none}}
+@media print{.gl-cats,.gl-acc,.gl-cp{display:none!important}.gl-t{break-inside:avoid;box-shadow:none}.dlg-glo{display:none!important}}
+html:has(body.glosario){scroll-padding-top:12px}

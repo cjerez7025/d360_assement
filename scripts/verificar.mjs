@@ -1468,7 +1468,7 @@ seccion('31. Guía previa a la sesión (enlace público para el cliente)');
 
   // ── enlace público, sin sesión ni Firebase ──
   ok(/return location\.origin \+ location\.pathname \+ '\?guia=1';/.test(gj) && /\/\(\^\|\[\?&\]\)guia=\/\.test\(location\.search\)/.test(gj), 'el enlace es la misma página con ?guia=1 y se reconoce al abrirla');
-  ok(/if \(P\.has\('guia'\)\) return;/.test(sj) && sj.indexOf("P.has('guia')") < sj.indexOf("import((MOCK"), 'con ?guia=1 la aplicación no pide ingreso ni conecta con Firebase');
+  ok(/if \(P\.has\('guia'\) \|\| P\.has\('glosario'\)\) return;/.test(sj) && sj.indexOf("P.has('guia')") < sj.indexOf("import((MOCK"), 'con ?guia=1 la aplicación no pide ingreso ni conecta con Firebase');
   ok(/guiaN = await import\(MOCK \? '\.\/nube-prueba\.js' : '\.\/nube\.js'\);/.test(gj) && /guiaN\.iniciar\(\{ persistente: false, conCuenta: true \}\)/.test(gj) && !/gstatic\.com\/firebasejs/.test(gj), 'la guía usa la misma capa de datos que la aplicación (con cuenta, sin guardar nada en el equipo)');
   // ── acceso privado ──
   ok(/if \(!u\) \{ if \(!\(enlace && enlace\.pedirCorreo\)\) guiaLogin\(/.test(gj) && /a = await guiaN\.guiaMiAcceso\(u\.email\)/.test(gj) && /if \(!a\.ok\) return guiaSinAcceso\(u\);/.test(gj) && gj.indexOf('guiaSinAcceso(u);') < gj.indexOf('guiaPantalla(guiaHtml(u))'), 'sin ingreso o sin autorización la guía no se dibuja: solo se pide el ingreso con Google o se dice que la cuenta no tiene acceso');
@@ -1590,6 +1590,101 @@ seccion('32. Pizarra: escritura en vivo (se ve lo que alguien escribe antes de p
   const bl = rg.slice(rg.indexOf('match /escribiendo/{pid}'), rg.indexOf('// Pizarra en vivo: mientras'));
   ok(/allow get, list: if esConsultor\(\) \|\| enlaceVigente\(\);/.test(bl) && /hasOnly\(\['a', 'r', 'c', 'q', 'x', 't'\]\)/.test(bl) && /x\.size\(\) <= 2000/.test(bl) && /\(request\.resource\.data\.r == 'cliente' \|\| esConsultor\(\)\)/.test(bl) && /request\.resource\.data\.t == request\.time/.test(bl) && /allow delete: if esConsultor\(\) \|\| enlaceVigente\(\);/.test(bl), 'las reglas dejan leer y escribir su borrador a quien está en la reunión (nadie puede hacerse pasar por consultor) y limitan los campos y los tamaños');
   ok(/\.pz-fan\{opacity:\.82/.test(cs) && /prefers-reduced-motion:reduce\)\{\.pz-fan,\.pz-nuevo,\.pz-pts b,\.pz-hay::after\{animation:none\}/.test(cs) && /@media print\{\.pz-fans\{display:none!important\}\}/.test(cs), 'las animaciones respetan «reducir movimiento» y los borradores no salen en los PDF');
+}
+
+seccion('33. Glosario de protección de datos (página pública para compartir)');
+{
+  const raiz33 = path.resolve(path.dirname(file), '..');
+  const leer33 = (f) => fs.readFileSync(path.join(raiz33, f), 'utf8').replace(/\r\n/g, '\n');
+  const gj = leer33('public/glosario.js'), ih = leer33('public/index.html'), sj = leer33('public/sesiones.js'), lj = leer33('public/lateral.js'), cs = leer33('public/styles.css'), aj = leer33('public/app.js'), vj = leer33('public/vivo.js'), gu = leer33('public/guia.js'), pj = leer33('public/porque.js');
+  const wl = {}; vm.runInNewContext(leer33('public/ley-texto.js'), { window: wl }); const L = wl.LEY;
+  const sb = sandbox;
+  const lugar = { origin: 'https://d360-assessment.web.app', pathname: '/' };
+  const cuerpo = gj.slice(0, gj.indexOf('\nif (typeof location !== \'undefined\' && typeof document'));
+  const G = new Function('location', 'refLey', cuerpo + '\nreturn { GLOSARIO, GLO_CATS, gloNorm, gloParrafos, glosarioDe, glosarioBtn, glosarioEnlace, glosarioMensaje, glosarioHtml };')(lugar, sb.refLey);
+  const T = G.GLOSARIO, ids = T.map((t) => t.id), cats = G.GLO_CATS.map((c) => c.id);
+
+  // ── contenido ──
+  ok(T.length >= 40 && new Set(ids).size === ids.length && ids.every((i) => /^[a-z0-9]+(-[a-z0-9]+)*$/.test(i)), 'cada término tiene un identificador único y sin caracteres raros (es la parte final de su enlace)');
+  ok(T.every((t) => t.t && t.n && cats.includes(t.c) && t.d && t.d.length >= 40), 'cada término tiene nombre, nombre corto, tema y una explicación en palabras simples');
+  ok(G.GLO_CATS.every((c) => T.some((t) => t.c === c.id)), 'todos los temas del glosario tienen al menos un término');
+  ok(T.filter((t) => t.c !== 'd360').every((t) => t.l && t.ej), 'los términos de la ley (no los del D360°) dicen qué dice la ley y traen un ejemplo');
+  ok(T.every((t) => (t.rel || []).every((r) => ids.includes(r) && r !== t.id)), 'los «ver también» llevan a términos que existen');
+  const qids = new Set(Q.map((q) => q.id));
+  ok(T.every((t) => (t.q || []).every((x) => qids.has(x))), 'las preguntas que se asocian a cada término existen');
+  ok(T.every((t) => ['t', 'n', 's', 'd', 'l', 'ej'].every((c) => !t[c] || !/[<>&"]/.test(t[c]))), 'los textos del glosario no llevan caracteres que se confundan con HTML (la ley se dibuja sin escapar)');
+  ok(T.every((t) => !t.bp || /relación|no (usa|define|menciona)|no lo exige/i.test(t.l || '')), 'lo que la ley no define lleva la marca y su texto lo aclara');
+
+  // ── cada artículo y letra citada existe en el texto oficial ──
+  const malos = [];
+  for (const t of T) {
+    if (!t.l) continue;
+    for (const c of sb.citasLey(t.l)) {
+      for (const it of c.items) {
+        const a = L.a[it.a];
+        if (!a) { malos.push(t.id + ': art. ' + it.a); continue; }
+        for (const x of it.l) if (!a.p.some((p) => p.startsWith(x + ') '))) malos.push(t.id + ': art. ' + it.a + ' ' + x + ')');
+      }
+    }
+  }
+  ok(malos.length === 0, 'todos los artículos y letras que cita el glosario existen en el texto oficial de la ley' + (malos.length ? ' (fallan: ' + malos.join(', ') + ')' : ''));
+  ok(T.filter((t) => t.l).every((t) => sb.leyTokens(t.l).length >= 1 || t.bp), 'cada «qué dice la ley» cita al menos un artículo');
+
+  // ── DPO ──
+  const dpo = T.find((t) => t.id === 'dpo');
+  ok(dpo && T.indexOf(dpo) === 0 && /^DPO$/.test(dpo.s) && /Data Protection Officer/.test(dpo.d) && /delegado de protección de datos personales/.test(dpo.d), 'el DPO es el primer término y explica que la ley lo llama «delegado de protección de datos personales»');
+  ok(/voluntario/.test(dpo.l) && /«podrá»/.test(dpo.l) && /art\. 50/.test(dpo.l) && /micro, pequeñas y medianas empresas/.test(dpo.l) && /art\. 50 a\) a h\)/.test(dpo.l) && /art\. 49 a\)/.test(dpo.l) && /estricto secreto/.test(dpo.l), 'el DPO se explica como lo dice la ley: voluntario, lo designa la máxima autoridad, las pymes pueden asumirlo, funciones a) a h), secreto y art. 49');
+  const art50 = L.a['50'].p.join(' ');
+  ok(/podrá designar un delegado/.test(art50) && /micro, pequeñas y medianas empresas, el dueño o sus máximas autoridades podrán asumir personalmente/.test(art50) && /estricto secreto/.test(art50), 'lo que el glosario dice del DPO coincide con el art. 50 del texto oficial');
+
+  // ── cifras y reglas que el glosario repite ──
+  const t = (id) => T.find((x) => x.id === id);
+  const inf = t('infracciones').l;
+  ok(/5\.000 UTM/.test(inf) && /10\.000 UTM/.test(inf) && /20\.000 UTM/.test(inf) && /tres veces/.test(inf) && /amonestación escrita/.test(inf), 'las multas (5.000, 10.000 y 20.000 UTM, amonestación y hasta el triple por reincidencia) coinciden con el art. 35');
+  const a35 = L.a['35'].p.join(' ');
+  ok(/hasta 5\.000 unidades tributarias mensuales/.test(a35) && /hasta 10\.000 unidades tributarias mensuales/.test(a35) && /hasta 20\.000 unidades tributarias mensuales/.test(a35) && /hasta tres veces el monto/.test(a35), 'el art. 35 del texto oficial dice lo mismo');
+  ok(/30 días corridos/.test(t('plazo-respuesta').l) && /otros 30 días corridos/.test(t('plazo-respuesta').l) && /30 días hábiles/.test(t('plazo-respuesta').l) && /dos días hábiles/.test(t('bloqueo').l), 'los plazos (30 días corridos prorrogables por otros 30, reclamo en 30 días hábiles, bloqueo en 2 días hábiles) coinciden con el art. 11');
+  const a11 = L.a['11'].p.join(' ');
+  ok(/treinta días corridos/.test(a11) && /treinta días corridos/.test(a11) && /treinta días hábiles/.test(a11) && /dos días hábiles/.test(a11), 'el art. 11 del texto oficial dice lo mismo');
+  ok(/sin dilaciones indebidas/.test(t('vulneracion').l) && /no fija un plazo en horas/.test(t('vulneracion').l) && /sin dilaciones indebidas/.test(L.a['14 sexies'].p.join(' ')), 'la vulneración de seguridad se reporta «sin dilaciones indebidas», sin inventar un plazo en horas');
+  ok(/14 años|catorce/.test(t('ninos').l) && /16 años/.test(t('ninos').l) && /menores de catorce años/.test(L.a['16 quáter'].p.join(' ')) && /dieciséis años/.test(L.a['16 quáter'].p.join(' ')), 'las edades de los niños y adolescentes (14 y 16 años) coinciden con el art. 16 quáter');
+  ok(/ARCOP/.test(t('arcop').s) && /no aparece en la ley/.test(t('arcop').d) && /seis derechos/.test(t('arcop').l), '«ARCOP» se explica como sigla de uso común y se aclara que son seis derechos');
+
+  // ── términos propios del D360°: deben coincidir con la aplicación ──
+  ok(D.every((d) => t('d360').d.includes(d.n)), 'el término D360° nombra las ocho dimensiones tal como están en la aplicación');
+  ok(/if\(s<=20\)return\{n:0,nm:'Inexistente'/.test(aj) && /if\(s<=40\)return\{n:1,nm:'Reactivo'/.test(aj) && /if\(s<=60\)return\{n:2,nm:'Parcial'/.test(aj) && /if\(s<=80\)return\{n:3,nm:'Gestionado'/.test(aj) && /Inexistente \(0 a 20\), Reactivo \(21 a 40\), Parcial \(41 a 60\), Gestionado \(61 a 80\) y Optimizado \(81 a 100\)/.test(t('madurez').d), 'los niveles de madurez del glosario son los que calcula la aplicación');
+  ok(/h: 30, n: 'Crítico'/.test(pj) && /h: 55, n: 'Alto'/.test(pj) && /h: 79, n: 'Medio'/.test(pj) && /PQ_OBJ = 80/.test(pj) && /crítico \(hasta 30\), alto \(31 a 55\) y medio \(56 a 79\)/.test(t('nivel-riesgo').d), 'los tramos de riesgo del glosario son los que usa la aplicación');
+  ok(OLAS.every((o) => t('hoja-de-ruta').d.includes('«' + o.t + '»')), 'las cuatro etapas de la hoja de ruta se nombran como en la aplicación');
+
+  // ── búsqueda, enlaces y párrafos ──
+  ok(G.gloNorm('Delegación ÁÉÍÓÚ Ñandú') === 'delegacion aeiou nandu', 'la búsqueda ignora tildes y mayúsculas');
+  ok(T.every((t2) => !t2.l || G.gloParrafos(t2.l).join(' ') === t2.l && G.gloParrafos(t2.l).every((p) => /^[A-ZÁÉÍÓÚÑ«]/.test(p))), 'al partir los textos largos en párrafos no se pierde nada ni se corta un «art. N»');
+  ok(G.glosarioEnlace() === 'https://d360-assessment.web.app/?glosario=1' && G.glosarioEnlace('dpo') === 'https://d360-assessment.web.app/?glosario=1#dpo', 'el enlace del glosario y el de un término tienen la forma ?glosario=1#término');
+  ok(/«DPO»/.test(G.glosarioMensaje('dpo')) && G.glosarioMensaje('dpo').endsWith('?glosario=1#dpo') && G.glosarioMensaje().endsWith('?glosario=1'), 'el mensaje para compartir nombra el término y termina con el enlace');
+  const html = G.glosarioHtml();
+  ok(ids.every((i) => html.includes('id="t-' + i + '"')) && (html.match(/<article class="gl-t"/g) || []).length === T.length && /id="gl-q"/.test(html) && /id="gl-cp-todo"/.test(html), 'la página dibuja todos los términos, el buscador y el botón de copiar el enlace');
+  ok(/<button type="button" class="ref" data-a="50"/.test(html) && /data-a="14 sexies"/.test(html), 'los artículos de la ley se dibujan como botones que abren el texto oficial');
+  ok(!/id="t-/.test(ih), 'ningún identificador de la página principal se confunde con el de un término');
+
+  // ── enlaces desde las preguntas ──
+  const b1 = G.glosarioBtn('GOB-01');
+  ok(/href="\?glosario=1#dpo" target="_blank" rel="noopener">DPO<\/a>/.test(b1) && /Glosario:/.test(b1), 'en la pregunta del delegado aparece el enlace al término DPO, en otra pestaña');
+  ok(/href="\?glosario=1" target="_blank" rel="noopener">ver todos<\/a>/.test(G.glosarioBtn('CUL-01')), 'una pregunta sin términos propios enlaza al glosario completo');
+  ok(Q.every((q) => G.glosarioDe(q.id).length <= 3) && Q.some((q) => G.glosarioDe(q.id).length >= 2), 'cada pregunta muestra hasta tres términos');
+  ok(/<i data-lucide="info"><\/i> ¿Por qué se pregunta esto\?<\/button>\$\{typeof glosarioBtn==='function'\?glosarioBtn\(q\.id\):''\}/.test(aj) && /¿Por qué se pregunta esto\?<\/button>\$\{typeof glosarioBtn === 'function' \? glosarioBtn\(q\.id\) : ''\}/.test(vj), 'el enlace al glosario aparece en la pregunta, tanto para el consultor como en la reunión en vivo');
+
+  // ── es público y no usa la nube ──
+  ok(!/nube\.js|firebase|import\(|localStorage/i.test(gj.replace(/\/\*[\s\S]*?\*\//, '')), 'el glosario es público: no usa la nube, no pide ingreso ni guarda nada');
+  ok(/if \(P\.has\('guia'\) \|\| P\.has\('glosario'\)\) return;/.test(sj), 'con ?glosario=1 la aplicación no arranca la sesión ni Firebase');
+  ok(/<div id="sgl" class="screen"><div id="gl-c"><\/div><\/div>/.test(ih) && /<script src="glosario\.js"><\/script>/.test(ih) && ih.indexOf('porque.js') < ih.indexOf('glosario.js') && ih.indexOf('glosario.js') < ih.indexOf('guia.js'), 'la pantalla del glosario existe y su script se carga después de app.js y antes de guia.js');
+  ok(/document\.body\.classList\.add\('cliente', 'guia', 'glosario'\)/.test(gj) && /body\.guia \.topbar/.test(cs), 'la página del glosario oculta el menú y las barras del consultor');
+  ok(/\.gl-t\{/.test(cs) && /\.gl-qt\{/.test(cs) && /html:has\(body\.glosario\)\{scroll-padding-top:12px\}/.test(cs) && /@media print\{\.gl-cats,\.gl-acc,\.gl-cp\{display:none!important\}/.test(cs), 'los estilos del glosario existen, no dejan margen para la barra oculta y se imprime sin los botones');
+
+  // ── acceso del consultor ──
+  ok(/\{ id: 'glo', ic: 'book-text', t: 'Glosario para compartir', fn: \(\) => glosarioDlg\(\)/.test(lj), 'el menú del consultor tiene «Glosario para compartir»');
+  ok(/id="dlg-glo"/.test(ih) && /id="glo-t" onchange="glosarioActualizar\(\)"/.test(ih) && /id="glo-url" readonly/.test(ih) && /onclick="glosarioCopiar\(\)"/.test(ih) && /id="glo-wa"/.test(ih) && /id="glo-abrir"/.test(ih), 'el diálogo permite elegir qué compartir y copiar el enlace, enviarlo por WhatsApp o abrirlo');
+  ok(/function glosarioActualizar\(\)/.test(gj) && /function glosarioDlg\(\)/.test(gj) && /function glosarioCopiar\(\)/.test(gj) && /https:\/\/wa\.me\/\?text=' \+ encodeURIComponent\(glosarioMensaje\(id\)\)/.test(gj), 'el diálogo arma el enlace y el mensaje de WhatsApp con el término elegido');
+  ok(/El <a href="\?glosario=1" target="_blank" rel="noopener">glosario de protección de datos<\/a> los explica/.test(gu), 'la guía previa enlaza al glosario');
 }
 
 console.log('\n' + (fallos ? '✗ ' + fallos + ' problema(s)' : '✓ Todas las verificaciones pasaron'));
