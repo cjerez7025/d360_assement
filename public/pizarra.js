@@ -372,8 +372,19 @@ ${lectura ? '' : `<form class="pz-f" id="pzf${n}" novalidate>
     if (abierto) return abierto.id === 'dlg-pz' ? cand.find((v) => abierto.contains(v.el)) : null;
     return cand.find((v) => !v.el.closest('dialog')) || null;
   }
+  // Archivos del portapapeles: se leen de «items» (donde los entregan las capturas de pantalla y «copiar imagen») y, si no, de «files»
+  function archivosPegados(cd) {
+    if (!cd) return [];
+    const sal = [];
+    for (const it of cd.items || []) {
+      if (it.kind !== 'file') continue;
+      const f = it.getAsFile(); if (!f) continue;
+      sal.push(f.name ? f : new File([f], 'captura-' + (sal.length + 1) + '.' + ((f.type.split('/')[1] || 'png').replace('jpeg', 'jpg')), { type: f.type }));
+    }
+    return sal.length ? sal : [...(cd.files || [])];
+  }
   document.addEventListener('paste', (e) => {
-    const fs = [...(e.clipboardData ? e.clipboardData.files : [])]; if (!fs.length) return;
+    const fs = archivosPegados(e.clipboardData); if (!fs.length) return;
     const t = e.target;
     if (t && (/^(INPUT|SELECT)$/.test(t.tagName) || (t.tagName === 'TEXTAREA' && !t.classList.contains('pz-x')) || t.isContentEditable)) return;
     const v = vistaActiva(); if (!v) return;

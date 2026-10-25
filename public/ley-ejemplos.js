@@ -193,6 +193,11 @@ window.LEY_EJ = {
     e: "Una persona pidió eliminar sus datos y la empresa se negó sin justificarlo. Tiene 30 días hábiles desde la respuesta negativa (o desde que venció el plazo sin respuesta) para reclamar ante la Agencia. La Agencia decide en 10 días hábiles si admite el reclamo, notifica a la empresa, que dispone de 30 días corridos para responder, y debe resolver en no más de seis meses. La resolución puede impugnarse judicialmente dentro de 15 días hábiles.",
     n: "Si el reclamo es por el rechazo de un bloqueo temporal, la Agencia debe resolver en un máximo de tres días hábiles."
   },
+  "48": {
+    s: "Toda organización que trata datos personales debe adoptar acciones para prevenir las infracciones de la ley (leves, graves y gravísimas). Esas acciones pueden ser simples: no se exige tener un departamento especializado.",
+    e: "Una pyme sin área de cumplimiento puede cumplir con reglas internas sencillas: un procedimiento por escrito para atender las solicitudes de las personas, una instrucción al personal sobre qué hacer ante un incidente y una revisión una vez al año.",
+    n: "El art. 48 obliga a adoptar acciones de prevención; el modelo de prevención certificable del art. 49 es voluntario."
+  },
   "49": {
     s: "Adoptar un modelo de prevención de infracciones es voluntario. Es un programa de cumplimiento con, al menos: un delegado de protección de datos con medios y facultades, el mapa de datos y de procesos de riesgo, protocolos, mecanismos de reporte interno y a la Agencia, y sanciones internas.",
     e: "Una empresa de retail decide adoptar el modelo: designa un delegado, identifica los procesos donde pueden ocurrir infracciones, crea protocolos para esas tareas, define cómo se reporta internamente y a la Agencia una vulneración de seguridad y establece sanciones internas. Las reglas del programa deben incorporarse como obligación en los contratos de trabajo o de prestación de servicios, o en el reglamento interno."

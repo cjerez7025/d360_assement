@@ -37,11 +37,11 @@ teclado, o tocar en el celular) aparece un globito con el significado simple y e
 
 ## Qué contiene (81 términos, 9 temas)
 
-Quién es quién (DPO, responsable, encargado, titular, Agencia, a quién se aplica la ley) · Tipos de datos (dato personal, sensible, biométricos, niños y
+Quién es quién (DPO o DPD, responsable, encargado, titular, Agencia, a quién se aplica la ley) · Tipos de datos (dato personal, sensible, biométricos, niños y
 adolescentes, salud, geolocalización, deudas, infracciones, fuentes públicas, base de datos, dato estadístico y caduco, anonimización, seudonimización, perfiles) ·
 Tratar datos con licitud (tratamiento, principios, consentimiento, base de licitud, interés legítimo, finalidad, proporcionalidad, calidad, cesión,
 almacenamiento, eliminación, fines estadísticos y científicos) · Derechos de las personas (ARCOP, acceso, rectificación, supresión, oposición, portabilidad,
-bloqueo, plazo de respuesta, reclamo ante la Agencia) · Deberes de la organización (transparencia, secreto, diseño y defecto, EIPD, programa de cumplimiento,
+bloqueo, plazo de respuesta, reclamo ante la Agencia) · Deberes de la organización (transparencia, secreto, diseño y defecto, EIPD, programa de cumplimiento o MPI,
 mapa de datos, estándares diferenciados, certificación) · Seguridad e incidentes (medidas, cifrado, control de acceso, doble factor, respaldo, parches,
 registro de accesos, vulneración) · Proveedores y transferencias (ATD/DPA, subcontratación, transferencia internacional) · Autoridad y sanciones (la ley,
 infracciones y multas, UTM, procedimiento sancionatorio, sanciones accesorias, prescripción, indemnización, registro nacional, vigencia) ·

@@ -25,9 +25,9 @@ const GLO_CATS = [
 const GLOSARIO = [
   // ───────── Quién es quién ─────────
   {
-    id: 'dpo', m: ['DPO', 'delegad[oa]s? de protección de datos(?: personales)?', 'encargad[oa]s? de prevención', 'responsable de privacidad'], c: 'roles', t: 'Delegado de protección de datos personales', n: 'DPO', s: 'DPO',
-    k: 'delegado encargado de prevencion responsable de privacidad data protection officer',
-    d: `Persona que lidera la protección de datos dentro de la organización: asesora, supervisa el cumplimiento de la ley y es el punto de contacto con las personas titulares y con la Agencia. La ley lo llama «delegado de protección de datos personales»; «DPO» es su sigla en inglés (Data Protection Officer).`,
+    id: 'dpo', m: ['DPO', 'DPD', 'delegad[oa]s? de protección de datos(?: personales)?', 'encargad[oa]s? de prevención', 'responsable de privacidad'], c: 'roles', t: 'Delegado de protección de datos personales', n: 'DPO', s: 'DPO · DPD',
+    k: 'delegado dpd dpo encargado de prevencion responsable de privacidad data protection officer',
+    d: `Persona que lidera la protección de datos dentro de la organización: asesora, supervisa el cumplimiento de la ley y es el punto de contacto con las personas titulares y con la Agencia. La ley lo llama «delegado de protección de datos personales»; «DPD» es su sigla en español y «DPO», en inglés (Data Protection Officer).`,
     l: `Designarlo es voluntario: el responsable «podrá» hacerlo (art. 50). Lo designa la máxima autoridad de la organización (el directorio, un socio administrador o equivalente), debe tener autonomía respecto de la administración, idoneidad y conocimientos específicos, y contar con los medios y recursos suficientes para su trabajo. En las micro, pequeñas y medianas empresas, el dueño o sus máximas autoridades pueden asumir personalmente esas tareas (art. 50). Sus funciones están en el art. 50 a) a h): informar y asesorar, promover la política de datos, supervisar el cumplimiento, cuidar la formación del personal, asistir en la identificación de riesgos, desarrollar un plan anual de trabajo y rendir cuenta de sus resultados, absolver las consultas de los titulares y ser punto de contacto de la Agencia. Debe guardar estricto secreto de los datos que conozca. Designar un delegado es además uno de los elementos del programa de cumplimiento (art. 49 a)).`,
     ej: `Una pyme de 40 personas puede asignar el cargo a su gerente general o a una persona de confianza con conocimientos del tema. En una empresa mayor, a alguien del área de cumplimiento o legal con autonomía para opinar sin la presión de las áreas que usan los datos.`,
     rel: ['programa-cumplimiento', 'responsable', 'agencia']
@@ -403,9 +403,9 @@ const GLOSARIO = [
     rel: ['perfiles', 'dato-sensible', 'diseno']
   },
   {
-    id: 'programa-cumplimiento', m: ['modelos? de prevención', 'programas? de cumplimiento'], c: 'deberes', t: 'Modelo de prevención de infracciones (programa de cumplimiento)', n: 'Programa de cumplimiento',
-    k: 'modelo de prevencion certificacion compliance',
-    d: `Conjunto de políticas, procedimientos y controles que una organización adopta voluntariamente para prevenir infracciones a la ley. Puede ser certificado por la Agencia.`,
+    id: 'programa-cumplimiento', m: ['MPI', 'modelos? de prevención', 'programas? de cumplimiento'], c: 'deberes', t: 'Modelo de prevención de infracciones (programa de cumplimiento)', n: 'Programa de cumplimiento', s: 'MPI',
+    k: 'mpi modelo de prevencion certificacion compliance',
+    d: `Conjunto de políticas, procedimientos y controles que una organización adopta voluntariamente para prevenir infracciones a la ley, y que se abrevia «MPI». La ley lo llama «modelo de prevención de infracciones» y lo describe como un programa de cumplimiento. Puede ser certificado por la Agencia.`,
     l: `Arts. 49 a 51. Adoptarlo es voluntario. Debe contener, al menos: la designación de un delegado y la definición de sus medios y facultades; la identificación del tipo de información que se trata y de los titulares; la identificación de los procesos donde hay riesgo de infracción; protocolos y procedimientos para prevenirlas; mecanismos de reporte interno y a la Agencia; y sanciones internas y procedimientos de denuncia (art. 49). Sus reglas deben incorporarse a los contratos de trabajo o de prestación de servicios, o al reglamento interno. La certificación vigente se consigna en el Registro Nacional de Sanciones y Cumplimiento (arts. 51 y 39) y haber cumplido diligentemente los deberes de dirección y supervisión, verificado con ese certificado, es una atenuante (art. 36).`,
     ej: `Una empresa documenta su política de privacidad, nombra una delegada, capacita a todo el personal, incorpora las reglas en su reglamento interno y se somete a certificación.`,
     rel: ['dpo', 'registro-sanciones', 'infracciones']

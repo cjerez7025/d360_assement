@@ -40,6 +40,7 @@
       $('se-a').innerHTML = '<button type="button" class="btn-go" onclick="location.reload()"><i data-lucide="log-in"></i> Volver a entrar</button>';
       if (window.lucide) lucide.createIcons();
     };
+    let dimAnt = null; // dimensión de la pregunta que se vio antes
     ss('sv'); $('sv-h').innerHTML = '<p class="vh-n" role="status">Conectando con su consultor…</p>';
 
     const cerrar = (t, p) => { if (hb) clearInterval(hb); if (apagar) { apagar(); apagar = null; } fin(t, p); };
@@ -72,6 +73,11 @@
         const foco = document.activeElement && document.activeElement.matches && document.activeElement.matches('#sv-q input[type=radio]') ? document.activeElement.value : null;
         pzAntes();
         $('sv-q').innerHTML = q ? pregunta(d, q) : espera(d);
+        if (q) { // al pasar a otra dimensión se avisa un momento, para que se note el cambio
+          const dm2 = D.find((x) => x.id === q.dm);
+          if (dimAnt && dimAnt !== q.dm && dm2) $('sv-q').insertAdjacentHTML('afterbegin', `<p class="cd-aviso" role="status"><i data-lucide="layers"></i> Pasamos a <strong>${esc(dm2.n)}</strong></p>`);
+          dimAnt = q.dm;
+        }
         if (q && typeof glosarioMarcarPregunta === 'function') glosarioMarcarPregunta($('sv-q'));
         if (q) pzMontar('pz-slot', q.id);
         if (foco !== null) { const r = document.querySelector('#sv-q input[value="' + foco + '"]'); if (r) r.focus(); }
