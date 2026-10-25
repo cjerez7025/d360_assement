@@ -1645,3 +1645,4 @@ html:has(body.glosario){scroll-padding-top:12px}
 .cd-aviso svg{width:18px;height:18px}
 @keyframes cd-aviso{0%,80%{opacity:1;max-height:80px}100%{opacity:0;max-height:0;margin:0;padding-block:0}}
 @media(prefers-reduced-motion:reduce){.cd-aviso{animation:none}}
+.cd-pj{color:var(--text-2)}

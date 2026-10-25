@@ -15,13 +15,14 @@
   const enSesion = () => typeof en !== 'undefined' && !!en.sid && !en.ro && typeof modo !== 'undefined' && modo === 'auditor';
   const tabActual = () => { const b = document.querySelector('.tbtn.active'); return b ? b.dataset.t : ''; };
   const respondidas = () => { try { return en.pg().d; } catch (e) { return 0; } };
+  const completa = () => { try { return resultadosListos(); } catch (e) { return false; } }; // los resultados se ven solo al terminar el cuestionario
 
   // ── acciones (las mismas que ya tiene la aplicación) ──
   const cerrarCajon = () => { body.classList.remove('sb-abierto'); const b = $('sb-burger'); if (b) b.setAttribute('aria-expanded', 'false'); const v = $('sb-vel'); if (v) v.hidden = true; };
   const irPreguntas = () => { const n = en.nx(); if (n) { ss('s2'); rq(n.id); } else edt(); };
   const irIndice = () => { if (pantalla() !== 's2') irPreguntas(); const p = $('idxp'); if (p && p.hidden) tix(); };
   const irRes = (t) => {
-    if (!respondidas()) return;
+    if (!completa()) return;
     if (pantalla() !== 's3') sr();
     const b = $('tab-' + t); if (b) b.click();
   };
@@ -37,20 +38,20 @@
     { sec: 'sesion', si: enSesion, items: [
       { id: 'preg', ic: 'clipboard-list', t: 'Preguntas', fn: irPreguntas, act: () => pantalla() === 's2', badge: () => { try { const p = en.pg(); return p.d + '/' + p.t; } catch (e) { return ''; } } },
       { id: 'idx', ic: 'list-tree', t: 'Índice de preguntas', fn: irIndice, act: () => false },
-      { id: 'res', ic: 'bar-chart-3', t: 'Resultados', fn: () => irRes('t1'), act: () => pantalla() === 's3' && !['t8', 't9', 't11'].includes(tabActual()), off: () => !respondidas() },
-      { id: 'hoja', ic: 'route', t: 'Hoja de ruta', fn: () => irRes('t8'), act: () => pantalla() === 's3' && tabActual() === 't8', off: () => !respondidas(), badge: () => { try { const n = respondidas() ? ruta(en).items.length : 0; return n || ''; } catch (e) { return ''; } } },
-      { id: 'tab', ic: 'kanban', t: 'Tablero', fn: () => irRes('t11'), act: () => pantalla() === 's3' && tabActual() === 't11', off: () => !respondidas(), badge: () => { try { const r = tarResumen(en); return r.total ? r.hechas + '/' + r.total : ''; } catch (e) { return ''; } } },
-      { id: 'evo', ic: 'trending-up', t: 'Evolución', fn: () => irRes('t9'), act: () => pantalla() === 's3' && tabActual() === 't9', off: () => !respondidas(), badge: () => ((en.rv || []).length || '') },
+      { id: 'res', ic: 'bar-chart-3', t: 'Resultados', fn: () => irRes('t1'), act: () => pantalla() === 's3' && !['t8', 't9', 't11'].includes(tabActual()), off: () => !completa() },
+      { id: 'hoja', ic: 'route', t: 'Hoja de ruta', fn: () => irRes('t8'), act: () => pantalla() === 's3' && tabActual() === 't8', off: () => !completa(), badge: () => { try { const n = respondidas() ? ruta(en).items.length : 0; return n || ''; } catch (e) { return ''; } } },
+      { id: 'tab', ic: 'kanban', t: 'Tablero', fn: () => irRes('t11'), act: () => pantalla() === 's3' && tabActual() === 't11', off: () => !completa(), badge: () => { try { const r = tarResumen(en); return r.total ? r.hechas + '/' + r.total : ''; } catch (e) { return ''; } } },
+      { id: 'evo', ic: 'trending-up', t: 'Evolución', fn: () => irRes('t9'), act: () => pantalla() === 's3' && tabActual() === 't9', off: () => !completa(), badge: () => ((en.rv || []).length || '') },
       { id: 'pz', ic: 'messages-square', t: 'Pizarra', fn: () => pzDlg(), act: () => false, badge: () => { const c = document.querySelector('#bpz .pz-cnt'); return c && !c.hidden ? c.textContent.trim() : ''; } },
       { id: 'srv', ic: 'handshake', t: 'Servicio contratado', fn: () => srvDlg(), act: () => false, badge: () => { try { return (window.srvSol || []).length || ''; } catch (e) { return ''; } } },
       { id: 'viv', ic: 'video', t: () => (en.viv ? 'Reunión en vivo' : 'Invitar al cliente'), fn: () => vivoDlg(), act: () => false, punto: () => { if (!en.viv) return ''; const t = (($('bviv-t') || {}).textContent || ''); return /conectad/i.test(t) && !/esperando/i.test(t) ? 'on' : 'espera'; } }
     ] },
     { sec: 'Entregables', si: enSesion, items: [
       { id: 'cmp', ic: 'share-2', t: 'Compartir con el cliente', fn: () => cmp(), act: () => false },
-      { id: 'inf', ic: 'file-text', t: 'Informe ejecutivo', fn: () => imprimirDoc('informe'), act: () => false, off: () => !respondidas() },
+      { id: 'inf', ic: 'file-text', t: 'Informe ejecutivo', fn: () => imprimirDoc('informe'), act: () => false, off: () => !completa() },
       { id: 'act', ic: 'notebook-text', t: 'Acta de la reunión', fn: () => imprimirDoc('acta'), act: () => false, off: () => !respondidas() },
-      { id: 'pdf', ic: 'download', t: 'Informe técnico (PDF)', fn: irPdf, act: () => false, off: () => !respondidas() },
-      { id: 'met', ic: 'calculator', t: 'Cómo se calcula', fn: () => metDlg(), act: () => false }
+      { id: 'pdf', ic: 'download', t: 'Informe técnico (PDF)', fn: irPdf, act: () => false, off: () => !completa() },
+      { id: 'met', ic: 'calculator', t: 'Cómo se calcula', fn: () => metDlg(), act: () => false, off: () => pantalla() !== 's3' }
     ] }
   ];
   const texto = (t) => (typeof t === 'function' ? t() : t);

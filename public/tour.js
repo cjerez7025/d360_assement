@@ -38,7 +38,7 @@
     ] },
     sesion: { nombre: 'Conducir la reunión', pasos: [
       { sel: () => q('#pp'), t: 'El nivel, en vivo', x: 'Mientras responde, este panel muestra el nivel de madurez y el avance. Cambia de color cuando sube o baja de nivel.' },
-      { sel: () => q('#s2 .pp-act'), t: 'Herramientas de la sesión', x: 'El Índice salta a cualquier pregunta; «Invitar al cliente» abre la reunión en vivo; «Cómo se calcula» explica el puntaje; la Pizarra guarda los comentarios.' },
+      { sel: () => q('#s2 .pp-act'), t: 'Herramientas de la sesión', x: 'El Índice salta a cualquier pregunta; «Invitar al cliente» abre la reunión en vivo; la Pizarra guarda los comentarios. El puntaje y su cálculo se ven al final, en los resultados.' },
       { sel: () => q('#qa .qh'), t: 'La ley en cada pregunta', x: 'Cada «art. X» abre el texto oficial de la ley. «¿Por qué se pregunta esto?» explica el fundamento de la pregunta.' },
       { sel: () => q('#qa .optw'), t: 'Respuestas con ejemplos', x: 'Cada respuesta tiene un ejemplo concreto: pulse la bombilla para verlo y léalo con el cliente. Con el teclado, 1 a 4 elige y Enter avanza.' },
       { sel: () => q('#qa .qn'), t: 'Avance y guardado', x: 'Todo se guarda solo. Si se cae internet, la sesión se sube sola al reconectar. Puede volver atrás para cambiar una respuesta.' },

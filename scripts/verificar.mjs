@@ -616,7 +616,7 @@ seccion('16. Metodología y ponderación sectorial: la explicación coincide con
   ok(/Incluye la ponderación sectorial de «Salud \/ Clínicas» \(v1\.0\)/.test(nota) && new RegExp('Sin ajuste: ' + e1.sc().gb + '%').test(nota) && sb.secNota(armar({ sector: 'otro' }, mixto)) === '' && sb.secNota(e0) === '', 'el encabezado de resultados avisa del ajuste y muestra el puntaje sin ajuste (nada si no hay ajuste)');
   ok(/\$\{secNota\(en\)\}/.test(codigo), 'la nota del ajuste está en el encabezado de los resultados');
   ok(/\['t7','calculator','Método',''\]/.test(codigo) && /id="t7"/.test(codigo), 'la pestaña «Método» está en los resultados');
-  ok(/id="dlg-met"/.test(ih) && /id="bmet"/.test(ih) && /function metDlg\(\)/.test(codigo), 'el consultor puede abrir la metodología desde la pregunta («Cómo se calcula»)');
+  ok(/id="dlg-met"/.test(ih) && !/id="bmet"/.test(ih) && /function metDlg\(\)/.test(codigo) && /id: 'met'[^\n]*off: \(\) => pantalla\(\) !== 's3'/.test(fs.readFileSync(path.join(path.dirname(file), '..', 'public/lateral.js'), 'utf8')), 'el puntaje y su cálculo se ven solo al final: «Cómo se calcula» ya no está en la pantalla de preguntas y el menú lo habilita solo en los resultados');
   ok(/@media print\{#t7,#t8,#t9,#bmet\{display:none!important\}\}/.test(cs), 'la metodología no sale en el PDF (no cambia su paginación)');
 }
 
@@ -1757,7 +1757,7 @@ seccion('34. Revisión del 24-10-2026: preguntas de Gobierno, cierre de dimensi�
   const q = (id) => Q.find((x) => x.id === id);
 
   // ── orden y contenido de Gobierno y liderazgo ──
-  ok(gob.map((x) => x.id).join() === 'GOB-02,GOB-08,GOB-04,GOB-07,GOB-01,GOB-05,GOB-06', 'Gobierno se ordena de lo general a lo específico: política, modelo de prevención, estructura, responsable/encargado, DPO, revisión anual y presupuesto al final');
+  ok(gob.map((x) => x.id).join() === 'GOB-08,GOB-02,GOB-04,GOB-07,GOB-01,GOB-05,GOB-06', 'Gobierno se ordena de lo general a lo específico: modelo de prevención (MPI), política, estructura, responsable/encargado, DPO, revisión anual y presupuesto al final');
   ok(!q('GOB-01b') && !('cd' in q('GOB-01')) && !JSON.stringify(CL).includes('GOB-01b') && !/GOB-01b/.test(rj), 'GOB-01b se eliminó por completo: pregunta, disparador, semáforo y tabla de esfuerzo');
   const op3 = q('GOB-01').op[3], ex3 = q('GOB-01').ex[3];
   ok(/autonomía, facultades y recursos/.test(op3.d) && /cuenta con la autonomía, las facultades y los recursos necesarios para desempeñar sus funciones conforme a la ley/.test(ex3.t) && /autonomía respecto de la administración/.test(q('GOB-01').cx), 'la alternativa más madura del DPO incluye autonomía, facultades y recursos, con su fundamento en el art. 50');
@@ -1775,6 +1775,15 @@ seccion('34. Revisión del 24-10-2026: preguntas de Gobierno, cierre de dimensi�
   ok(/Arts\. 2 n\), 2 x\) y 15 bis/.test(q('GOB-07').ar) && /art\. 2 x/.test(q('GOB-07').cx) && /Tratamiento de datos a través de un tercero mandatario o encargado/.test(L.a['15 bis'].t), 'la pregunta de responsable y encargado se apoya en los arts. 2 n), 2 x) y 15 bis');
   ok(/prevenir la comisión de las infracciones/.test(L.a['48'].p.join(' ')) && /sin que sea obligatorio contar con un departamento especializado/.test(q('GOB-08').cx), 'la pregunta de prevención de infracciones se apoya en el art. 48 y aclara que no se exige un departamento especializado');
   ok(/"48": \{/.test(leer34('public/ley-ejemplos.js')), 'el recuadro de la ley explica y da un ejemplo del art. 48');
+
+  // ── el acta no adelanta el puntaje global mientras el cuestionario está en curso ──
+  { const parcial = new E2(); parcial.ans('GOB-02', 1); sb.window.PZ = { entries: [] };
+    const dp = sb.docActa(parcial), pg = parcial.pg();
+    ok(dp.includes('El cuestionario está en curso (1 de ' + pg.t + ' preguntas respondidas): el puntaje y el nivel global se calculan al terminarlo') && !/puntaje \d+%/.test(dp) && !/índice \d/.test(dp), 'con el cuestionario a medias, el acta no muestra el puntaje ni el nivel global');
+    const completa = new E2(); for (const x of completa.ga()) completa.a[x.id] = 2;
+    const dc = sb.docActa(completa);
+    ok(/Nivel \d \(/.test(dc) && /puntaje \d+%/.test(dc), 'con el cuestionario completo, el acta sí muestra el resultado');
+    delete sb.window.PZ; }
 
   // ── puntaje: ya no se muestra el porcentaje del nivel durante la sesión ──
   ok(/document\.getElementById\('pnv-s'\)\.textContent='';/.test(aj) && /pintarNivel\(n,'Nivel '\+n\+' — '\+lv\.nm,'',/.test(aj), 'durante las preguntas el nivel se muestra sin porcentaje');
@@ -1795,9 +1804,12 @@ seccion('34. Revisión del 24-10-2026: preguntas de Gobierno, cierre de dimensi�
     ok(cierre(Q, D, eC)(primeraOtra.id, gobTodas[0]) === null, 'al volver a una dimensión anterior no hay cierre');
   }
   ok(/function gn\(qid\)\{[^\n]*cierreDimNecesario\(qid,n\);if\(dm\)cierreDim\(dm,n\);else rq\(n\.id\)/.test(aj), 'al responder, «Siguiente» muestra el cierre de dimensión cuando corresponde');
-  ok(/Dimensión \$\{i\} de \$\{D\.length\} completada/.test(aj) && /Nivel alcanzado en esta dimensión: <strong>\$\{esc\(lv\.nm\)\}<\/strong>/.test(aj) && /¿Está conforme con las respuestas de esta dimensión\? ¿Seguimos\?/.test(aj) && /Revisar las respuestas/.test(aj) && /Continuar con \$\{esc\(d2\.n\)\}/.test(aj), 'el cierre muestra la dimensión completada, su nivel (sin porcentaje), la pregunta «¿Seguimos?» y los botones para revisar o continuar');
+  ok(/Dimensión \$\{i\} de \$\{D\.length\} completada/.test(aj) && /Nivel alcanzado en esta dimensión: <strong>\$\{esc\(lv\.nm\)\}<\/strong>/.test(aj) && /Puntaje de la dimensión: <strong>\$\{en\.sc\(\)\.d\[dmId\]\}%<\/strong>/.test(aj) && /¿Está conforme con las respuestas de esta dimensión\? ¿Seguimos\?/.test(aj) && /Revisar las respuestas/.test(aj) && /Continuar con \$\{esc\(d2\.n\)\}/.test(aj), 'el cierre muestra la dimensión completada, su nivel (sin porcentaje), la pregunta «¿Seguimos?» y los botones para revisar o continuar');
   const cuerpoCierre = aj.slice(aj.indexOf('function cierreDim('), aj.indexOf('lucide.createIcons();const t=document.getElementById(\'cd-t\')'));
-  ok(!/%/.test(cuerpoCierre.replace(/%\)/g, '')) || !/sc\.g|\.d\[dmId\]\+'%'/.test(cuerpoCierre), 'el cierre no muestra porcentajes');
+  ok(!/sc\.g|\.gb\b/.test(cuerpoCierre) && /\.d\[dmId\]/.test(cuerpoCierre), 'el cierre muestra el puntaje de la dimensión que se termina, pero nunca el puntaje global');
+  ok(/function resultadosListos\(\)\{const p=en\.pg\(\);return p\.t>0&&p\.d===p\.t\}/.test(aj) && /function sr\(\)\{if\(!resultadosListos\(\)\)\{const n=en\.nx\(\);if\(n\)\{ss\('s2'\);rq\(n\.id\);return\}\}ss\('s3'\);/.test(aj), 'los resultados solo se abren con el cuestionario completo: si faltan preguntas, se vuelve a las preguntas');
+  const lj34 = leer34('public/lateral.js');
+  ok(['res', 'hoja', 'tab', 'evo', 'inf', 'pdf'].every((id) => new RegExp("id: '" + id + "'[^\\n]*off: \\(\\) => !completa\\(\\)").test(lj34)) && /id: 'act'[^\n]*off: \(\) => !respondidas\(\)/.test(lj34) && /if \(!completa\(\)\) return;/.test(lj34), 'en el menú, Resultados, Hoja de ruta, Tablero, Evolución, Informe y PDF se habilitan solo con el cuestionario completo; el acta puede sacarse antes'); 
   ok(/dimAnt && dimAnt !== q\.dm/.test(vj) && /Pasamos a <strong>\$\{esc\(dm2\.n\)\}<\/strong>/.test(vj), 'en la reunión en vivo, el cliente ve un aviso al pasar a otra dimensión');
   ok(/\.qc\.cd\{/.test(cs) && /\.cd-aviso\{/.test(cs) && /prefers-reduced-motion:reduce\)\{\.cd-aviso\{animation:none\}/.test(cs), 'los estilos del cierre y del aviso existen y respetan «reducir movimiento»');
 
