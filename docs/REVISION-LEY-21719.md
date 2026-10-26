@@ -7,7 +7,7 @@ Cruce de las preguntas, explicaciones, semáforo y plan de acción contra el **t
 | Dónde | Decía | Ahora |
 |---|---|---|
 | ARC-01, ARC-01b, plan de acción | "5 derechos", "15 días hábiles" | **6 derechos** (art. 4); **30 días corridos**, prorrogables una vez por 30 (art. 11) |
-| GOB-01 | El art. 14 impone deberes de información, seguridad y confidencialidad; designar responsable | Esos deberes son los arts. 14 ter, 14 quinquies y 14 bis. El delegado es **voluntario** (arts. 49 y 50) |
+| GOB-05 | El art. 14 impone deberes de información, seguridad y confidencialidad; designar responsable | Esos deberes son los arts. 14 ter, 14 quinquies y 14 bis. El delegado es **voluntario** (arts. 49 y 50) |
 | GOB-01b | "Plan para designar antes del 1/12/2026" | No hay plazo legal; ahora pregunta por funciones, medios y autonomía (art. 49 b y art. 50) |
 | REG-01 y semáforo | "Registro de actividades de tratamiento" como obligación del art. 14 ter | La ley **no lo exige**; se mantiene como buena práctica que sustenta los arts. 14 ter, 15 ter y 49 |
 | REG-02 | "Art. 14 ter lit. e)" para retención | Es la lit. i) y el principio de proporcionalidad (art. 3 c) |
@@ -16,7 +16,7 @@ Cruce de las preguntas, explicaciones, semáforo y plan de acción contra el **t
 | SEG-02b | Brechas de sensibles se avisan a la Agencia y a los titulares | A la Agencia toda vulneración con riesgo razonable; a los titulares solo si son sensibles, de menores de 14 años o económicos/comerciales (art. 14 sexies) |
 | SEN-01b / SEN-02 | Consentimiento "escrito" | Escrito, verbal o medio tecnológico equivalente (art. 16); se incluyen las excepciones |
 | RIE-03 | "Supervisión independiente" en el art. 49 | Sanciones internas, reporte, contratos o reglamento interno; la certificación es del art. 51 y atenúa (art. 36) |
-| GOB-03 | Capacitación atribuida al art. 14 bis | La ley no exige capacitar; el art. 14 bis exige medidas para el deber de secreto. Se rotula como buena práctica |
+| CUL-06 | Capacitación atribuida al art. 14 bis | La ley no exige capacitar; el art. 14 bis exige medidas para el deber de secreto. Se rotula como buena práctica |
 
 Las preguntas condicionales "¿Sabe que…?" medían conocimiento y no cumplimiento; se reescribieron como preguntas de práctica (GOB-01b, LEG-01b, ARC-01b, REG-01b, SEG-02b, TER-01b).
 

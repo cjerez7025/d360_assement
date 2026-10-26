@@ -31,7 +31,7 @@ Firebase Firestore, proyecto `aligndata-arcop`, **base nombrada `d360`** (regió
 ```
 sesiones/{id}          Solo consultores autorizados
   perfil               nombre, sector, tamaño, contacto, email
-  respuestas           { "GOB-01": 3, ... }
+  respuestas           { "GOB-05": 3, ... }
   revisiones           [ {id, e, f, a, p, g, n} ]  fotos de las respuestas por fecha (evolución; ver docs/RUTA-EVOLUCION-DOCUMENTOS.md)
   notas                (antiguo) se pasa a la pizarra al abrir la sesión
   estado, avance, hechas, total, puntaje, nivel     (resumen para el panel)

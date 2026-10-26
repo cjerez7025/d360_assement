@@ -214,10 +214,10 @@ ${lectura ? '' : `<form class="pz-f" id="pzf${n}" novalidate>
 <div class="pz-prev" id="pzp${n}"></div>
 <p class="pz-err" id="pze${n}" role="alert" hidden></p>
 <div class="pz-acc"><span class="pz-como" id="pzo${n}"></span>
-<button type="button" class="pz-b pz-adj" id="pza${n}"><i data-lucide="paperclip"></i> Adjuntar</button><input type="file" accept="${ACEPTA}" multiple hidden id="pzi${n}">
+<button type="button" class="pz-b pz-adj" id="pza${n}"><i data-lucide="paperclip"></i> Adjuntar</button><button type="button" class="pz-b pz-adj" id="pzv${n}"><i data-lucide="clipboard-paste"></i> Pegar imagen</button><input type="file" accept="${ACEPTA}" multiple hidden id="pzi${n}">
 <button type="submit" class="pz-b pz-send" id="pzs${n}"><i data-lucide="send"></i> Publicar</button></div>
 <div class="pz-prog" id="pzg${n}" role="status" hidden><progress max="100" value="0"></progress><span></span></div>
-<p class="pz-ayuda">Ctrl + Enter publica. Puede <strong>pegar con Ctrl + V</strong> (captura de pantalla o archivo copiado), arrastrar o adjuntar: imágenes y documentos PDF, Word, Excel, PowerPoint, CSV o ZIP (hasta 3 de cada uno; documentos de hasta 5 MB).</p></form>`}
+<p class="pz-ayuda">Ctrl + Enter publica. Puede <strong>pegar con Ctrl + V</strong> o con el botón «Pegar imagen» (captura de pantalla o archivo copiado), arrastrar o adjuntar: imágenes y documentos PDF, Word, Excel, PowerPoint, CSV o ZIP (hasta 3 de cada uno; documentos de hasta 5 MB).</p></form>`}
 </section>`;
     const lista = $('pzl' + n);
     const vista = {
@@ -251,6 +251,7 @@ ${lectura ? '' : `<form class="pz-f" id="pzf${n}" novalidate>
       prev.innerHTML = borr.imgs.map((s, i) => `<span class="pz-pv"><img src="${s}" alt="Imagen ${i + 1} para adjuntar"><button type="button" class="pz-quitar" data-i="${i}" aria-label="Quitar la imagen ${i + 1}">×</button></span>`).join('')
         + borr.docs.map((d, i) => `<span class="pz-fp"><i data-lucide="${PZ_ICONO[pzExt(d.nombre)] || 'file'}"></i><span class="pz-fn">${esc(d.nombre)}</span><small>${pzTam(d.z)}</small><button type="button" class="pz-quitar-doc" data-i="${i}" aria-label="Quitar el documento ${esc(d.nombre)}">×</button></span>`).join('');
       $('pza' + n).disabled = borr.imgs.length >= 3 && borr.docs.length >= PZ_ADJ.maxArchivos;
+      $('pzv' + n).disabled = borr.imgs.length >= 3;
       lucide.createIcons();
     };
     vista.quien = quien; // para refrescar «Comentando como…» cuando el cliente termina de escribir su nombre
@@ -290,12 +291,23 @@ ${lectura ? '' : `<form class="pz-f" id="pzf${n}" novalidate>
     const agregar = async (archivos) => {
       mostrarError(''); const todos = [...archivos], imgs = todos.filter((a) => /^image\//.test(a.type)), docs = todos.filter((a) => !/^image\//.test(a.type));
       if (!todos.length) return;
-      $('pza' + n).disabled = true; ta.setAttribute('aria-busy', 'true');
+      $('pza' + n).disabled = true; $('pzv' + n).disabled = true; ta.setAttribute('aria-busy', 'true');
       await agregarImagenes(imgs); await agregarDocumentos(docs);
       ta.removeAttribute('aria-busy'); pintarPrev();
     };
-    vista.agregarArchivos = agregar;
+    vista.agregarArchivos = agregar; vista.aviso = mostrarError;
     $('pza' + n).addEventListener('click', () => file.click());
+    // «Pegar imagen»: lee la imagen del portapapeles (por ejemplo, una captura con Windows + Mayús + S) sin depender de Ctrl + V
+    $('pzv' + n).addEventListener('click', async () => {
+      mostrarError('');
+      if (!navigator.clipboard || !navigator.clipboard.read) { mostrarError('Este navegador no deja leer el portapapeles con el botón. Haga clic dentro del cuadro y use Ctrl + V, o use «Adjuntar».'); ta.focus(); return; }
+      try {
+        const items = await navigator.clipboard.read(), archivos = [];
+        for (const it of items) { const t = it.types.find((x) => /^image\//.test(x)); if (t) archivos.push(new File([await it.getType(t)], 'captura.' + t.split('/')[1].replace('jpeg', 'jpg'), { type: t })); }
+        if (!archivos.length) { mostrarError('No hay una imagen en el portapapeles. Haga una captura (Windows + Mayús + S) y pulse de nuevo este botón.'); return; }
+        await agregar(archivos);
+      } catch (x) { mostrarError('El navegador no permitió leer el portapapeles. Haga clic dentro del cuadro y use Ctrl + V, o use «Adjuntar».'); ta.focus(); }
+    });
     file.addEventListener('change', () => { agregar(file.files); file.value = ''; });
     ['dragover', 'dragenter'].forEach((t) => f.addEventListener(t, (e) => { if ([...(e.dataTransfer ? e.dataTransfer.types : [])].includes('Files')) { e.preventDefault(); f.classList.add('pz-arrastre'); } }));
     ['dragleave', 'drop'].forEach((t) => f.addEventListener(t, () => f.classList.remove('pz-arrastre')));
@@ -318,7 +330,7 @@ ${lectura ? '' : `<form class="pz-f" id="pzf${n}" novalidate>
       };
       // los documentos se suben primero (con barra de avance); el comentario aparece cuando están completos
       if (docs.length) {
-        f.dataset.ocupado = '1'; enviarBtn.disabled = true; $('pza' + n).disabled = true; prog.hidden = false;
+        f.dataset.ocupado = '1'; enviarBtn.disabled = true; $('pza' + n).disabled = true; $('pzv' + n).disabled = true; prog.hidden = false;
         try { await subirPartes(c, docs, (h, t) => { const p = t ? Math.round(h / t * 100) : 100; prog.querySelector('progress').value = p; prog.querySelector('span').textContent = 'Subiendo documentos… ' + p + '%'; }); }
         catch (x) { restaurar(x); prog.hidden = true; delete f.dataset.ocupado; enviarBtn.disabled = false; pintarPrev(); return; }
         prog.hidden = true; delete f.dataset.ocupado; enviarBtn.disabled = false;
@@ -384,9 +396,19 @@ ${lectura ? '' : `<form class="pz-f" id="pzf${n}" novalidate>
     return sal.length ? sal : [...(cd.files || [])];
   }
   document.addEventListener('paste', (e) => {
-    const fs = archivosPegados(e.clipboardData); if (!fs.length) return;
-    const t = e.target;
+    const cd = e.clipboardData, t = e.target;
     if (t && (/^(INPUT|SELECT)$/.test(t.tagName) || (t.tagName === 'TEXTAREA' && !t.classList.contains('pz-x')) || t.isContentEditable)) return;
+    const fs = archivosPegados(cd);
+    if (!fs.length) {
+      // sin archivos: una imagen incrustada en el texto con formato (data:) también sirve; si no hay ni texto ni imagen, se avisa
+      const tipos = cd ? [...(cd.types || [])] : [], enTexto = tipos.includes('text/plain');
+      const m = !enTexto && cd && cd.getData ? /<img[^>]+src=["'](data:image\/[a-z+.-]+;base64,[^"']+)["']/i.exec(cd.getData('text/html') || '') : null;
+      const v0 = (m || (!enTexto && tipos.length && t && t.classList && t.classList.contains('pz-x'))) ? vistaActiva() : null; if (!v0) return;
+      e.preventDefault();
+      if (m) fetch(m[1]).then((r) => r.blob()).then((b) => v0.agregarArchivos([new File([b], 'captura.png', { type: b.type })])).catch(() => v0.aviso && v0.aviso('No se pudo leer la imagen pegada. Use «Pegar imagen» o «Adjuntar».'));
+      else if (v0.aviso) v0.aviso('El portapapeles no trae una imagen que se pueda pegar. Use «Pegar imagen» o «Adjuntar».');
+      return;
+    }
     const v = vistaActiva(); if (!v) return;
     e.preventDefault(); v.agregarArchivos(fs);
   });

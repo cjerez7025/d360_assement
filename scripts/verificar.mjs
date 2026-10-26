@@ -88,13 +88,13 @@ ok(e2.sc().g >= esperado - 1 && e2.sc().g <= esperado + 1, 'todo 2 debe dar ≈6
 console.log('  todo 3 → ' + e3.sc().g + ' | todo 2 → ' + e2.sc().g + ' | todo 0 → ' + e0.sc().g);
 
 seccion('4. Motor: preguntas condicionales y banderas');
-const e = new E2(); e.ans('GOB-01', 1);
+const e = new E2(); e.ans('GOB-05', 1);
 ok(e.ga().some((q) => q.id === 'LEG-01b') === false, 'sin responder LEG-01 no se muestra LEG-01b');
 e.ans('LEG-01', 1);
 ok(e.ga().some((q) => q.id === 'LEG-01b'), 'LEG-01 < 2 debe mostrar LEG-01b');
 const f = new E2(); f.ans('LEG-01', 3);
 ok(!f.ga().some((q) => q.id === 'LEG-01b'), 'LEG-01 = 3 no debe mostrar LEG-01b');
-ok(!Q.some((q) => q.id === 'GOB-01b') && !('cd' in Q.find((q) => q.id === 'GOB-01')), 'GOB-01b se eliminó: la pregunta del DPO ya no abre una de profundización');
+ok(!Q.some((q) => q.id === 'GOB-01b') && !('cd' in Q.find((q) => q.id === 'GOB-05')), 'GOB-01b se eliminó: la pregunta del DPO ya no abre una de profundización');
 ok(e0.fl().length > 10, 'todo 0 debe levantar banderas rojas (' + e0.fl().length + ')');
 ok(e3.fl().length === 0, 'todo 3 no debe levantar banderas rojas');
 const progreso = e0.pg(); ok(progreso.p === 100, 'progreso con todo respondido debe ser 100%');
@@ -149,7 +149,7 @@ ok(sandbox.document.title === 'D360° Privacy Assessment — AlignData', 'el tí
 ok(/^\d{2}-\d{2}-\d{4}$/.test(sandbox.fch()), 'la fecha del informe debe ser dd-mm-aaaa');
 
 seccion('8. Persistencia: la clave de almacenamiento cambió (evita mezclar respuestas de la versión anterior)');
-const p = new E2(); p.ans('GOB-01', 3);
+const p = new E2(); p.ans('GOB-05', 3);
 ok('d360v3' in store && !('d360v2' in store), 'debe guardarse en d360v3');
 
 seccion('9. Diseño y accesibilidad');
@@ -241,13 +241,13 @@ seccion('10. Sesiones guardadas (consultor y cliente)');
   // guardado: con sesión en la nube no se escribe en el equipo; en modo solo lectura no se guarda nada
   delete store['d360v3'];
   vm.runInContext('Nube={guardar(e){globalThis.__guardados=(globalThis.__guardados||0)+1;globalThis.__sid=e.sid}}', sandbox);
-  const nube = new E2(); nube.sid = 'abc123'; nube.ans('GOB-01', 3);
+  const nube = new E2(); nube.sid = 'abc123'; nube.ans('GOB-05', 3);
   ok(sandbox.__guardados === 1 && sandbox.__sid === 'abc123', 'con una sesión abierta cada respuesta se envía a la nube');
   ok(!('d360v3' in store), 'con una sesión en la nube no se deja una copia de los datos del cliente en el navegador');
-  const lec = new E2(); lec.sid = 'abc123'; lec.ro = true; lec.ans('GOB-01', 3);
+  const lec = new E2(); lec.sid = 'abc123'; lec.ro = true; lec.ans('GOB-05', 3);
   ok(sandbox.__guardados === 1 && !('d360v3' in store), 'en modo solo lectura no se guarda nada');
   vm.runInContext('Nube=null', sandbox);
-  const local = new E2(); local.ans('GOB-01', 2);
+  const local = new E2(); local.ans('GOB-05', 2);
   ok('d360v3' in store, 'sin sesión en la nube se sigue guardando en el navegador (modo local)');
 
   // texto que viene de personas se escapa antes de mostrarlo
@@ -458,7 +458,7 @@ seccion('14. Pizarra compartida (comentarios con autor e imágenes)');
   const leer6 = (f) => fs.readFileSync(path.join(raiz6, f), 'utf8').replace(/\r\n/g, '\n');
   const sb = sandbox;
   const img = 'data:image/jpeg;base64,' + 'A'.repeat(200);
-  const base = { id: 'abcdefghijKLMNOPQR12', autor: 'Marcela Soto', rol: 'cliente', qid: 'GOB-01', texto: 'Hola', imgs: [], creadoEn: 1700000000000 };
+  const base = { id: 'abcdefghijKLMNOPQR12', autor: 'Marcela Soto', rol: 'cliente', qid: 'GOB-05', texto: 'Hola', imgs: [], creadoEn: 1700000000000 };
   // validación de un comentario
   ok(sb.pzValidar(base) === '' && sb.pzValidar({ ...base, texto: '', imgs: [img] }) === '', 'un comentario con texto, o solo con imagen, es válido');
   ok(sb.pzValidar({ ...base, texto: '  ' }) !== '' && sb.pzValidar({ ...base, autor: '' }) !== '', 'un comentario vacío o sin autor no es válido');
@@ -656,8 +656,10 @@ seccion('17. Documentos adjuntos (PDF, Word, Excel…) y pegado');
   ok(exp(nb) === exp(nbp) && /pzSubirParte/.test(exp(nb)) && /pzLeerParte/.test(exp(nb)) && /pzCopiarPartes/.test(exp(nb)), 'nube.js y nube-prueba.js tienen las mismas funciones, incluidas las de partes de archivo');
   ok(/await subirPartes\(c, docs[\s\S]*?limpiar\(\);[\s\S]*?enviar\(c\)/.test(pj), 'el contenido de los documentos se sube completo antes de crear el comentario');
   ok(/await PZS\.N\.pzSubirParte\(amb, clave, c\.id/.test(pj) && /pzCopiarPartes\(\['vivo', PZS\.vivoTk\], \['ses', PZS\.sid\], e\)[\s\S]{0,80}pzEspejar/.test(pj), 'lo que sube un cliente se copia a la sesión (contenido primero, luego el comentario)');
-  ok(/document\.addEventListener\('paste'/.test(pj) && /archivosPegados\(e\.clipboardData\)/.test(pj) && /v\.agregarArchivos\(fs\)/.test(pj), 'se puede pegar (Ctrl+V) un archivo o una captura en cualquier parte de la pantalla');
-  ok(/PZ_EXT\[pzExt\(a\.n\)\] \|\| 'application\/octet-stream'/.test(pj) && !/text\/html/.test(pj), 'al descargar, el tipo sale de la extensión permitida y nunca de lo que declara el archivo');
+  ok(/document\.addEventListener\('paste'/.test(pj) && /archivosPegados\(cd\)/.test(pj) && /v\.agregarArchivos\(fs\)/.test(pj), 'se puede pegar (Ctrl+V) un archivo o una captura en cualquier parte de la pantalla');
+  ok(/id="pzv\$\{n\}"><i data-lucide="clipboard-paste"><\/i> Pegar imagen/.test(pj) && /navigator\.clipboard\.read\(\)/.test(pj) && /vista\.agregarArchivos = agregar; vista\.aviso = mostrarError;/.test(pj) && /\$\('pzv' \+ n\)\.disabled = true/.test(pj), 'cada pizarra (también la general) tiene el botón «Pegar imagen», que lee la imagen del portapapeles sin depender de Ctrl + V');
+  ok(/El portapapeles no trae una imagen que se pueda pegar/.test(pj) && /data:image/.test(pj), 'si el portapapeles no trae nada pegable se avisa, y una imagen incrustada en un texto con formato también se acepta');
+  ok(/PZ_EXT\[pzExt\(a\.n\)\] \|\| 'application\/octet-stream'/.test(pj) && pj.split('text/html').length === 2 && /getData\('text\/html'\)/.test(pj) && !/type: ?'text\/html'/.test(pj), 'al descargar, el tipo sale de la extensión permitida y nunca de lo que declara el archivo');
   ok(/pzBorrar\(PZS\.sid, ent,/.test(pj) && /idsPartes\(e\)/.test(nb) && /quitarPartes\(p, 'ses', sid, e\)/.test(nbp), 'borrar un comentario borra también el contenido de sus documentos');
   ok(/@media print\{\.pz-file\{/.test(cs), 'los documentos adjuntos no rompen el PDF');
 }
@@ -672,14 +674,14 @@ seccion('18. La pizarra reemplaza a las notas de la reunión');
   ok(!/notas/.test(ss5.slice(ss5.indexOf('function dlgRender'), ss5.indexOf('window.pub'))) && /y la pizarra con los comentarios y archivos de la reunión/.test(ss5), 'los textos del diálogo de compartir ya no hablan de notas');
   ok(/\['t6','messages-square','Pizarra'/.test(aj) && /Notas anteriores/.test(aj), 'en los resultados la pestaña se llama «Pizarra» y las notas antiguas salen aparte, bajo «Notas anteriores»');
   // id fijo y válido para las reglas (20 letras o números)
-  const id1 = sb.pzIdNota('sesion1', 'GOB-01'), id2 = sb.pzIdNota('sesion1', 'GOB-01b'), id3 = sb.pzIdNota('sesion2', 'GOB-01');
-  ok(/^[A-Za-z0-9]{20}$/.test(id1) && id1 === sb.pzIdNota('sesion1', 'GOB-01') && id1 !== id2 && id1 !== id3, 'el id de una nota migrada es de 20 letras/números, siempre el mismo para la misma sesión y pregunta, y distinto entre preguntas y sesiones');
+  const id1 = sb.pzIdNota('sesion1', 'GOB-05'), id2 = sb.pzIdNota('sesion1', 'GOB-01b'), id3 = sb.pzIdNota('sesion2', 'GOB-05');
+  ok(/^[A-Za-z0-9]{20}$/.test(id1) && id1 === sb.pzIdNota('sesion1', 'GOB-05') && id1 !== id2 && id1 !== id3, 'el id de una nota migrada es de 20 letras/números, siempre el mismo para la misma sesión y pregunta, y distinto entre preguntas y sesiones');
   const todas = new Set(); for (const q of Q) todas.add(sb.pzIdNota('mockabc123', q.id)); ok(todas.size === Q.length, 'ninguna pregunta repite el id de nota');
   // la migración: usa el id fijo, conserva autor y fecha, y solo después borra las notas antiguas
   const mig = ss5.slice(ss5.indexOf('async function migrarNotas'), ss5.indexOf('window.abrirSes'));
   ok(/pzIdNota\(sid, qid\)/.test(mig) && /rol: 'consultor'/.test(mig) && /creadoEn: ms\(d\.actualizadoEn\)/.test(mig) && /cr\.nombre \|\| cr\.email/.test(mig), 'la migración conserva el autor original y la fecha de la sesión');
   ok(mig.indexOf('await N.pzEspejar(sid, e)') > 0 && mig.indexOf('await N.pzEspejar(sid, e)') < mig.indexOf('en.n = {}; en.sv()'), 'las notas antiguas solo se borran después de haberlas copiado a la pizarra (si falla, siguen en la sesión)');
-  ok(/await PZ\.abrirSesion\(N, id\); await migrarNotas\(d, id\)/.test(ss5), 'las notas se migran al abrir la sesión (para trabajar, ver resultados o compartir)');
+  ok(/await PZ\.abrirSesion\(N, id\);[\s\S]*await migrarNotas\(d, id\); vivoOn\(\);/.test(ss5), 'las notas se migran al abrir la sesión (para trabajar, ver resultados o compartir)');
   ok(/\.slice\(0, 2000\)/.test(mig), 'una nota migrada respeta el máximo de 2000 caracteres de la pizarra');
 }
 
@@ -804,7 +806,7 @@ seccion('20. Hoja de ruta por etapas, evolución en el tiempo, informe ejecutivo
   const rev = () => armar({ sector: 'salud', 'tamaño': '11-50' }, () => 1);
   const er = rev(); const v1 = er.rev('Diagnóstico inicial', 1790000000000);
   ok(er.rv.length === 1 && /^r[a-z0-9]{6,}$/.test(v1.id) && v1.e === 'Diagnóstico inicial' && v1.f === 1790000000000 && v1.p.sector === 'salud' && v1.p['tamaño'] === '11-50' && v1.g === er.sc().g && Object.keys(v1.a).length === Object.keys(er.a).length, 'guardar una revisión toma una foto de las respuestas, el perfil, el puntaje y la fecha');
-  er.a['GOB-01'] = 3; ok(v1.a['GOB-01'] === 1 && er.rv[0].a['GOB-01'] === 1, 'cambiar las respuestas después no altera la revisión guardada');
+  er.a['GOB-05'] = 3; ok(v1.a['GOB-05'] === 1 && er.rv[0].a['GOB-05'] === 1, 'cambiar las respuestas después no altera la revisión guardada');
   const v0 = er.rev('Revisión anterior', 1780000000000);
   ok(er.rv[0].id === v0.id && er.rv[1].id === v1.id, 'las revisiones quedan ordenadas por fecha');
   ok(er.rev('x'.repeat(100), 1).e.length === 40 && er.rev('  ', 2).e === 'Revisión', 'el nombre de una revisión se limita a 40 caracteres y no queda vacío');
@@ -813,7 +815,7 @@ seccion('20. Hoja de ruta por etapas, evolución en el tiempo, informe ejecutivo
   // guardado: la sesión guarda las revisiones y el estado se restaura al cargar
   const ng = leer12('public/nube.js'), np = leer12('public/nube-prueba.js');
   ok(/revisiones: \[\.\.\.\(en\.rv \|\| \[\]\)\]/.test(ng) && /revisiones: \[\.\.\.\(en\.rv \|\| \[\]\)\]/.test(np), 'el guardado automático incluye las revisiones (en la nube y en el modo de prueba)');
-  const er4 = new E2(); er4.cargar({ perfil: { sector: 'salud' }, respuestas: er.pub().respuestas, revisiones: [{ id: 'ra', e: 'A', f: 5, a: { 'GOB-01': 1 }, p: {} }, { id: 5, e: 'mala' }, null, { id: 'rb', e: 'B', f: 'x', a: {} }, { id: 'rc', e: 'C', f: 7, a: 'no' }] });
+  const er4 = new E2(); er4.cargar({ perfil: { sector: 'salud' }, respuestas: er.pub().respuestas, revisiones: [{ id: 'ra', e: 'A', f: 5, a: { 'GOB-05': 1 }, p: {} }, { id: 5, e: 'mala' }, null, { id: 'rb', e: 'B', f: 'x', a: {} }, { id: 'rc', e: 'C', f: 7, a: 'no' }] });
   ok(er4.rv.length === 1 && er4.rv[0].id === 'ra', 'al cargar, se descartan las revisiones mal formadas');
   new E2().cargar({}); const er5 = new E2(); er5.rv = [v1]; er5.rs(); ok(er5.rv.length === 0 && new E2().rv.length === 0, 'un motor nuevo o reiniciado no trae revisiones');
   // lo publicado para el cliente
@@ -869,7 +871,7 @@ seccion('20. Hoja de ruta por etapas, evolución en el tiempo, informe ejecutivo
   const alerta = armar({}, (q) => (q.fl && q.fl.length ? q.fl[0] : 3)); ok(/<h2>Alertas críticas<\/h2>/.test(sb.docInforme(alerta)) && !/<h2>Alertas críticas<\/h2>/.test(sb.docInforme(armar({}, () => 3))), 'las alertas críticas salen en el informe solo si las hay');
   // acta
   sb.window.PZ = { entries: [
-    { id: 'a'.repeat(20), autor: 'Marcela Soto', rol: 'cliente', cargo: 'Gerente de TI', qid: 'GOB-01', texto: 'Lo ve TI <i>hoy</i>', creadoEn: 1790000000000, adjuntos: [{ n: 'politica.pdf', z: 10, p: 1 }], imgs: ['data:image/jpeg;base64,AAAAAAAAAAAAAAAAAAAAAAAA'] },
+    { id: 'a'.repeat(20), autor: 'Marcela Soto', rol: 'cliente', cargo: 'Gerente de TI', qid: 'GOB-05', texto: 'Lo ve TI <i>hoy</i>', creadoEn: 1790000000000, adjuntos: [{ n: 'politica.pdf', z: 10, p: 1 }], imgs: ['data:image/jpeg;base64,AAAAAAAAAAAAAAAAAAAAAAAA'] },
     { id: 'b'.repeat(20), autor: 'Carlos Jerez', rol: 'consultor', qid: 'general', texto: 'Acordamos revisar en 3 meses', creadoEn: 1790000100000 }] };
   const da = sb.docActa(eD);
   const esc33 = (x) => String(x).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
@@ -920,19 +922,19 @@ seccion('21. Dimensión Cultura y formación y las ocho dimensiones del sitio');
   const hist = D.find((d) => d.id === 'cumplimiento'), qc = Q.filter((q) => q.dm === 'cumplimiento').sort((a, b) => a.o - b.o);
   ok(hist.w === 2.2 && qc.filter((q) => !q.iS).length === 10 && qc.map((q) => q.id.slice(0, 3)).join('').replace(/(LEG)+(SEN)+/, 'OK') === 'OK' && Q.every((q) => D.some((d) => d.id === q.dm)) && Q.filter((q) => !q.iS).length === 53, 'Cumplimiento normativo reúne las preguntas de legitimación y de datos sensibles (las de legitimación primero), con el peso de ambas sumado (2,2); las preguntas base suman 53');
   ok(A.cumplimiento && A.cumplimiento.ac.length === 10 && !A.legitimacion && !A.sensibles && Object.keys(A).length === 8 && SEC_DIM.cumplimiento.join() === 'vuln,fin,auto,sens' && !SEC_DIM.sensibles && !SEC_DIM.legitimacion, 'el plan de acción y la ponderación por rubro también se fusionaron (los factores de ambas dimensiones)');
-  ok(cul.map((q) => q.id).sort().join() === 'CUL-01,CUL-02,CUL-03,CUL-04,CUL-05,GOB-03' && cul.every((q) => !q.iS) && cul.length === 6, 'Cultura tiene 6 preguntas base: la capacitación (GOB-03, que conserva su código para no perder respuestas guardadas), 4 nuevas y la revisión de mejoras (CUL-05)');
+  ok(cul.map((q) => q.id).sort().join() === 'CUL-01,CUL-02,CUL-03,CUL-04,CUL-05,CUL-06' && cul.every((q) => !q.iS) && cul.length === 6, 'Cultura tiene 6 preguntas base: la capacitación (CUL-06, antes GOB-03: cambió de código y lo guardado se traduce al abrirlo), 4 nuevas y la revisión de mejoras (CUL-05)');
   ok(Q.length === 60 && Q.filter((q) => !q.iS).length === 53 && Q.filter((q) => q.iS).length === 7, 'hay 60 preguntas: 53 base (41 + 10 que faltaban respecto del Assessment de Drive + 2 de la revisión del 24-10) y 7 de profundización');
   ok(cul.every((q) => q.op.length === 4 && q.ex.length === 4 && q.ev && q.cx && q.s && q.ar && q.w >= 0.8 && q.w <= 1.3 && Array.isArray(q.fl)), 'cada pregunta de Cultura tiene cuatro respuestas, cuatro ejemplos, cómo comprobarlo, contexto legal y peso válido');
-  ok(cul.every((q) => /Art/.test(q.ar) && (q.id === 'GOB-03' || /buena práctica|14 sexies|14 quinquies/.test(q.ar))) && cul.every((q) => /no exige|voluntari|exige/.test(q.cx)), 'las preguntas nuevas dicen si la ley lo exige o es buena práctica (el modelo de prevención es voluntario)');
-  ok(cul.every((q) => !q.fl.length) && Q.find((q) => q.id === 'GOB-03').dm === 'cultura', 'ninguna pregunta de Cultura genera alerta crítica (la ley no exige capacitar)');
+  ok(cul.every((q) => /Art/.test(q.ar) && (q.id === 'CUL-06' || /buena práctica|14 sexies|14 quinquies/.test(q.ar))) && cul.every((q) => /no exige|voluntari|exige/.test(q.cx)), 'las preguntas nuevas dicen si la ley lo exige o es buena práctica (el modelo de prevención es voluntario)');
+  ok(cul.every((q) => !q.fl.length) && Q.find((q) => q.id === 'CUL-06').dm === 'cultura', 'ninguna pregunta de Cultura genera alerta crítica (la ley no exige capacitar)');
   ok(Array.isArray(A.cultura.ac) && A.cultura.ac.length >= 4 && A.cultura.ac.every((a) => a.t && a.p && a.r) && A.cultura.e && !A.gobernanza.ac.some((a) => /capacitación periódica/.test(a.t)) && A.gobernanza.ac.length >= 4, 'Cultura tiene su plan de acción y la acción de capacitación salió de Gobierno y liderazgo');
-  ok(CL.some((c2) => c2.qs.includes('CUL-01') && c2.qs.includes('CUL-02') && c2.qs.includes('GOB-03')) && CL.some((c2) => c2.qs.includes('CUL-03') && c2.qs.includes('CUL-04') && /voluntario/.test(c2.ob)), 'las preguntas de Cultura alimentan el semáforo de obligaciones (el modelo de prevención se marca como voluntario)');
+  ok(CL.some((c2) => c2.qs.includes('CUL-01') && c2.qs.includes('CUL-02') && c2.qs.includes('CUL-06')) && CL.some((c2) => c2.qs.includes('CUL-03') && c2.qs.includes('CUL-04') && /voluntario/.test(c2.ob)), 'las preguntas de Cultura alimentan el semáforo de obligaciones (el modelo de prevención se marca como voluntario)');
   ok(SEC_DIM.cultura && SEC_DIM.cultura.length > 0 && EF['CUL-01'] && EF['CUL-04'], 'Cultura entra en la ponderación sectorial y en la hoja de ruta');
   // el puntaje
   const arm = (f) => { const e = new E2(); e.p = {}; Q.filter((q) => !q.iS).forEach((q, i) => { e.a[q.id] = f(q, i); }); return e; };
   ok(arm(() => 3).sc().g === 100 && arm(() => 0).sc().g === 0 && arm((q) => (q.dm === 'cultura' ? 0 : 3)).sc().g < 100 && arm((q) => (q.dm === 'cultura' ? 0 : 3)).sc().d.cultura === 0, 'todo en 3 vale 100; sin Cultura el puntaje baja y la dimensión vale 0');
-  const antes = new E2(); antes.cargar({ perfil: {}, respuestas: Object.fromEntries(Q.filter((q) => !q.iS && q.dm !== 'cultura').map((q) => [q.id, 3]).concat([['GOB-03', 3]])) });
-  ok(antes.a['GOB-03'] === 3 && antes.sc().d.cultura === 100 && antes.sc().d.gobernanza === 100 && antes.nx().dm === 'cultura' && antes.pg().d < antes.pg().t, 'una sesión guardada conserva su respuesta de capacitación (ahora en Cultura) y queda pendiente lo nuevo');
+  const antes = new E2(); antes.cargar({ perfil: {}, respuestas: Object.fromEntries(Q.filter((q) => !q.iS && q.dm !== 'cultura').map((q) => [q.id, 3]).concat([['CUL-06', 3]])) });
+  ok(antes.a['CUL-06'] === 3 && antes.sc().d.cultura === 100 && antes.sc().d.gobernanza === 100 && antes.nx().dm === 'cultura' && antes.pg().d < antes.pg().t, 'una sesión guardada conserva su respuesta de capacitación (ahora en Cultura) y queda pendiente lo nuevo');
   ok(new RegExp('en ' + D.length + ' dimensiones').test(ih) && /<strong>8<\/strong> dimensiones/.test(ih) && !/\b9 dimensiones/.test(ih), 'la portada dice ocho dimensiones');
   ok(/\$\{D\.length\} dimensione/.test(leer13('public/app.js')) && !/las 8 dimensiones/.test(leer13('public/app.js')), 'el texto de resultados cuenta las dimensiones en vez de decir 8');
 }
@@ -1286,8 +1288,8 @@ seccion('29. Backlog y tablero kanban del plan');
   ok(b1.id === 'abc1' && b1.t === 'Hacer algo importante' && b1.e === 'backlog' && b1.ola === 4 && b1.qid === '' && b1.r.length === 60 && b1.v === 0 && b1.h === 0 && b1.n.length === 300 && b1.ev.n.length === 80 && b1.ev.u === '' && b1.c === 0, 'se limpian las etiquetas y los espacios, se limitan los largos y un estado, una etapa, una pregunta o un enlace inválidos se corrigen');
   ok(L([{ id: 'a', t: 'Uno' }, { id: 'a', t: 'Dos' }, { id: 'b', t: 'Tres' }]).map((t) => t.t).join() === 'Uno,Tres', 'un id repetido se descarta');
   ok(L(Array.from({ length: 200 }, (_, i) => ({ id: 'x' + i, t: 'T' + i }))).length === TAR_MAX, 'nunca hay más de 120 tareas');
-  ok(L([{ id: 'a', t: 'x', e: 'en_curso', ola: 2, qid: 'GOB-01', ev: { u: 'https://drive.google.com/x' }, v: 1790000000000, h: 1790000100000 }])[0].qid === 'GOB-01' && L([{ id: 'a', t: 'x', ev: { u: 'https://drive.google.com/x' } }])[0].ev.u === 'https://drive.google.com/x', 'una pregunta real y un enlace https se conservan');
-  const pubT = sb.tarPublico([{ id: 'a', t: 'x', e: 'hecha', ola: 1, qid: 'GOB-01', r: 'Ana', v: 5, h: 6, n: 'interna', ev: { n: 'Acta', u: 'https://x.cl/a' }, c: 9 }]);
+  ok(L([{ id: 'a', t: 'x', e: 'en_curso', ola: 2, qid: 'GOB-05', ev: { u: 'https://drive.google.com/x' }, v: 1790000000000, h: 1790000100000 }])[0].qid === 'GOB-05' && L([{ id: 'a', t: 'x', ev: { u: 'https://drive.google.com/x' } }])[0].ev.u === 'https://drive.google.com/x', 'una pregunta real y un enlace https se conservan');
+  const pubT = sb.tarPublico([{ id: 'a', t: 'x', e: 'hecha', ola: 1, qid: 'GOB-05', r: 'Ana', v: 5, h: 6, n: 'interna', ev: { n: 'Acta', u: 'https://x.cl/a' }, c: 9 }]);
   ok(JSON.stringify(Object.keys(pubT[0]).sort()) === JSON.stringify(['e', 'h', 'id', 'ola', 'qid', 'r', 't', 'v']), 'al cliente solo viaja el título, el estado, la etapa, el responsable y las fechas (nunca la nota interna ni la evidencia)');
 
   // ── backlog desde la hoja de ruta ──
@@ -1391,8 +1393,8 @@ seccion('29. Backlog y tablero kanban del plan');
   jk_reset(); kbCerr[1] = true; const jk_fc = sb.tarZona(act, 'auditor');
   ok(/aria-expanded="false"/.test(jk_fc) && (jk_fc.match(/<article class="kb-t /g) || []).length === act.tar.filter((t) => t.ola !== 1).length, 'un carril plegado oculta sus tarjetas y lo indica (aria-expanded)');
   jk_reset();
-  const qg = Q.find((q) => q.id === 'GOB-01'), metaG = qg.op.find((o) => o.v === 3).l;
-  ok(sb.kbTit({ qid: 'GOB-01', t: 'GOB-01 · ' + metaG }).t === qg.q && sb.kbTit({ qid: 'GOB-01', t: 'GOB-01 · ' + metaG }).sub === metaG && sb.kbTit({ qid: 'GOB-01', t: 'Nombrar al delegado esta semana' }).t === 'Nombrar al delegado esta semana' && sb.kbTit({ qid: '', t: 'Tarea propia' }).sub === '', 'una tarea generada muestra la pregunta como título y la meta debajo; si el consultor cambió el título, se respeta el suyo');
+  const qg = Q.find((q) => q.id === 'GOB-05'), metaG = qg.op.find((o) => o.v === 3).l;
+  ok(sb.kbTit({ qid: 'GOB-05', t: 'GOB-05 · ' + metaG }).t === qg.q && sb.kbTit({ qid: 'GOB-05', t: 'GOB-05 · ' + metaG }).sub === metaG && sb.kbTit({ qid: 'GOB-05', t: 'Nombrar al delegado esta semana' }).t === 'Nombrar al delegado esta semana' && sb.kbTit({ qid: '', t: 'Tarea propia' }).sub === '', 'una tarea generada muestra la pregunta como título y la meta debajo; si el consultor cambió el título, se respeta el suyo');
   ok(/function tarSig\(id, dir\)/.test(tj) && /function tarFiltro\(k, v\)/.test(tj) && /function tarLimpiar\(\)/.test(tj) && /function tarLane\(o\)/.test(tj) && /tarNueva\(ola\)/.test(tj) && /ola: \[1, 2, 3, 4\]\.includes\(\+ola\)/.test(tj), 'las acciones del tablero (flechas, filtros, plegar y crear en una etapa) existen');
   ok(/const destino = \(ev\) =>/.test(tj) && /c\.dataset\.o === carril/.test(tj) && /t\.e !== c\.dataset\.e/.test(tj) && /\.kb-t\[data-edit\]/.test(tj), 'una tarjeta solo se suelta en las columnas de su propia etapa, no cambia nada si se suelta donde estaba y pulsarla la abre para editarla');
   ok(/id="kb-zona"/.test(sb.tarHtml(act, 'auditor')) && /oninput="tarFiltro\('q',this\.value\)"/.test(sb.tarHtml(act, 'auditor')) && /function tarZonaRefrescar\(\)/.test(tj), 'al escribir en la búsqueda solo se redibuja el tablero (no se pierde el foco)');
@@ -1433,8 +1435,8 @@ seccion('30. Icono «¿por qué?» junto al riesgo, salida del diálogo de nombr
   poner(() => 0);
   const fl0 = en.fl(), al = fl0.length ? sb.pqAlerta(fl0[0].id) : null, qa = fl0.length ? Q.find((q) => q.id === fl0[0].id) : null;
   ok(fl0.length > 5 && al && al.t === '¿Por qué es una alerta crítica?' && al.h.includes(fl0[0].id) && al.h.includes(sb.pqEsc(qa.cx)) && /no cambia el puntaje/.test(al.h) && /Deja de ser alerta si la respuesta pasa a/.test(al.h), 'la alerta crítica cita la pregunta, la respuesta, por qué importa y cómo deja de serlo');
-  poner(() => 0); delete en.a['GOB-01'];
-  ok(sb.pqAlerta('GOB-01') === null, 'una pregunta sin responder no tiene alerta que explicar');
+  poner(() => 0); delete en.a['GOB-05'];
+  ok(sb.pqAlerta('GOB-05') === null, 'una pregunta sin responder no tiene alerta que explicar');
   ok(estados.every((f) => { poner(f); return en.cl2().every((c, i) => { const x = sb.pqSem(i); return x && x.t === '¿Por qué «' + c.lb + '»?' && x.h.includes(sb.pqEsc(c.ob)); }); }), 'cada obligación del semáforo se explica con su estado y su promedio');
   en.a = {}; ok(sb.pqSem(0).h.includes('aún no tiene preguntas respondidas'), 'una obligación sin respuestas lo dice');
   en.a = guarda.a; en.p = guarda.p;
@@ -1575,17 +1577,17 @@ seccion('32. Pizarra: escritura en vivo (se ve lo que alguien escribe antes de p
   const sb = sandbox, B = sb.pzBorradorOk;
 
   // ── lo que llega de la base de datos nunca se usa tal cual ──
-  const bien = { a: 'Marcela Rojas', r: 'cliente', c: 'Gerente', q: 'GOB-01', x: 'Estamos revisando' };
-  ok(B(bien) && B(bien).a === 'Marcela Rojas' && B(bien).r === 'cliente' && B(bien).c === 'Gerente' && B(bien).q === 'GOB-01' && B(bien).x === 'Estamos revisando', 'un borrador válido se acepta tal cual');
-  ok(B(null) === null && B('x') === null && B({ ...bien, x: '' }) === null && B({ ...bien, x: '   \n ' }) === null && B({ ...bien, a: '' }) === null && B({ ...bien, q: '' }) === null && B({ q: 'GOB-01', x: 'hola' }) === null, 'sin nombre, sin pregunta o sin texto no hay nada que mostrar');
+  const bien = { a: 'Marcela Rojas', r: 'cliente', c: 'Gerente', q: 'GOB-05', x: 'Estamos revisando' };
+  ok(B(bien) && B(bien).a === 'Marcela Rojas' && B(bien).r === 'cliente' && B(bien).c === 'Gerente' && B(bien).q === 'GOB-05' && B(bien).x === 'Estamos revisando', 'un borrador válido se acepta tal cual');
+  ok(B(null) === null && B('x') === null && B({ ...bien, x: '' }) === null && B({ ...bien, x: '   \n ' }) === null && B({ ...bien, a: '' }) === null && B({ ...bien, q: '' }) === null && B({ q: 'GOB-05', x: 'hola' }) === null, 'sin nombre, sin pregunta o sin texto no hay nada que mostrar');
   const largo = B({ ...bien, a: 'N'.repeat(100), c: 'C'.repeat(100), q: 'Q'.repeat(60), x: 'x'.repeat(5000) });
   ok(largo.a.length === 60 && largo.c.length === 60 && largo.q.length === 40 && largo.x.length === 2000, 'se recortan el nombre (60), el cargo (60), la pregunta (40) y el texto (2.000)');
   ok(B({ ...bien, r: 'admin' }).r === 'cliente' && B({ ...bien, r: 'consultor' }).r === 'consultor' && B({ ...bien, c: 5 }).c === '' && B({ ...bien, a: '  Ana   Soto ' }).a === 'Ana Soto', 'un rol raro se trata como cliente, un cargo que no es texto se ignora y se limpian los espacios');
 
   // ── la tarjeta «escribiendo…» ──
   const f1 = sb.pzFantasma(B(bien), false), f2 = sb.pzFantasma(B({ ...bien, r: 'consultor' }), true), f3 = sb.pzFantasma(B({ ...bien, q: 'general' }), true);
-  ok(/class="pz-e pz-fan pz-cli"/.test(f1) && /Marcela Rojas/.test(f1) && /Gerente/.test(f1) && />escribiendo<i class="pz-pts"/.test(f1) && /Estamos revisando/.test(f1) && !/>en GOB-01</.test(f1), 'la tarjeta muestra quién escribe, su cargo, «escribiendo…» y el borrador (en el hilo de la pregunta no repite la pregunta)');
-  ok(/pz-fan pz-con/.test(f2) && />Consultor</.test(f2) && />en GOB-01</.test(f2) && />en la pizarra general</.test(f3), 'en la pizarra general dice en qué pregunta escribe, y distingue al consultor');
+  ok(/class="pz-e pz-fan pz-cli"/.test(f1) && /Marcela Rojas/.test(f1) && /Gerente/.test(f1) && />escribiendo<i class="pz-pts"/.test(f1) && /Estamos revisando/.test(f1) && !/>en GOB-05</.test(f1), 'la tarjeta muestra quién escribe, su cargo, «escribiendo…» y el borrador (en el hilo de la pregunta no repite la pregunta)');
+  ok(/pz-fan pz-con/.test(f2) && />Consultor</.test(f2) && />en GOB-05</.test(f2) && />en la pizarra general</.test(f3), 'en la pizarra general dice en qué pregunta escribe, y distingue al consultor');
   const xss = sb.pzFantasma(B({ ...bien, a: '<img src=x onerror=alert(1)>', x: '<script>alert(2)</script>', q: '"><b>' }), true);
   ok(!/<img|<script/.test(xss) && /&lt;script&gt;/.test(xss) && /&quot;&gt;&lt;b&gt;/.test(xss), 'nada de lo que escriben los demás se dibuja sin escapar');
 
@@ -1754,26 +1756,27 @@ seccion('34. Revisión del 24-10-2026: preguntas de Gobierno, cierre de dimensi�
   const aj = leer34('public/app.js'), vj = leer34('public/vivo.js'), pj = leer34('public/pizarra.js'), cs = leer34('public/styles.css'), rj = leer34('public/ruta.js');
   const wl = {}; vm.runInNewContext(leer34('public/ley-texto.js'), { window: wl }); const L = wl.LEY;
   const sb = sandbox, gob = Q.filter((q) => q.dm === 'gobernanza' && !q.iS).sort((a, b) => a.o - b.o);
+  const esc34 = (x) => String(x).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   const q = (id) => Q.find((x) => x.id === id);
 
   // ── orden y contenido de Gobierno y liderazgo ──
-  ok(gob.map((x) => x.id).join() === 'GOB-08,GOB-02,GOB-04,GOB-07,GOB-01,GOB-05,GOB-06', 'Gobierno se ordena de lo general a lo específico: modelo de prevención (MPI), política, estructura, responsable/encargado, DPO, revisión anual y presupuesto al final');
-  ok(!q('GOB-01b') && !('cd' in q('GOB-01')) && !JSON.stringify(CL).includes('GOB-01b') && !/GOB-01b/.test(rj), 'GOB-01b se eliminó por completo: pregunta, disparador, semáforo y tabla de esfuerzo');
-  const op3 = q('GOB-01').op[3], ex3 = q('GOB-01').ex[3];
-  ok(/autonomía, facultades y recursos/.test(op3.d) && /cuenta con la autonomía, las facultades y los recursos necesarios para desempeñar sus funciones conforme a la ley/.test(ex3.t) && /autonomía respecto de la administración/.test(q('GOB-01').cx), 'la alternativa más madura del DPO incluye autonomía, facultades y recursos, con su fundamento en el art. 50');
+  ok(gob.map((x) => x.id).join() === 'GOB-01,GOB-02,GOB-03,GOB-04,GOB-05,GOB-06,GOB-07', 'Gobierno se ordena de lo general a lo específico: modelo de prevención (MPI), política, estructura, responsable/encargado, DPO, revisión anual y presupuesto al final');
+  ok(!q('GOB-01b') && !('cd' in q('GOB-05')) && !JSON.stringify(CL).includes('GOB-01b') && !/GOB-01b/.test(rj), 'GOB-01b se eliminó por completo: pregunta, disparador, semáforo y tabla de esfuerzo');
+  const op3 = q('GOB-05').op[3], ex3 = q('GOB-05').ex[3];
+  ok(/autonomía, facultades y recursos/.test(op3.d) && /cuenta con la autonomía, las facultades y los recursos necesarios para desempeñar sus funciones conforme a la ley/.test(ex3.t) && /autonomía respecto de la administración/.test(q('GOB-05').cx), 'la alternativa más madura del DPO incluye autonomía, facultades y recursos, con su fundamento en el art. 50');
   ok(/autonomía respecto de la administración/.test(L.a['50'].p.join(' ')) && /recursos materiales necesarios/.test(L.a['50'].p.join(' ')), 'el art. 50 del texto oficial dice lo mismo');
-  ok(!/comité/.test(q('GOB-04').s) && /La ley no exige un comité/.test(q('GOB-04').cx), 'la estructura de gobierno ya no repite «comité» en el subtítulo y el «por qué» aclara que la ley no lo exige');
+  ok(!/comité/.test(q('GOB-03').s) && /La ley no exige un comité/.test(q('GOB-03').cx), 'la estructura de gobierno ya no repite «comité» en el subtítulo y el «por qué» aclara que la ley no lo exige');
   ok(/modelo de prevención de infracciones \(MPI, art\. 49\)/.test(q('GOB-02').cx) && /Arts\. 14 ter a\) y 49/.test(q('GOB-02').ar), 'la política de tratamiento se relaciona con el modelo de prevención (MPI)');
 
   // ── preguntas nuevas ──
-  for (const [id, art, ref] of [['GOB-07', ['2', '15 bis'], /responsable.*encargad/i], ['GOB-08', ['3', '48', '49'], /prevenir infracciones/]]) {
+  for (const [id, art, ref] of [['GOB-04', ['2', '15 bis'], /responsable.*encargad/i], ['GOB-01', ['3', '48', '49'], /prevenir infracciones/]]) {
     const n = q(id);
     ok(n && n.dm === 'gobernanza' && !n.iS && n.op.length === 4 && n.ex.length === 4 && n.op.every((o, i) => o.v === i && o.l && o.d) && n.ex.every((e, i) => e.v === i && e.t) && n.ev && ref.test(n.q) && Array.isArray(n.fl) && n.fl.length === 0 && n.w > 0, id + ' tiene pregunta, cuatro niveles con descripción y ejemplo, evidencia y peso');
     ok(art.every((a) => sb.leyTokens(n.ar + ' ' + n.cx).includes(a) && L.a[a]) && sb.leyTokens(n.ar).every((a) => L.a[a] || /-/.test(a)), id + ' cita artículos que existen en el texto oficial (' + art.join(', ') + ')');
     ok(id in EF && JSON.stringify(CL).includes(id) && A.gobernanza.ac.length >= 7, id + ' tiene esfuerzo para la hoja de ruta y figura en el semáforo y en el plan de acción');
   }
-  ok(/Arts\. 2 n\), 2 x\) y 15 bis/.test(q('GOB-07').ar) && /art\. 2 x/.test(q('GOB-07').cx) && /Tratamiento de datos a través de un tercero mandatario o encargado/.test(L.a['15 bis'].t), 'la pregunta de responsable y encargado se apoya en los arts. 2 n), 2 x) y 15 bis');
-  ok(/prevenir la comisión de las infracciones/.test(L.a['48'].p.join(' ')) && /sin que sea obligatorio contar con un departamento especializado/.test(q('GOB-08').cx), 'la pregunta de prevención de infracciones se apoya en el art. 48 y aclara que no se exige un departamento especializado');
+  ok(/Arts\. 2 n\), 2 x\) y 15 bis/.test(q('GOB-04').ar) && /art\. 2 x/.test(q('GOB-04').cx) && /Tratamiento de datos a través de un tercero mandatario o encargado/.test(L.a['15 bis'].t), 'la pregunta de responsable y encargado se apoya en los arts. 2 n), 2 x) y 15 bis');
+  ok(/prevenir la comisión de las infracciones/.test(L.a['48'].p.join(' ')) && /sin que sea obligatorio contar con un departamento especializado/.test(q('GOB-01').cx), 'la pregunta de prevención de infracciones se apoya en el art. 48 y aclara que no se exige un departamento especializado');
   ok(/"48": \{/.test(leer34('public/ley-ejemplos.js')), 'el recuadro de la ley explica y da un ejemplo del art. 48');
 
   // ── el acta no adelanta el puntaje global mientras el cuestionario está en curso ──
@@ -1785,8 +1788,14 @@ seccion('34. Revisión del 24-10-2026: preguntas de Gobierno, cierre de dimensi�
     ok(/Nivel \d \(/.test(dc) && /puntaje \d+%/.test(dc), 'con el cuestionario completo, el acta sí muestra el resultado');
     delete sb.window.PZ; }
 
+  // ── la guía previa y el cuestionario tienen las mismas preguntas y el mismo orden ──
+  { const guiaH = sb.guiaHtml(), orden = new E2().ga(), pos = orden.map((x) => guiaH.indexOf('<h5 class="gp-pq-t"><span class="gp-pq-n">' + (orden.filter((y) => y.dm === x.dm).indexOf(x) + 1) + '</span>' + esc34(x.q) + '</h5>'));
+    ok(orden.length === Q.filter((x) => !x.iS).length && pos.every((p) => p > 0) && pos.every((p, i) => i === 0 || p > pos[i - 1]), 'la guía previa lista todas las preguntas base del cuestionario, en el mismo orden (las de profundización solo aparecen en la sesión si la respuesta es baja)'); }
+
   // ── puntaje: ya no se muestra el porcentaje del nivel durante la sesión ──
-  ok(/document\.getElementById\('pnv-s'\)\.textContent='';/.test(aj) && /pintarNivel\(n,'Nivel '\+n\+' — '\+lv\.nm,'',/.test(aj), 'durante las preguntas el nivel se muestra sin porcentaje');
+  ok(/document\.getElementById\('pnv-s'\)\.textContent='';/.test(aj) && /pintarNivel\(n,'Esta dimensión · Nivel '\+n\+' — '\+lv\.nm,'',/.test(aj), 'durante las preguntas el nivel se muestra sin porcentaje');
+  ok(/lv=hay\?en\.ml\(sc\.d\[dm\]\):null/.test(aj) && /hay=!!dm&&en\.ga\(\)\.some\(x=>x\.dm===dm&&en\.a\[x\.id\]!==undefined\)/.test(aj) && !/lv=hay\?en\.ml\(sc\.g\)/.test(aj.slice(aj.indexOf('function nivelVivo'), aj.indexOf('function nivelVivo') + 900)), 'mientras se responde, el nivel es el de la dimensión en curso (y solo si ya tiene respuestas), no el global');
+  ok(/ant=nvDim===dm\?nvLive:null/.test(aj), 'al cambiar de dimensión no se avisa «subió de nivel» comparando con otra dimensión');
 
   // ── cierre de dimensión ──
   const f1 = /function cierreDimNecesario\(qid,n\)\{[^\n]*\}/.exec(aj);
@@ -1797,24 +1806,66 @@ seccion('34. Revisión del 24-10-2026: preguntas de Gobierno, cierre de dimensi�
     for (const x of gobTodas) eC.a[x.id] = 2;
     const ultima = gobTodas.sort((a, b) => a.o - b.o)[gobTodas.length - 1], primeraOtra = eC.ga().find((x) => x.dm === 'registro');
     ok(cierre(Q, D, eC)(ultima.id, primeraOtra) === 'gobernanza', 'al terminar todas las preguntas de una dimensión y pasar a la siguiente, corresponde el cierre');
-    ok(cierre(Q, D, eC)('GOB-02', gobTodas.find((x) => x.id === 'GOB-04')) === null, 'dentro de la misma dimensión no hay cierre');
-    delete eC.a['GOB-06'];
-    ok(cierre(Q, D, eC)('GOB-05', primeraOtra) === null, 'si queda una pregunta sin responder en la dimensión, no se cierra');
-    eC.a['GOB-06'] = 2;
+    ok(cierre(Q, D, eC)('GOB-02', gobTodas.find((x) => x.id === 'GOB-03')) === null, 'dentro de la misma dimensión no hay cierre');
+    delete eC.a['GOB-07'];
+    ok(cierre(Q, D, eC)('GOB-06', primeraOtra) === null, 'si queda una pregunta sin responder en la dimensión, no se cierra');
+    eC.a['GOB-07'] = 2;
     ok(cierre(Q, D, eC)(primeraOtra.id, gobTodas[0]) === null, 'al volver a una dimensión anterior no hay cierre');
   }
   ok(/function gn\(qid\)\{[^\n]*cierreDimNecesario\(qid,n\);if\(dm\)cierreDim\(dm,n\);else rq\(n\.id\)/.test(aj), 'al responder, «Siguiente» muestra el cierre de dimensión cuando corresponde');
   ok(/Dimensión \$\{i\} de \$\{D\.length\} completada/.test(aj) && /Nivel alcanzado en esta dimensión: <strong>\$\{esc\(lv\.nm\)\}<\/strong>/.test(aj) && /Puntaje de la dimensión: <strong>\$\{en\.sc\(\)\.d\[dmId\]\}%<\/strong>/.test(aj) && /¿Está conforme con las respuestas de esta dimensión\? ¿Seguimos\?/.test(aj) && /Revisar las respuestas/.test(aj) && /Continuar con \$\{esc\(d2\.n\)\}/.test(aj), 'el cierre muestra la dimensión completada, su nivel (sin porcentaje), la pregunta «¿Seguimos?» y los botones para revisar o continuar');
   const cuerpoCierre = aj.slice(aj.indexOf('function cierreDim('), aj.indexOf('lucide.createIcons();const t=document.getElementById(\'cd-t\')'));
   ok(!/sc\.g|\.gb\b/.test(cuerpoCierre) && /\.d\[dmId\]/.test(cuerpoCierre), 'el cierre muestra el puntaje de la dimensión que se termina, pero nunca el puntaje global');
-  ok(/function resultadosListos\(\)\{const p=en\.pg\(\);return p\.t>0&&p\.d===p\.t\}/.test(aj) && /function sr\(\)\{if\(!resultadosListos\(\)\)\{const n=en\.nx\(\);if\(n\)\{ss\('s2'\);rq\(n\.id\);return\}\}ss\('s3'\);/.test(aj), 'los resultados solo se abren con el cuestionario completo: si faltan preguntas, se vuelve a las preguntas');
+  ok(/function resultadosListos\(\)\{const p=en\.pg\(\);return p\.t>0&&p\.d===p\.t\}/.test(aj) && /function sr\(\)\{if\(!en\.ro&&!resultadosListos\(\)\)\{const n=en\.nx\(\);if\(n\)\{ss\('s2'\);rq\(n\.id\);return\}\}ss\('s3'\);/.test(aj), 'los resultados solo se abren con el cuestionario completo: si faltan preguntas, se vuelve a las preguntas');
   const lj34 = leer34('public/lateral.js');
   ok(['res', 'hoja', 'tab', 'evo', 'inf', 'pdf'].every((id) => new RegExp("id: '" + id + "'[^\\n]*off: \\(\\) => !completa\\(\\)").test(lj34)) && /id: 'act'[^\n]*off: \(\) => !respondidas\(\)/.test(lj34) && /if \(!completa\(\)\) return;/.test(lj34), 'en el menú, Resultados, Hoja de ruta, Tablero, Evolución, Informe y PDF se habilitan solo con el cuestionario completo; el acta puede sacarse antes'); 
   ok(/dimAnt && dimAnt !== q\.dm/.test(vj) && /Pasamos a <strong>\$\{esc\(dm2\.n\)\}<\/strong>/.test(vj), 'en la reunión en vivo, el cliente ve un aviso al pasar a otra dimensión');
   ok(/\.qc\.cd\{/.test(cs) && /\.cd-aviso\{/.test(cs) && /prefers-reduced-motion:reduce\)\{\.cd-aviso\{animation:none\}/.test(cs), 'los estilos del cierre y del aviso existen y respetan «reducir movimiento»');
 
   // ── pegar imágenes ──
-  ok(/function archivosPegados\(cd\)/.test(pj) && /cd\.items/.test(pj) && /it\.getAsFile\(\)/.test(pj) && /\[\.\.\.\(cd\.files \|\| \[\]\)\]/.test(pj) && /const fs = archivosPegados\(e\.clipboardData\)/.test(pj), 'al pegar se leen los archivos de «items» (capturas de pantalla) y, si no, de «files»');
+  ok(/function archivosPegados\(cd\)/.test(pj) && /cd\.items/.test(pj) && /it\.getAsFile\(\)/.test(pj) && /\[\.\.\.\(cd\.files \|\| \[\]\)\]/.test(pj) && /const fs = archivosPegados\(cd\)/.test(pj), 'al pegar se leen los archivos de «items» (capturas de pantalla) y, si no, de «files»');
+}
+
+seccion('35. Códigos correlativos de Gobierno y traducción de lo guardado con los códigos antiguos');
+{
+  const raiz35 = path.resolve(path.dirname(file), '..');
+  const leer35 = (f) => fs.readFileSync(path.join(raiz35, f), 'utf8').replace(/\r\n/g, '\n');
+  const sj = leer35('public/sesiones.js'), nj = leer35('public/nube.js'), npj = leer35('public/nube-prueba.js'), aj = leer35('public/app.js');
+  const sb = sandbox;
+
+  // ── códigos nuevos ──
+  const gobIds = Q.filter((q) => q.dm === 'gobernanza').sort((a, b) => a.o - b.o).map((q) => q.id);
+  ok(gobIds.join() === 'GOB-01,GOB-02,GOB-03,GOB-04,GOB-05,GOB-06,GOB-07', 'los códigos de Gobierno son correlativos y siguen el orden en que se hacen las preguntas (GOB-01 a GOB-07)');
+  ok(new Set(Q.map((q) => q.id)).size === Q.length && !Q.some((q) => q.id === 'GOB-08' || q.id === 'GOB-01b') && Q.find((q) => q.id === 'CUL-06').dm === 'cultura', 'no hay códigos repetidos ni sobrantes; la capacitación quedó en Cultura como CUL-06');
+  ok(Q.find((q) => q.id === 'GOB-01').q.includes('prevenir infracciones') && Q.find((q) => q.id === 'GOB-04').q.includes('responsable') && Q.find((q) => q.id === 'GOB-05').q.includes('delegado de protección de datos') && Q.find((q) => q.id === 'GOB-03').q.includes('estructura de gobierno') && Q.find((q) => q.id === 'GOB-07').q.includes('presupuesto'), 'cada código nuevo corresponde a la pregunta correcta (GOB-01 modelo de prevención … GOB-05 DPO … GOB-07 presupuesto)');
+
+  // ── tabla de traducción ──
+  const nuevoOk = (id) => id === null || Q.some((q) => q.id === id);
+  const eAnt = ['GOB-08', 'GOB-02', 'GOB-04', 'GOB-07', 'GOB-01', 'GOB-05', 'GOB-06', 'GOB-03', 'GOB-01b'].map((k) => [k, sb.idNuevo(k)]), ant = Object.fromEntries(eAnt);
+  ok(eAnt.every(([, n]) => nuevoOk(n)) && ant['GOB-01'] === 'GOB-05' && ant['GOB-08'] === 'GOB-01' && ant['GOB-03'] === 'CUL-06' && ant['GOB-01b'] === null && /const IDS_ANT=\{'GOB-08':'GOB-01','GOB-02':'GOB-02','GOB-04':'GOB-03','GOB-07':'GOB-04','GOB-01':'GOB-05','GOB-05':'GOB-06','GOB-06':'GOB-07','GOB-03':'CUL-06','GOB-01b':null\}/.test(aj), 'la tabla de códigos antiguos lleva cada pregunta a su código nuevo (el DPO era GOB-01 y hoy es GOB-05; GOB-01b ya no existe)');
+  ok(new Set(eAnt.map(([, n]) => n).filter(Boolean)).size === eAnt.filter(([, n]) => n).length, 'dos códigos antiguos nunca van al mismo código nuevo');
+  ok(sb.idNuevo('GOB-01') === 'GOB-05' && sb.idNuevo('REG-01') === 'REG-01' && sb.idNuevo('general') === 'general', 'solo cambian los códigos de la tabla; el resto queda igual');
+  ok(JSON.stringify(sb.mapaIds({ 'GOB-01': 3, 'GOB-01b': 2, 'GOB-08': 1, 'REG-01': 0 })) === JSON.stringify({ 'GOB-05': 3, 'GOB-01': 1, 'REG-01': 0 }), 'al traducir las respuestas el DPO pasa a GOB-05, el modelo de prevención a GOB-01 y la pregunta eliminada se descarta');
+
+  // ── cuándo se traduce: solo lo guardado con los códigos antiguos ──
+  ok(sb.esAntiguo({ version: 'd360v3' }) && !sb.esAntiguo({ version: 'd360v3', esquema: 2 }) && !sb.esAntiguo({ version: 'd360v4' }) && !sb.esAntiguo({ respuestas: {} }) && !sb.esAntiguo(null), 'se traduce una sesión sin esquema 2 o un resultado publicado con version d360v3; no lo ya nuevo ni lo que no declara versión');
+  const viejo = { version: 'd360v3', perfil: { nombre: 'Acme' }, respuestas: { 'GOB-01': 3, 'GOB-03': 2, 'GOB-04': 1, 'GOB-01b': 0, 'REG-01': 2 }, notas: { 'GOB-02': 'una nota' },
+    revisiones: [{ id: 'r1', e: 'x', f: 1790000000000, a: { 'GOB-01': 0, 'GOB-01b': 1 } }],
+    tareas: [{ id: 't1', t: 'GOB-05 · Revisión anual documentada', e: 'backlog', ola: 1, qid: 'GOB-05', r: '', v: 0, h: 0, n: '', ev: { n: '', u: '' }, c: 1 }, { id: 't2', t: 'GOB-01b · algo', e: 'backlog', ola: 2, qid: 'GOB-01b', r: '', v: 0, h: 0, n: '', ev: { n: '', u: '' }, c: 1 }] };
+  const eV = new E2().cargar(viejo);
+  ok(eV.migrado === true && eV.a['GOB-05'] === 3 && eV.a['CUL-06'] === 2 && eV.a['GOB-03'] === 1 && eV.a['REG-01'] === 2 && !('GOB-01b' in eV.a) && !('GOB-08' in eV.a) && eV.a['GOB-01'] === undefined, 'al abrir una sesión antigua, las respuestas pasan a los códigos nuevos (la del DPO a GOB-05, la capacitación a CUL-06)');
+  ok(eV.n['GOB-02'] === 'una nota' && eV.rv[0].a['GOB-05'] === 0 && !('GOB-01b' in eV.rv[0].a), 'las notas y las revisiones guardadas también se traducen');
+  ok(eV.tar.length === 2 && eV.tar[0].qid === 'GOB-06' && eV.tar[0].t === 'GOB-06 · Revisión anual documentada' && eV.tar[1].qid === '', 'las tareas del tablero siguen apuntando a su pregunta (GOB-05 → GOB-06, con su título) y la de una pregunta eliminada queda sin pregunta');
+  const eN = new E2().cargar({ version: 'd360v3', esquema: 2, respuestas: { 'GOB-01': 3 } });
+  ok(eN.migrado === false && eN.a['GOB-01'] === 3, 'una sesión ya con códigos nuevos no se vuelve a traducir');
+  ok(JSON.stringify(new E2().cargar({ ...eV.pub(), version: 'd360v4' }).a) === JSON.stringify(eV.a), 'lo publicado con los códigos nuevos (version d360v4) se abre tal cual');
+
+  // ── dónde se marca y dónde se aplica ──
+  ok(/esquema: 2, compartido: null/.test(nj) && /datos: \{ esquema: 2, respuestas/.test(nj) && /version: 'd360v4' \}\);/.test(nj) && /esquema: 2, compartido: null/.test(npj) && /datos: \{ esquema: 2, respuestas/.test(npj) && /version: 'd360v4' \}/.test(npj), 'las sesiones nuevas y cada guardado llevan «esquema 2», y lo publicado queda como version d360v4 (en la nube y en el modo de prueba)');
+  ok(/export async function pzMigrarIds\(sid, mapear\)/.test(nj) && /x\.qidAnt !== undefined/.test(nj) && /qid: mapear\(x\.qid\) \|\| 'general', qidAnt: x\.qid/.test(nj) && /export async function pzMigrarIds\(sid, mapear\)/.test(npj), 'los comentarios de la pizarra pasan al código nuevo guardando el anterior (qidAnt), así que repetirlo no los cambia dos veces');
+  ok(/if \(en\.migrado\) \{[\s\S]*await N\.pzMigrarIds\(id, idNuevo\); en\.sv\(\); if \(N\.vaciarYa\) await N\.vaciarYa\(\); en\.migrado = false;[\s\S]*throw new Error\('migración'\)/.test(sj) && sj.indexOf("N.pzMigrarIds(id, idNuevo)") < sj.indexOf('await migrarNotas(d, id); vivoOn();'), 'al abrir una sesión antigua se pasan primero sus comentarios, luego se marca la sesión y recién después se migran las notas; si falla, avisa y no pierde nada');
+  ok(/if \(en\.migrado\) pz = pz\.map\(\(x\) => \(\{ \.\.\.x, qid: idNuevo\(x\.qid\) \|\| 'general' \}\)\)/.test(sj), 'el cliente que abre un resultado publicado con códigos antiguos ve también sus comentarios con los códigos nuevos');
+  ok(/esq:ESQUEMA/.test(aj) && /const ant=d\.esq!==ESQUEMA;this\.a=ant\?mapaIds\(d\.a\)/.test(aj), 'la sesión guardada en este navegador (sin cuenta) también se traduce una sola vez');
 }
 
 console.log('\n' + (fallos ? '✗ ' + fallos + ' problema(s)' : '✓ Todas las verificaciones pasaron'));

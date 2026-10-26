@@ -7,8 +7,8 @@
 // Es criterio inicial de AlignData, sujeto a revisión: para cambiarlo se edita EF y se actualiza RT_V.
 const RT_V = '1.0', RT_ALTO = 1;
 const EF = {
-  'GOB-01': 1, 'GOB-02': 1, 'GOB-03': 2, 'GOB-07': 2, 'GOB-08': 3,
-  'GOB-04': 2, 'GOB-05': 1, 'GOB-06': 2, 'REG-06': 3, 'SEG-06': 2, 'RIE-04': 3, 'RIE-05': 2, 'ARC-08': 1, 'TER-05': 1, 'CUL-05': 2,
+  'GOB-05': 1, 'GOB-02': 1, 'CUL-06': 2, 'GOB-04': 2, 'GOB-01': 3,
+  'GOB-03': 2, 'GOB-06': 1, 'GOB-07': 2, 'REG-06': 3, 'SEG-06': 2, 'RIE-04': 3, 'RIE-05': 2, 'ARC-08': 1, 'TER-05': 1, 'CUL-05': 2,
   'LEG-01': 2, 'LEG-01b': 2, 'LEG-02': 1, 'LEG-03': 1, 'LEG-04': 2, 'LEG-05': 2,
   'ARC-01': 1, 'ARC-01b': 1, 'ARC-02': 3, 'ARC-03': 3, 'ARC-04': 1, 'ARC-05': 3, 'ARC-06': 1, 'ARC-07': 2,
   'REG-01': 3, 'REG-01b': 1, 'REG-02': 2, 'REG-03': 2, 'REG-04': 1, 'REG-05': 2,

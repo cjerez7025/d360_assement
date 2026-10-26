@@ -126,7 +126,7 @@ export function crear(perfil) {
   const ref = F.doc(col());
   F.setDoc(ref, {
     perfil, respuestas: {}, notas: {}, estado: 'en_curso', avance: 0, hechas: 0, total: 0, puntaje: null, nivel: null,
-    version: 'd360v3', compartido: null,
+    version: 'd360v3', esquema: 2, compartido: null,
     creadoPor: { uid: usuario && usuario.uid, email: usuario && usuario.email, nombre: usuario && (usuario.displayName || usuario.email) },
     creadoEn: F.serverTimestamp(), actualizadoEn: F.serverTimestamp(), actualizadoPor: usuario && usuario.email
   }).then(() => aviso('guardado'), (e) => aviso('error', e));
@@ -141,7 +141,7 @@ export async function leer(id) {
 let pend = null, tmr = null;
 export function guardar(en) {
   const r = en.res();
-  pend = { sid: en.sid, datos: { respuestas: { ...en.a }, notas: { ...en.n }, revisiones: [...(en.rv || [])], servicio: en.srv || null, tareas: en.tar && en.tar.length ? en.tar : null, avance: r.avance, hechas: r.hechas, total: r.total, puntaje: r.puntaje, nivel: r.nivel, estado: r.completa ? 'completa' : 'en_curso' } };
+  pend = { sid: en.sid, datos: { esquema: 2, respuestas: { ...en.a }, notas: { ...en.n }, revisiones: [...(en.rv || [])], servicio: en.srv || null, tareas: en.tar && en.tar.length ? en.tar : null, avance: r.avance, hechas: r.hechas, total: r.total, puntaje: r.puntaje, nivel: r.nivel, estado: r.completa ? 'completa' : 'en_curso' } };
   clearTimeout(tmr); tmr = setTimeout(vaciar, 700);
   aviso('guardando');
 }
@@ -164,7 +164,7 @@ function nuevoToken() {
 }
 export async function compartir(sid, pub, token) {
   const tk = token || nuevoToken();
-  await F.setDoc(F.doc(db, 'compartidos', tk), { ...pub, publicadoEn: F.serverTimestamp(), version: 'd360v3' });
+  await F.setDoc(F.doc(db, 'compartidos', tk), { ...pub, publicadoEn: F.serverTimestamp(), version: 'd360v4' });
   await F.updateDoc(F.doc(db, 'sesiones', sid), { compartido: { token: tk, en: F.serverTimestamp() } });
   return tk;
 }
@@ -295,6 +295,15 @@ export async function pzGuardar(sid, e, vivoTk) {
   await b.commit();
 }
 /** Consultor: copia a la sesión un comentario que hizo un cliente en vivo, conservando su hora. */
+/** Cambio de códigos de las preguntas: cada comentario de la pizarra de la sesión pasa al código nuevo. Se puede repetir sin riesgo: los ya cambiados llevan «qidAnt». */
+export async function pzMigrarIds(sid, mapear) {
+  const s = await F.getDocs(F.collection(db, ...rutaSes(sid)));
+  for (const d of s.docs) {
+    const x = d.data();
+    if (x.qidAnt !== undefined || typeof x.qid !== 'string') continue;
+    await F.updateDoc(d.ref, { qid: mapear(x.qid) || 'general', qidAnt: x.qid });
+  }
+}
 export async function pzEspejar(sid, e) { await F.setDoc(F.doc(db, ...rutaSes(sid), e.id), cuerpoPz(e, F.Timestamp.fromMillis(e.creadoEn))); }
 export async function pzBorrar(sid, e, vivoTk) {
   const b = F.writeBatch(db);
