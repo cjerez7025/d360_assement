@@ -72,7 +72,7 @@
       en.cons = d.consultor || null;
       if (d.consultor) usuarioBarra({ con: { nombre: d.consultor.nombre, foto: d.consultor.foto, etq: 'Preparado por', rol: 'Consultor AlignData' } });
       let pz = []; try { pz = await N.pzLeerCompartido(tk); } catch (e) { pz = []; } // sin pizarra publicada o sin acceso: se muestran solo los resultados
-      if (en.migrado) pz = pz.map((x) => ({ ...x, qid: idNuevo(x.qid) || 'general' })); // resultados publicados con los códigos antiguos
+      if (en.migrado) pz = pz.map((x) => ({ ...x, qid: idNuevo(x.qid, en.migradoDesde) || 'general' })); // resultados publicados con los códigos antiguos
       PZ.lectura(pz, tk, N);
       sr();
     } catch (e) { invalido(); }
@@ -211,7 +211,7 @@ ${s.servicio && srvEtiqueta(s.servicio) ? '<p class="sc-srv"><i data-lucide="han
     en.viv = d.vivo && d.vivo.venceEn > Date.now() ? d.vivo : null;
     await PZ.abrirSesion(N, id);
     if (en.migrado) { // sesión guardada con los códigos antiguos de las preguntas: se pasan sus comentarios a los códigos nuevos y se marca la sesión
-      try { await N.pzMigrarIds(id, idNuevo); en.sv(); if (N.vaciarYa) await N.vaciarYa(); en.migrado = false; }
+      try { await N.pzMigrarIds(id, (q) => idNuevo(q, en.migradoDesde), esquemaActual()); en.sv(); if (N.vaciarYa) await N.vaciarYa(); en.migrado = false; }
       catch (e) { msg('No se pudo actualizar la sesión', 'Cambiaron los códigos de las preguntas y falta pasar los comentarios de esta sesión a los nuevos. Revise su conexión e intente abrirla de nuevo: no se perdió nada.', [['Volver a las sesiones', () => window.dash()]]); throw new Error('migración'); }
     }
     await migrarNotas(d, id); vivoOn();

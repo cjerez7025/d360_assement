@@ -35,7 +35,7 @@ teclado, o tocar en el celular) aparece un globito con el significado simple y e
 - Cada término trae sus patrones en `m` (`~` = cualquier terminación). Se probó contra todas las preguntas del diagnóstico y se quitaron los que se
   parecían pero significaban otra cosa (por ejemplo, «perfiles de acceso», «respaldo de una respuesta», «certificados de asistencia»).
 
-## Qué contiene (81 términos, 9 temas)
+## Qué contiene (83 términos, 9 temas)
 
 Quién es quién (DPO o DPD, responsable, encargado, titular, Agencia, a quién se aplica la ley) · Tipos de datos (dato personal, sensible, biométricos, niños y
 adolescentes, salud, geolocalización, deudas, infracciones, fuentes públicas, base de datos, dato estadístico y caduco, anonimización, seudonimización, perfiles) ·

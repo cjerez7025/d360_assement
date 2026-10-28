@@ -53,14 +53,14 @@ export function escucharSesiones(cb) {
 export function crear(perfil) {
   const id = 'mock' + Math.random().toString(36).slice(2, 10);
   const d = leerTodo(), ahora = Date.now();
-  d.sesiones[id] = { perfil, respuestas: {}, notas: {}, estado: 'en_curso', avance: 0, hechas: 0, total: 0, puntaje: null, nivel: null, version: 'd360v3', esquema: 2, compartido: null, creadoPor: USUARIO, creadoEn: ahora, actualizadoEn: ahora, actualizadoPor: USUARIO.email };
+  d.sesiones[id] = { perfil, respuestas: {}, notas: {}, estado: 'en_curso', avance: 0, hechas: 0, total: 0, puntaje: null, nivel: null, version: 'd360v3', esquema: 3, compartido: null, creadoPor: USUARIO, creadoEn: ahora, actualizadoEn: ahora, actualizadoPor: USUARIO.email };
   guardarTodo(d); return id;
 }
 export async function leer(id) { const s = leerTodo().sesiones[id]; return s ? { id, ...s } : null; }
 let tmr = null, pend = null;
 export function guardar(en) {
   const r = en.res();
-  pend = { sid: en.sid, datos: { esquema: 2, respuestas: { ...en.a }, notas: { ...en.n }, revisiones: [...(en.rv || [])], servicio: en.srv || null, tareas: en.tar && en.tar.length ? en.tar : null, avance: r.avance, hechas: r.hechas, total: r.total, puntaje: r.puntaje, nivel: r.nivel, estado: r.completa ? 'completa' : 'en_curso' } };
+  pend = { sid: en.sid, datos: { esquema: 3, respuestas: { ...en.a }, notas: { ...en.n }, revisiones: [...(en.rv || [])], servicio: en.srv || null, tareas: en.tar && en.tar.length ? en.tar : null, avance: r.avance, hechas: r.hechas, total: r.total, puntaje: r.puntaje, nivel: r.nivel, estado: r.completa ? 'completa' : 'en_curso' } };
   aviso('guardando'); clearTimeout(tmr); tmr = setTimeout(vaciar, 500);
 }
 function vaciar() {
@@ -73,7 +73,7 @@ export async function vaciarYa() { clearTimeout(tmr); vaciar(); }
 export async function compartir(sid, pub, token) {
   const tk = (token && token.length === 32) ? token : Array.from(crypto.getRandomValues(new Uint8Array(32))).map((b) => 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_'[b % 64]).join('');
   const d = leerTodo(), ahora = Date.now();
-  d.compartidos[tk] = { ...pub, publicadoEn: ahora, version: 'd360v4' };
+  d.compartidos[tk] = { ...pub, publicadoEn: ahora, version: 'd360v5' };
   d.sesiones[sid].compartido = { token: tk, en: ahora };
   guardarTodo(d); return tk;
 }
@@ -142,9 +142,9 @@ function escucharPz(sel, cb) {
   return () => oyentes.delete(emitir);
 }
 export const pzEscuchar = (sid, cb) => escucharPz((p) => p.ses[sid], cb);
-export async function pzMigrarIds(sid, mapear) {
+export async function pzMigrarIds(sid, mapear, esq) {
   const d = leerTodo(), p = pzD(d);
-  for (const e of Object.values(p.ses[sid] || {})) { if (e.qidAnt !== undefined || typeof e.qid !== 'string') continue; const ant = e.qid; e.qid = mapear(ant) || 'general'; e.qidAnt = ant; }
+  for (const e of Object.values(p.ses[sid] || {})) { if (e.qidEsq === esq || typeof e.qid !== 'string') continue; const ant = e.qid; e.qid = mapear(ant) || 'general'; if (e.qidAnt === undefined) e.qidAnt = ant; e.qidEsq = esq; }
   guardarTodo(d);
 }
 export async function pzLeer(sid) { return ordenadas(pzD(leerTodo()).ses[sid]); }

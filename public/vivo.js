@@ -1,7 +1,7 @@
 /* Vista del cliente en la reunión en vivo (?v=<token>).
    El cliente abre el enlace en su propio dispositivo mientras sigue la videollamada: ve la misma pregunta que el
    consultor (con sus ejemplos) y puede PROPONER una respuesta; el consultor la ve en su
-   pantalla y decide cuál queda registrada. No muestra puntajes ni niveles.
+   pantalla y decide cuál queda registrada. No muestra puntajes ni niveles, salvo en la pantalla de fin de dimensión (la misma del consultor), que da el nivel y el puntaje de esa dimensión y nunca el global.
    Usa las variables de app.js (Q, D, E2, esc, exo, glosaArt, sufArt, temaQ, refLey, leyRel, ss, tgl, modo). */
 (function () {
   const $ = (id) => document.getElementById(id);
@@ -50,6 +50,14 @@
       return `<div class="qc vespera" role="status"><i data-lucide="${resultados ? 'bar-chart-3' : 'hourglass'}"></i><h2 class="qt">${resultados ? 'Su consultor está revisando los resultados' : 'Su consultor está preparando la siguiente pregunta'}</h2><p class="qs">${resultados ? 'Cuando terminen, recibirá un enlace para verlos.' : 'Esta pantalla se actualiza sola: no necesita hacer nada.'}</p></div>`;
     }
 
+    // fin de dimensión: la misma pantalla que ve el consultor (sin los botones, que maneja él)
+    function cierre(d, q) {
+      const e = new E2(); e.a = { ...(d.respuestas || {}) };
+      const n = e.sig(q.id) || e.nx();
+      if (!n || n.dm === q.dm) return espera(d);
+      return cierreDimHtml(e, q.dm, n, '<p class="cd-q" role="status"><i data-lucide="hourglass"></i> Su consultor está confirmando las respuestas de esta dimensión.</p><p class="qs">Esta pantalla se actualiza sola: no necesita hacer nada.</p>');
+    }
+
     function pregunta(d, q) {
       const dm = D.find((x) => x.id === q.dm), conf = (d.respuestas || {})[q.id], mia = (d.propuestas || {})[q.id], gl = glosaArt(q.ar);
       const opciones = q.op.map((o, i) => {
@@ -72,14 +80,16 @@
         ultimaClave = clave;
         const foco = document.activeElement && document.activeElement.matches && document.activeElement.matches('#sv-q input[type=radio]') ? document.activeElement.value : null;
         pzAntes();
-        $('sv-q').innerHTML = q ? pregunta(d, q) : espera(d);
-        if (q) { // al pasar a otra dimensión se avisa un momento, para que se note el cambio
+        const cerrando = !!q && d.fase === 'cierre';
+        $('sv-q').innerHTML = cerrando ? cierre(d, q) : q ? pregunta(d, q) : espera(d);
+        if (cerrando) dimAnt = null;
+        else if (q) { // al pasar a otra dimensión se avisa un momento, para que se note el cambio
           const dm2 = D.find((x) => x.id === q.dm);
           if (dimAnt && dimAnt !== q.dm && dm2) $('sv-q').insertAdjacentHTML('afterbegin', `<p class="cd-aviso" role="status"><i data-lucide="layers"></i> Pasamos a <strong>${esc(dm2.n)}</strong></p>`);
           dimAnt = q.dm;
         }
-        if (q && typeof glosarioMarcarPregunta === 'function') glosarioMarcarPregunta($('sv-q'));
-        if (q) pzMontar('pz-slot', q.id);
+        if (q && !cerrando && typeof glosarioMarcarPregunta === 'function') glosarioMarcarPregunta($('sv-q'));
+        if (q && !cerrando) pzMontar('pz-slot', q.id);
         if (foco !== null) { const r = document.querySelector('#sv-q input[value="' + foco + '"]'); if (r) r.focus(); }
       }
       quien(); lucide.createIcons();

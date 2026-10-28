@@ -30,11 +30,17 @@ Las preguntas condicionales "¿Sabe que…?" medían conocimiento y no cumplimie
 | ARC-07 | Decisiones automatizadas y perfiles | 8 bis, 14 ter l) |
 | LEG-04 | Nuevos usos y cesiones: nuevo consentimiento o base legal | 3 b), 15 |
 | LEG-05 | Datos económicos, financieros y comerciales | 13 a), 17 a 19 |
-| REG-04 | Información pública exigida (transparencia) | 14 ter |
-| REG-05 | Calidad de los datos | 3 d), 14 c) |
+| REG-02 | Períodos de conservación según finalidades y obligaciones legales | 3 c), 14 ter i) |
+| REG-03 | Eliminación o anonimización al vencer el plazo | 2 k), 2 l), 3 c) |
+| REG-04 | Cesiones (distinguidas del encargo) | 15, 15 bis |
+| REG-05 | Información pública exigida (transparencia) | 14 ter |
+| REG-06 | Calidad de los datos | 3 d), 14 c) |
 | SEG-04 | Privacidad desde el diseño y por defecto | 14 quáter |
 | SEG-05 | Restauración de datos y pruebas periódicas de seguridad | 14 quinquies b) a d) |
+| TER-01 | Contratos de encargo en ambos roles | 15 bis |
+| TER-02 | Seguridad de los encargados | 14 bis, 14 quinquies, 15 bis |
 | TER-04 | Transferencias internacionales | 27, 28, 14 ter h) |
+| TER-06 | Subcontratación con autorización específica y escrita | 15 bis |
 | SEN-04 | Niños, niñas y adolescentes | 16 quáter |
 | SEN-05 | Biometría y geolocalización | 16 ter, 16 sexies |
 
@@ -67,3 +73,9 @@ npm run verificar
 Revisa la integridad de los datos (IDs, opciones, referencias del semáforo, ejemplos y "cómo comprobarlo" de cada pregunta), que no reaparezcan los errores listados arriba, el cálculo de puntajes (todo 3 → 100, todo 0 → 0), las preguntas condicionales y el semáforo.
 
 Estos cambios **no están publicados**: para verlos en línea hay que desplegar `public/` en Firebase Hosting (sitio `d360-assessment`).
+
+## Revisión del 28-10-2026
+
+Los textos de TER-01, TER-02 y TER-06 y la división de REG-02 siguen las propuestas de Ale Yevilaf (actas del 25 y 27-10); los niveles y ejemplos los redactó el equipo de desarrollo y **quedan por revisar por ella**. Se verificó contra el texto oficial (`public/ley-texto.js`) el art. 15 bis (contrato, autorización específica y escrita para delegar, responsabilidad solidaria, supresión o devolución), el art. 15 ter (criterio general de alto riesgo y los cuatro casos) y el art. 2 letras k) y l) (anonimización y seudonimización).
+
+Pendiente de revisión jurídica: (a) las citas del DS 662 de Hacienda (publicado el 9-sep-2026) agregadas a GOB-01, GOB-03, GOB-05, GOB-06 y GOB-07, (b) el criterio preliminar de REG-04 sobre remuneraciones (cesión o encargo), y (c) la lectura de que el proveedor de nube es subencargado cuando trata datos de un cliente, y de quién «efectúa» la transferencia internacional en ese caso (arts. 27 y 28). Hay un proyecto de ley (boletín 18.623-07) que propone postergar la vigencia al 1-dic-2027; según fuentes secundarias aún no es ley, así que la fecha vigente sigue siendo el 1-dic-2026.

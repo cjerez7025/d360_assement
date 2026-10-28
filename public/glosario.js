@@ -411,6 +411,22 @@ const GLOSARIO = [
     rel: ['dpo', 'registro-sanciones', 'infracciones']
   },
   {
+    id: 'reglamento-mpi', m: ['DS 662', 'reglamento del modelo(?: de prevención)?'], c: 'deberes', bp: true, t: 'Reglamento del modelo de prevención (DS 662)', n: 'DS 662',
+    k: 'ds 662 decreto 662 reglamento modelo de prevencion hacienda certificacion',
+    d: `Decreto del Ministerio de Hacienda, publicado en el Diario Oficial el 9 de septiembre de 2026, que reglamenta el modelo de prevención de infracciones: fija los diez elementos mínimos del programa, regula al delegado y establece cómo la Agencia lo certifica, lo registra y lo supervisa.`,
+    l: `La ley no define este decreto: solo ordena dictar un reglamento del modelo (art. 51). Reglamenta el modelo de prevención de infracciones de los arts. 49 a 51.`,
+    ej: `El decreto exige que el programa incluya canales de reporte siempre disponibles y una denuncia ante el delegado que proteja la identidad de quien denuncia.`,
+    rel: ['programa-cumplimiento', 'dpo']
+  },
+  {
+    id: 'constancia', m: ['constancia de (?:supresión|devolución|eliminación)', 'constancia escrita'], c: 'terceros', bp: true, t: 'Constancia de supresión o devolución', n: 'Constancia',
+    k: 'constancia certificado eliminacion devolucion borrado proveedor termino contrato acta',
+    d: `El registro que permite demostrar que un proveedor eliminó o devolvió los datos al terminar el servicio: un certificado o carta del proveedor, un acta de devolución o una confirmación archivada, que diga qué datos, cuándo y cómo.`,
+    l: `La ley no define la constancia: exige que, cumplido el servicio, el encargado suprima o devuelva los datos (art. 15 bis), sin fijar un formato ni exigir firma para acreditarlo. Dejar constancia es una buena práctica.`,
+    ej: `Al cerrar el contrato con una empresa de software, ella envía un correo confirmando qué bases borró y en qué fecha, y el correo se archiva.`,
+    rel: ['encargado', 'subencargado']
+  },
+  {
     id: 'mapa-datos', m: ['inventario(?: interno)? de(?: los)? tratamientos', 'mapa de datos', 'mapead[oa]s?', 'registro de actividades de tratamiento', 'flujos? de(?:l)? datos'], c: 'deberes', bp: true, t: 'Inventario de tratamientos (mapa de datos)', n: 'Mapa de datos',
     k: 'inventario registro de actividades de tratamiento rat flujo de datos',
     d: `Listado de qué datos personales trata la organización, para qué, con qué base, dónde se guardan, quién accede, a quién se ceden y por cuánto tiempo. Es la base para cumplir casi todo lo demás.`,
