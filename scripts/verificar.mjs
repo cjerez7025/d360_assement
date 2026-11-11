@@ -139,7 +139,7 @@ ok(/print-color-adjust:exact/.test(impresion), 'al imprimir deben conservarse lo
 ok(/#t4\{break-before:page\}/.test(impresion), 'el semáforo debe empezar en una hoja nueva');
 ok(!/\.ph\{/.test(impresion.replace(/\.pc2 \.ph\{[^}]*\}/g, '')), 'la clase .ph es del plan de acción: el encabezado del informe usa .rpt');
 ok(/class="po rpt"/.test(code) && /class="po rpt-f"/.test(code), 'faltan el encabezado o el pie del informe');
-ok(/onclick="pdf\(\)"/.test(code) && !/onclick="window\.print\(\)"/.test(code), 'el botón debe usar pdf()');
+ok(/onclick="docDlg\(\\'tecnico\\'\)"/.test(code) && !/onclick="window\.print\(\)"/.test(code), 'el botón del informe técnico abre el diálogo de descarga (PDF o Word) y no imprime la pantalla');
 en.sp({ nombre: 'Acme SpA' });
 sandbox.pdf();
 ok(/^Informe D360 - Acme SpA - \d{2}-\d{2}-\d{4}$/.test(sandbox.__impreso || ''), 'el nombre sugerido del archivo debe ser "Informe D360 - <empresa> - <fecha>" y es: ' + sandbox.__impreso);
@@ -903,7 +903,7 @@ seccion('20. Hoja de ruta por etapas, evolución en el tiempo, informe ejecutivo
   sb.__eventos.afterprint && sb.__eventos.afterprint();
   sb.document.getElementById = gid3; sb.document.body = bd;
   // pantalla y estilos
-  ok(/imprimirDoc\(\\'informe\\'\)/.test(codigo) && /imprimirDoc\(\\'acta\\'\)/.test(codigo) && /modo==='cliente'\|\|modo==='auditor'/.test(codigo), 'los resultados tienen los botones «Informe ejecutivo» y «Acta de la reunión»');
+  ok(/docDlg\(\\'informe\\'\)/.test(codigo) && /docDlg\(\\'acta\\'\)/.test(codigo) && /modo==='cliente'\|\|modo==='auditor'/.test(codigo), 'los resultados tienen los botones «Informe ejecutivo» y «Acta de la reunión» (abren el diálogo de descarga)');
   ok(/<script src="app\.js"><\/script>\s*<script src="ruta\.js"><\/script>/.test(ih) && /<div id="doc" aria-hidden="true"><\/div>\s*<script src="theme\.js">/.test(ih), 'ruta.js se carga después de app.js y el contenedor de documentos es hijo directo de <body>');
   ok(/body\.imp-doc>\*\{display:none!important\}/.test(css) && /body\.imp-doc>#doc\{display:block!important\}/.test(css) && /#doc\{display:none\}/.test(css), 'al imprimir un documento solo se ve el documento; en pantalla está oculto');
   ok(/\.dc-fir/.test(css) && /\.dc h2/.test(css), 'el documento tiene sus estilos de impresión');
@@ -978,7 +978,7 @@ seccion('23. Menú lateral del consultor');
   ok(/<script src="sesiones\.js"><\/script>[\s\S]*<script src="lateral\.js"><\/script>\s*<script src="tour\.js"><\/script>\s*<\/body>/.test(ih), 'lateral.js se carga al final, después de la lógica que usa');
   ok(/if\(window\.sbActualizar\)setTimeout\(window\.sbActualizar,0\);/.test(aj), 'cada cambio de pantalla actualiza el menú');
   // cada opción llama a una función que existe
-  const llamadas = ['dash', 'nueva', 'edt', 'tix', 'rq', 'sr', 'ss', 'pzDlg', 'vivoDlg', 'metDlg', 'cmp', 'docDlg', 'pdf', 'salir'];
+  const llamadas = ['dash', 'nueva', 'edt', 'tix', 'rq', 'sr', 'ss', 'pzDlg', 'vivoDlg', 'metDlg', 'cmp', 'docDlg', 'salir'];
   ok(llamadas.every((f) => new RegExp('(function ' + f + '[(]|window[.]' + f + ' =)').test(todo)), 'todas las funciones que llama el menú existen (' + llamadas.join(', ') + ')');
   ok(llamadas.every((f) => lj.includes(f + '(') || (f === 'salir' && lj.includes('window.salir'))), 'el menú usa cada una de esas funciones: no tiene lógica propia');
   // quién lo ve
@@ -1961,7 +1961,7 @@ seccion('36. Informe ejecutivo y acta: PDF y Word, participantes y formato del i
   // descarga: diálogo con PDF y Word, y el Word se arma con el mismo HTML que el PDF
   ok(/<dialog class="dlg dlg-doc" id="dlg-doc"/.test(ih36) && /<div id="doc-slot"><\/div>/.test(ih36), 'la página tiene el diálogo de descarga de documentos');
   ok(/<script src="ley\.js"><\/script>\s*<script src="word\.js"><\/script>\s*<script src="lateral\.js">/.test(ih36), 'word.js se carga antes del menú lateral');
-  ok(/id="dd-pdf"/.test(rj36) && /id="dd-word"/.test(rj36) && /Descargar PDF/.test(rj36) && /Descargar Word/.test(rj36) && /window\.descargarWord\(t === 'acta' \? docActa\(en\) : docInforme\(en\)/.test(rj36), 'el diálogo ofrece PDF y Word del informe y del acta');
+  ok(/id="dd-pdf"/.test(rj36) && /id="dd-word"/.test(rj36) && /Descargar PDF/.test(rj36) && /Descargar Word/.test(rj36) && /window\.descargarWord\(t === 'acta' \? docActa\(en\) : t === 'tecnico' \? docTecnico\(en\) : docInforme\(en\)/.test(rj36) && /docDlg\('tecnico'\)/.test(lj36), 'el diálogo ofrece PDF y Word del informe ejecutivo, el acta y el informe técnico');
   ok(/docDlg\('informe'\)/.test(lj36) && /docDlg\('acta'\)/.test(lj36) && !/imprimirDoc\(/.test(lj36), 'el menú abre el diálogo de descarga en vez de imprimir directo');
   ok(/window\.docxBlob = /.test(wj36) && /window\.descargarWord = /.test(wj36) && /0x04034b50/.test(wj36) && /word\/document\.xml/.test(wj36) && /word\/numbering\.xml/.test(wj36) && /word\/footer1\.xml/.test(wj36), 'word.js arma un .docx real (ZIP con documento, estilos, numeración y pie con el número de página)');
   ok(/Segoe UI/.test(wj36) && /00705D/.test(wj36) && /EAF0EE/.test(wj36) && /D9E1DF/.test(wj36) && /w:w="12240" w:h="15840"/.test(wj36) && /w:left="624"/.test(wj36), 'el Word copia el diseño de impresión: Segoe UI, verde 00705D, tabla con encabezado EAF0EE, líneas D9E1DF, carta con márgenes de 11 mm');
@@ -1990,6 +1990,20 @@ seccion('36. Informe ejecutivo y acta: PDF y Word, participantes y formato del i
   ok(/etapas: en\.etp \|\| null/.test(nj36) && /etapas: en\.etp \|\| null/.test(npj36) && /this\.etp=typeof etpLimpio==='function'\?etpLimpio\(d\.etapas\):null/.test(aj36), 'las fechas previstas se guardan con la sesión y se leen al abrirla');
   ok(/id="dd-ent"/.test(rj36) && /id="dd-pre"/.test(rj36) && /guardarFechas\(\)/.test(rj36), 'el diálogo de descarga permite cargar las dos fechas previstas');
   ok(/function tarjetas\(/.test(wj36) && /function escala\(/.test(wj36) && /92D050/.test(wj36) && /'dc-et'/.test(wj36) && /'dc-esc'/.test(wj36), 'word.js dibuja las tarjetas de etapas y dimensiones y la escala de niveles con color');
+
+  // informe técnico (Informe D360°) en PDF y Word: sin la pizarra y con la respuesta de cada pregunta por dimensión (acuerdo del 11-11-2026)
+  corre("window.PZ = { entries: [{ id: '1', autor: 'Karen Otárola', rol: 'cliente', qid: 'GOB-01', texto: 'COMENTARIO-DE-LA-PIZARRA', creadoEn: 1 }] }; en.rs(); en.sp({ nombre: 'Empresa X', sector: 'legal', 'tamaño': '1-10' }); for (const q of Q) en.a[q.id] = 1; en.part = null; en.etp = null; en.srv = null;");
+  const ht = corre('docTecnico(en)');
+  const sec = (ht.match(/<h2>[^<]*/g) || []).map((x) => x.slice(4));
+  ok(sec.join('|') === 'Perfil por dimensión|Brechas de cumplimiento|Plan de acción priorizado|Semáforo Ley 21.719|Alertas críticas|Detalle de respuestas por dimensión', 'el informe técnico tiene perfil, brechas, plan de acción, semáforo, alertas y el detalle de respuestas por dimensión');
+  ok(!ht.includes('COMENTARIO-DE-LA-PIZARRA') && !/Pizarra/i.test(ht), 'el informe técnico no lleva los comentarios de la pizarra (van solo en el acta)');
+  ok(corre('docActa(en)').includes('COMENTARIO-DE-LA-PIZARRA'), 'el acta sí lleva los comentarios de la pizarra');
+  ok((ht.match(/Respuesta: <strong>/g) || []).length === corre('en.ga().length'), 'el detalle muestra la respuesta elegida de cada pregunta del cuestionario');
+  ok(D.every((d) => ht.includes('<h3>' + d.n + ' <span>')), 'el detalle de respuestas se agrupa por las ocho dimensiones');
+  ok(/<tfoot><tr><th scope="row">Puntaje global<\/th>/.test(ht) && /<footer class="dc-p"><strong>Alcance\.<\/strong> Autoevaluación referencial/.test(ht), 'el informe técnico trae el puntaje global y el alcance');
+  corre("delete en.a['GOB-01']");
+  ok(corre('docTecnico(en)').includes('Sin respuesta registrada'), 'una pregunta sin respuesta se indica en el detalle');
+  ok(/docDlg\('tecnico'\)/.test(lj36) && /t === 'tecnico' \? 'Informe D360 - '/.test(rj36) && /ESTADO = /.test(wj36), 'el informe técnico se descarga como «Informe D360 - …» en PDF y en Word, con el estado de cada obligación en color');
   corre("window.PZ = { entries: [] }; en.rs();");
 }
 

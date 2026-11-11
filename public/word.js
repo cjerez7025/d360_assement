@@ -71,7 +71,7 @@
     if (g === 'h3') return par(piezas([...n.childNodes], { h3: true }, []), { style: 'Heading2' });
     if (g === 'p') {
       const nota = n.classList.contains('dc-s');
-      return par(piezas([...n.childNodes], nota ? { c: C.muted, sz: 19 } : st, []), { sp: ctx.cell ? SP.celda : SP.texto, jc: ctx.jc, keepNext: nota && !/^Y \d+ más/.test(n.textContent.trim()) });
+      return par(piezas([...n.childNodes], nota ? { c: C.muted, sz: 19 } : st, []), { sp: ctx.cell ? SP.celda : SP.texto, jc: ctx.jc, keepNext: (nota && !/^Y \d+ más/.test(n.textContent.trim())) || (!!n.previousElementSibling && n.previousElementSibling.tagName.toLowerCase() === 'h2') });
     }
     if (g === 'ul' || g === 'ol') return lista(n, g, ctx, 0);
     if (g === 'table') return tabla(n, ctx);
@@ -140,13 +140,17 @@
     return tbl(cols, `<w:tr><w:trPr><w:trHeight w:val="120" w:hRule="exact"/></w:trPr>${cel}</w:tr>`, BARRA) + MINI;
   }
 
+  const ESTADO = { Cumple: '1A7F37', Parcial: '9A6700', 'No cumple': 'B42318' }, RIESGO = { Crítico: 'B42318', Alto: 'C2410C', Medio: '9A6700' };
   function tabla(t, ctx) {
     const filas = [...t.querySelectorAll('tr')];
     if (!filas.length) return '';
     const ncol = Math.max(...filas.map((f) => f.children.length));
+    const hdr = [...t.querySelectorAll('thead th')].map((h) => h.textContent.trim());
     const conBarra = !!t.querySelector('.dc-bar'); // tabla de dimensiones: el puntaje se parte en barra + número
     let w;
     if (conBarra) w = [4000, 1700, 1400, 1700, W - 8800];
+    else if (ncol === 4 && hdr[1] === 'Referencia legal') w = [3000, 4000, 1700, W - 8700];
+    else if (ncol === 3 && hdr[0] === 'Obligación') w = [5400, 3600, W - 9000];
     else if (ncol === 2) w = [1000, W - 1000];
     else { w = Array(ncol).fill(Math.floor(W / ncol)); w[ncol - 1] += W - w.reduce((a, b) => a + b, 0); }
     const x = filas.map((f) => {
@@ -164,6 +168,9 @@
           cs += celda(barra(bar), w[1], { bordes, va: 'center' }) + celda(par([{ t: pct, sz: 19 }], { sp: SP.celda }), w[2], { bordes, va: 'center', ml: 0 });
         } else {
           const base = { sz: 19, ...(c.tagName.toLowerCase() === 'th' ? { b: true } : {}) };
+          const tx = c.textContent.trim();
+          if (hdr[i] === 'Estado' && ESTADO[tx]) { base.b = true; base.c = ESTADO[tx]; }
+          if (hdr[i] === 'Riesgo' && RIESGO[tx]) { base.b = true; base.c = RIESGO[tx]; }
           cs += celda(bloques(c, { ...ctx, cell: true, st: base }), ancho, { span, bordes });
         }
         col += esPuntaje ? 2 : 1;
