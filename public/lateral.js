@@ -1,6 +1,6 @@
 /* lateral.js — Menú lateral del consultor (panel de vidrio flotante, con versión colapsada solo con íconos).
    No tiene lógica propia: cada opción llama a las funciones que ya existen (dash, nueva, rq, sr, vivoDlg, pzDlg, metDlg, cmp,
-   imprimirDoc, pdf, salir). Solo se muestra con una cuenta de consultor y fuera del ingreso, los avisos y la vista del cliente.
+   docDlg, pdf, salir). Solo se muestra con una cuenta de consultor y fuera del ingreso, los avisos y la vista del cliente.
    En pantallas angostas se abre como cajón desde el botón de la barra superior. */
 (function () {
   const $ = (id) => document.getElementById(id);
@@ -48,8 +48,8 @@
     ] },
     { sec: 'Entregables', si: enSesion, items: [
       { id: 'cmp', ic: 'share-2', t: 'Compartir con el cliente', fn: () => cmp(), act: () => false },
-      { id: 'inf', ic: 'file-text', t: 'Informe ejecutivo', fn: () => imprimirDoc('informe'), act: () => false, off: () => !completa() },
-      { id: 'act', ic: 'notebook-text', t: 'Acta de la reunión', fn: () => imprimirDoc('acta'), act: () => false, off: () => !respondidas() },
+      { id: 'inf', ic: 'file-text', t: 'Informe ejecutivo', fn: () => docDlg('informe'), act: () => false, off: () => !completa() },
+      { id: 'act', ic: 'notebook-text', t: 'Acta de la reunión', fn: () => docDlg('acta'), act: () => false, off: () => !respondidas() },
       { id: 'pdf', ic: 'download', t: 'Informe técnico (PDF)', fn: irPdf, act: () => false, off: () => !completa() },
       { id: 'met', ic: 'calculator', t: 'Cómo se calcula', fn: () => metDlg(), act: () => false, off: () => pantalla() !== 's3' }
     ] }

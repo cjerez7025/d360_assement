@@ -153,6 +153,55 @@ const docCab = (titulo, e, pie) => {
   const p = e.p || {}, quien = docAutor();
   return `<header class="dc-h"><div class="dc-m"><span class="dc-lg">AlignData</span><span>D360° · Ley 21.719</span></div><h1>${esc(titulo)}</h1><dl class="dc-meta"><div><dt>Empresa</dt><dd>${esc(p.nombre || '—')}</dd></div><div><dt>Rubro</dt><dd>${esc((SEC_N[p.sector]) || (p.sector === 'otro' ? 'Otro' : '—'))}</dd></div><div><dt>Tamaño</dt><dd>${esc(TAM[p['tamaño']] ? TAM[p['tamaño']].n + ' (' + TAM[p['tamaño']].e + ')' : '—')}</dd></div><div><dt>Fecha</dt><dd>${e.pubEn ? fchd(e.pubEn) : fch()}</dd></div>${quien ? `<div><dt>Preparado por</dt><dd>${esc(quien)}</dd></div>` : ''}</dl></header>`;
 };
+// ── participantes: los de la pizarra y de la ficha, o la lista que el consultor dejó editada (e.part = { cli: [{n, c}], con: [{n, c}] }) ──
+const MESES_L = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+const fchl = (t, sinAnio) => { const d = new Date(t); return d.getDate() + ' de ' + MESES_L[d.getMonth()] + (sinAnio ? '' : ' de ' + d.getFullYear()); };
+const lstY = (a) => (a.length < 2 ? a.join('') : a.slice(0, -1).join(', ') + ' y ' + a[a.length - 1]);
+function partLimpio(x) {
+  if (!x || typeof x !== 'object') return null;
+  const lim = (l) => (Array.isArray(l) ? l : []).slice(0, 15).map((p) => ({ n: String((p && p.n) || '').trim().slice(0, 80), c: String((p && p.c) || '').trim().slice(0, 80) })).filter((p) => p.n);
+  const r = { cli: lim(x.cli), con: lim(x.con) };
+  return r.cli.length || r.con.length ? r : null;
+}
+function partDerivar(e) {
+  const pz = (window.PZ && window.PZ.entries) || [], cand = [];
+  for (const x of pz) cand.push({ n: String(x.autor || '').trim(), rol: x.rol === 'consultor' ? 'con' : 'cli', c: x.cargo ? String(x.cargo).trim() : '' });
+  const quien = docAutor(); if (quien) cand.push({ n: quien, rol: 'con', c: '' });
+  const ct = e.p && e.p.contacto ? String(e.p.contacto).trim() : ''; if (ct) cand.push({ n: ct, rol: 'cli', c: '' });
+  // misma persona: el nombre más corto está contenido, palabra por palabra, en el más largo («Patricio» y «Patricio Oliva Ramírez»)
+  const pal = (s) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').split(/\s+/).filter(Boolean);
+  const dentro = (a, b) => a.every((t) => b.includes(t));
+  const out = [];
+  for (const c of cand) {
+    if (!c.n) continue;
+    const t = pal(c.n), m = out.find((o) => { const u = pal(o.n); return dentro(t, u) || dentro(u, t); });
+    if (!m) { out.push({ ...c }); continue; }
+    if (t.length > pal(m.n).length) m.n = c.n; // se queda con el nombre más completo
+    if (c.rol === 'con') m.rol = 'con'; // si alguna vez firmó como consultor, es consultor
+    if (!m.c && c.c) m.c = c.c;
+  }
+  const f = (r) => out.filter((o) => o.rol === r).map(({ n, c }) => ({ n, c }));
+  return { cli: f('cli'), con: f('con') };
+}
+const partLista = (e) => partLimpio(e.part) || partDerivar(e);
+function docNotas(e) {
+  const L = partLista(e), emp = (e.p && e.p.nombre) || 'la empresa', fe = e.fechas || {}, hoy = e.pubEn || Date.now();
+  const dia = (t) => new Date(t).toDateString();
+  const cuest = fe.ini && fe.fin ? (dia(fe.ini) === dia(fe.fin) ? `cuestionario D360° respondido el ${fchl(fe.ini)}` : `cuestionario D360° respondido entre el ${fchl(fe.ini, new Date(fe.ini).getFullYear() === new Date(fe.fin).getFullYear())} y el ${fchl(fe.fin)}`) : 'cuestionario D360° respondido durante la reunión';
+  const hayPz = ((window.PZ && window.PZ.entries) || []).length > 0;
+  const fuentes = lstY([cuest, ...(hayPz ? ['comentarios registrados en la pizarra de la reunión'] : []), `acta del ${fchl(hoy)}`]);
+  const nom = (l) => lstY(l.map((p) => p.n));
+  const gente = [L.cli.length ? `${nom(L.cli)} (${emp})` : '', L.con.length ? `${nom(L.con)} (AlignData)` : ''].filter(Boolean).join('; ');
+  return `<p class="dc-n"><strong>Fuentes:</strong> ${esc(fuentes)}.</p>${gente ? `<p class="dc-n"><strong>Participantes:</strong> ${esc(gente)}.</p>` : ''}<p class="dc-n"><strong>Escala:</strong> cada respuesta se califica de 0 a 3 según lo declarado; el índice de 0 a 4 resulta de dividir el puntaje global por 25, y la meta de referencia es el nivel 3 (Gestionado, de 61% a 80%).</p><p class="dc-n"><strong>Marco normativo:</strong> Ley N° 19.628, modificada por la Ley N° 21.719, y Decreto N° 662 de 2026, que reglamenta los modelos de prevención de infracciones.</p>`;
+}
+// servicios que AlignData puede ofrecer a continuación: salen del catálogo de paquetes (servicio.js); no se ofrece el que el cliente ya tiene
+function docServicios(e) {
+  if (typeof SRV_P === 'undefined' || typeof SRV_SOLICITABLES === 'undefined') return '';
+  const tiene = e.srv && SRV_ACT.includes(e.srv.estado) ? SRV_P[e.srv.paquete] : null;
+  const ofrece = SRV_SOLICITABLES.filter((k) => SRV_P[k] && (!tiene || SRV_P[k].nivel > tiene.nivel));
+  if (!ofrece.length) return '';
+  return `<h2>Servicios que puede entregar AlignData para asegurar el cumplimiento y optimizar tiempos</h2><p>Para cerrar las brechas de este diagnóstico y ganar tiempo antes de la entrada en vigor, AlignData ofrece los siguientes servicios, que se pueden contratar en forma progresiva:</p>${ofrece.map((k) => `<div class="dc-o"><h3>${esc(SRV_P[k].n)} <span>${esc(SRV_P[k].tag)}</span></h3><ul class="dc-l">${SRV_P[k].incl.map((i) => `<li>${esc(i)}</li>`).join('')}</ul></div>`).join('')}`;
+}
 function docInforme(e) {
   const sc = e.sc(), mt = e.ml(sc.g), cl = e.cl2(), fl = e.fl(), r = ruta(e), pts = evoPuntos(e);
   const ord = D.map((d) => ({ d, s: sc.d[d.id] })).sort((a, b) => b.s - a.s), mejor = ord[0], peor = ord[ord.length - 1];
@@ -163,13 +212,12 @@ function docInforme(e) {
   const olas = r.olas.filter((o) => o.items.length).map((o) => `<div class="dc-o"><h3>Etapa ${o.n} · ${esc(o.t)} <span>${esc(o.p)}</span></h3><p class="dc-s">${o.items.length} ${o.items.length === 1 ? 'iniciativa' : 'iniciativas'} · +${fnum(o.gain)} pts · puntaje estimado al terminar: ~${o.hasta}%</p><ol>${o.items.slice(0, 5).map((i) => `<li><strong>${esc(i.q.id)}</strong> ${i.q.q} <em>— Meta: ${esc(rtPaso(i).meta)}. Esfuerzo ${EF_N[i.ef].toLowerCase()} (${EF_T[i.ef]}), +${fnum(i.gain)} pts.</em></li>`).join('')}</ol>${o.items.length > 5 ? `<p class="dc-s">Y ${o.items.length - 5} más en el detalle de la hoja de ruta.</p>` : ''}</div>`).join('');
   const evo = pts.length > 1 ? `<h2>Evolución</h2>${evoTabla(pts, false).replace('class="met-t evo-t"', 'class="dc-t"')}` : '';
   const sec = SEC[(e.p || {}).sector] || (TAM[(e.p || {})['tamaño']] || {}).lv > 0 ? `<p>El puntaje incluye ${[SEC[(e.p || {}).sector] ? 'la ponderación por exposición sectorial' : '', (TAM[(e.p || {})['tamaño']] || {}).lv > 0 ? 'el ajuste por tamaño' : ''].filter(Boolean).join(' y ')}; sin ajustes sería ${sc.gb}%.</p>` : '';
-  return `<article class="dc">${docCab('Informe ejecutivo', e)}<h2>Resumen</h2><p>${resumen}</p><h2>Resultado por dimensión</h2>${dims}${alertas}<h2>Hoja de ruta</h2>${r.items.length ? `<p>${r.items.length} brechas ordenadas por beneficio y esfuerzo. Si se completan todas, el puntaje pasaría de ${r.g}% a ${Math.min(100, Math.round(r.actual + r.total))}%.</p>${olas}` : '<p>No hay brechas pendientes.</p>'}${evo}<h2>Alcance y límites</h2><p>Es un diagnóstico de preparación frente a la Ley 21.719 basado en lo que se declaró en la reunión: no es una auditoría ni una opinión legal. Los pesos, los ajustes por rubro y tamaño, el esfuerzo de cada iniciativa y los plazos de las etapas son criterios de AlignData sujetos a revisión (método ${SEC_V}/${TAM_V}/${RT_V}); el detalle está en la pestaña Método.</p>${sec}<h2>Próximos pasos</h2><ol class="dc-l"><li>Validar la hoja de ruta con la gerencia y asignar un responsable a cada iniciativa de la Etapa 1.</li><li>Atender primero las alertas críticas${fl.length ? '' : ' (no hay alertas críticas en esta evaluación)'}.</li><li>Repetir el diagnóstico a los 3, 6 y 12 meses para medir el avance contra la meta (nivel 3).</li></ol><footer class="dc-p">AlignData · aligndata.cl · Documento generado por el D360° el ${fch()}</footer></article>`;
+  return `<article class="dc">${docCab('Informe ejecutivo', e)}<h2>Resumen</h2><p>${resumen}</p>${docNotas(e)}<h2>Resultado por dimensión</h2>${dims}${alertas}<h2>Hoja de ruta</h2>${r.items.length ? `<p>${r.items.length} brechas ordenadas por beneficio y esfuerzo. Si se completan todas, el puntaje pasaría de ${r.g}% a ${Math.min(100, Math.round(r.actual + r.total))}%.</p>${olas}` : '<p>No hay brechas pendientes.</p>'}${evo}<h2>Alcance y límites</h2><p>Es un diagnóstico de preparación frente a la Ley 21.719 basado en lo que se declaró en la reunión: no es una auditoría ni una opinión legal. Los pesos, los ajustes por rubro y tamaño, el esfuerzo de cada iniciativa y los plazos de las etapas son criterios de AlignData sujetos a revisión.</p>${sec}<h2>Próximos pasos</h2><ol class="dc-l"><li>Validar la hoja de ruta con la gerencia y asignar un responsable a cada iniciativa de la Etapa 1.</li><li>Atender primero las alertas críticas${fl.length ? '' : ' (no hay alertas críticas en esta evaluación)'}.</li><li>En forma adicional se sugiere repetir el diagnóstico a los 3, 6 y 12 meses para medir el avance contra la meta (nivel 3).</li></ol>${docServicios(e)}<footer class="dc-p">AlignData · aligndata.cl · Documento generado por el D360° el ${fch()}</footer></article>`;
 }
 function docActa(e) {
   const pgA = e.pg(), completa = pgA.t > 0 && pgA.d === pgA.t;
   const sc = e.sc(), mt = e.ml(sc.g), fl = e.fl(), r = ruta(e), pz = (window.PZ && window.PZ.entries) || [], grupos = pzAgrupar(pz), porQ = new Map(grupos.map((g) => [g.qid, g.items]));
-  const gente = new Map(); for (const x of pz) { const k = x.autor + '|' + x.rol; if (!gente.has(k)) gente.set(k, { n: x.autor, rol: x.rol, cargo: x.cargo }); }
-  const quien = docAutor(); if (quien && ![...gente.values()].some((g) => g.n === quien)) gente.set('doc|consultor', { n: quien, rol: 'consultor' });
+  const PL = partLista(e), gente = [...PL.cli.map((p) => ({ n: p.n, rol: 'cliente', cargo: p.c })), ...PL.con.map((p) => ({ n: p.n, rol: 'consultor', cargo: p.c }))];
   const com = (it) => `<li><strong>${esc(it.autor)}</strong> <span>(${it.rol === 'consultor' ? 'Consultor' : 'Cliente'}, ${+it.creadoEn ? fchd(new Date(+it.creadoEn)) : 's/f'})</span>: ${esc(it.texto)}${(it.adjuntos || []).length ? ` <em>Adjuntos: ${(it.adjuntos || []).map((a) => esc(a.n)).join(', ')}.</em>` : ''}${(it.imgs || []).length ? ` <em>${it.imgs.length} imagen${it.imgs.length === 1 ? '' : 'es'}.</em>` : ''}</li>`;
   const mostrados = new Set();
   const resp = D.map((d) => { const qs = e.ga().filter((q) => q.dm === d.id && (e.a[q.id] !== undefined || porQ.has(q.id))); if (!qs.length) return ''; qs.forEach((q) => mostrados.add(q.id)); return `<h3>${esc(d.n)} <span>${sc.d[d.id]}%</span></h3><table class="dc-t"><tbody>${qs.map((q) => { const o = q.op.find((x) => x.v === e.a[q.id]) || {}; return `<tr><th scope="row">${esc(q.id)}</th><td>${q.q}${e.a[q.id] !== undefined ? `<div class="dc-r">Respuesta: <strong>${e.a[q.id]} · ${esc(o.l || '')}</strong></div>` : '<div class="dc-r">Sin respuesta registrada</div>'}${porQ.has(q.id) ? `<ul class="dc-c">${porQ.get(q.id).map(com).join('')}</ul>` : ''}</td></tr>`; }).join('')}</tbody></table>`; }).join('');
@@ -177,7 +225,7 @@ function docActa(e) {
   // comentarios de preguntas que no aparecen en la lista de esta sesión (por ejemplo, una pregunta de profundización que no se activó): se muestran con su dimensión
   const otros = grupos.filter((g) => g.qid !== 'general' && !mostrados.has(g.qid)).map((g) => { const q = Q.find((x) => x.id === g.qid), d = q && D.find((x) => x.id === q.dm); return `<li><strong>${esc(g.qid)}</strong>${d ? ` <span>(${esc(d.n)})</span>` : ''}${q ? ` ${q.q}` : ''}<ul class="dc-c">${g.items.map(com).join('')}</ul></li>`; });
   const olas1 = r.olas[0].items.slice(0, 8);
-  return `<article class="dc dc-acta">${docCab('Acta de la reunión', e)}<h2>Participantes</h2>${gente.size ? `<ul class="dc-l">${[...gente.values()].map((g) => `<li>${esc(g.n)} — ${g.rol === 'consultor' ? 'Consultor AlignData' : 'Cliente'}${g.cargo ? ', ' + esc(g.cargo) : ''}</li>`).join('')}</ul>` : '<p>No se registraron participantes en la pizarra.</p>'}<h2>Resultado del diagnóstico</h2><p>${completa ? `Nivel ${mt.n} (${esc(mt.nm)}), puntaje ${sc.g}%, índice ${fnum(idx04(sc.g))} de 4,0, riesgo ${esc(mt.ri)}.` : `El cuestionario está en curso (${pgA.d} de ${pgA.t} preguntas respondidas): el puntaje y el nivel global se calculan al terminarlo.`} ${fl.length ? `${fl.length} alerta${fl.length === 1 ? '' : 's'} crítica${fl.length === 1 ? '' : 's'}: ${fl.map((f) => esc(f.id)).join(', ')}.` : 'Sin alertas críticas.'}</p>${gen && gen.length ? `<h2>Comentarios y acuerdos generales</h2><ul class="dc-c">${gen.map(com).join('')}</ul>` : ''}<h2>Respuestas y comentarios por pregunta</h2>${resp || '<p>Aún no hay respuestas.</p>'}${otros.length ? `<h2>Comentarios sobre otras preguntas</h2><ul class="dc-l">${otros.join('')}</ul>` : ''}${olas1.length ? `<h2>Compromisos propuestos (Etapa 1)</h2><ol class="dc-l">${olas1.map((i) => `<li><strong>${esc(i.q.id)}</strong> ${i.q.q} <em>— Meta: ${esc(rtPaso(i).meta)}</em></li>`).join('')}</ol>` : ''}<div class="dc-fir"><div><span></span>Consultor AlignData</div><div><span></span>Representante de la empresa</div></div><footer class="dc-p">Acta generada por el D360° el ${fch()}. Resume lo declarado en la reunión; no es una auditoría ni una opinión legal.</footer></article>`;
+  return `<article class="dc dc-acta">${docCab('Acta de la reunión', e)}<h2>Participantes</h2>${gente.length ? `<ul class="dc-l">${gente.map((g) => `<li>${esc(g.n)} — ${g.rol === 'consultor' ? 'Consultor AlignData' : 'Cliente'}${g.cargo ? ', ' + esc(g.cargo) : ''}</li>`).join('')}</ul>` : '<p>No se registraron participantes en la pizarra.</p>'}<h2>Resultado del diagnóstico</h2><p>${completa ? `Nivel ${mt.n} (${esc(mt.nm)}), puntaje ${sc.g}%, índice ${fnum(idx04(sc.g))} de 4,0, riesgo ${esc(mt.ri)}.` : `El cuestionario está en curso (${pgA.d} de ${pgA.t} preguntas respondidas): el puntaje y el nivel global se calculan al terminarlo.`} ${fl.length ? `${fl.length} alerta${fl.length === 1 ? '' : 's'} crítica${fl.length === 1 ? '' : 's'}: ${fl.map((f) => esc(f.id)).join(', ')}.` : 'Sin alertas críticas.'}</p>${gen && gen.length ? `<h2>Comentarios y acuerdos generales</h2><ul class="dc-c">${gen.map(com).join('')}</ul>` : ''}<h2>Respuestas y comentarios por pregunta</h2>${resp || '<p>Aún no hay respuestas.</p>'}${otros.length ? `<h2>Comentarios sobre otras preguntas</h2><ul class="dc-l">${otros.join('')}</ul>` : ''}${olas1.length ? `<h2>Compromisos propuestos (Etapa 1)</h2><ol class="dc-l">${olas1.map((i) => `<li><strong>${esc(i.q.id)}</strong> ${i.q.q} <em>— Meta: ${esc(rtPaso(i).meta)}</em></li>`).join('')}</ol>` : ''}<div class="dc-fir"><div><span></span>Consultor AlignData</div><div><span></span>Representante de la empresa</div></div><footer class="dc-p">Acta generada por el D360° el ${fch()}. Resume lo declarado en la reunión; no es una auditoría ni una opinión legal.</footer></article>`;
 }
 function imprimirDoc(t) {
   const d = document.getElementById('doc'); if (!d) return;
@@ -188,4 +236,31 @@ function imprimirDoc(t) {
   const r = () => { document.body.classList.remove('imp-doc'); document.title = tt; d.innerHTML = ''; window.removeEventListener('afterprint', r); };
   window.addEventListener('afterprint', r);
   window.print();
+}
+function descargarWordDoc(t) {
+  const nom = ((en.p && en.p.nombre) || 'Diagnóstico').replace(/[\\/:*?"<>|]/g, ' ').trim();
+  window.descargarWord(t === 'acta' ? docActa(en) : docInforme(en), (t === 'acta' ? 'Acta D360 - ' : 'Informe ejecutivo D360 - ') + nom + ' - ' + fch() + '.docx');
+}
+// Diálogo de descarga: elige PDF o Word y, si lo conduce un consultor, deja ajustar la lista de participantes que sale en ambos documentos
+function docDlg(t) {
+  const d = document.getElementById('dlg-doc'), sl = document.getElementById('doc-slot'); if (!d || !sl) return;
+  const acta = t === 'acta', emp = (en.p && en.p.nombre) || 'la empresa', L = partLista(en);
+  const edita = typeof modo !== 'undefined' && modo === 'auditor' && !en.ro;
+  document.getElementById('doc-t').innerHTML = `<i data-lucide="${acta ? 'notebook-text' : 'file-text'}"></i> ${acta ? 'Acta de la reunión' : 'Informe ejecutivo'}`;
+  const area = (id, l) => `<textarea id="${id}" rows="${Math.max(3, l.length + 1)}" spellcheck="false" ${edita ? '' : 'readonly'}>${esc(l.map((p) => p.n + (p.c ? ', ' + p.c : '')).join('\n'))}</textarea>`;
+  sl.innerHTML = `<p class="dd-p">${acta ? 'Resume la reunión: respuestas, comentarios de la pizarra y compromisos propuestos, con espacio para las firmas.' : 'Resumen de resultados, alertas críticas, hoja de ruta y servicios que AlignData puede entregar.'}</p>
+<div class="dd-part"><h3>Participantes</h3><p class="dd-n">${edita ? 'Aparecen en el informe y en el acta. Uno por línea: «Nombre, cargo». Revíselos antes de descargar.' : 'Personas que participaron en la reunión.'}</p><label for="dd-cli">Por ${esc(emp)}</label>${area('dd-cli', L.cli)}<label for="dd-con">Por AlignData</label>${area('dd-con', L.con)}</div>
+<div class="dd-bt"><button type="button" class="be" id="dd-pdf"><i data-lucide="file-down"></i> Descargar PDF</button><button type="button" class="be dd-w" id="dd-word"><i data-lucide="file-text"></i> Descargar Word</button></div>
+<p class="dd-n">El PDF se guarda desde el cuadro de impresión: elija «Guardar como PDF» como destino.</p>`;
+  const leer = (id) => document.getElementById(id).value.split('\n').map((s) => s.trim()).filter(Boolean).slice(0, 15).map((s) => { const i = s.indexOf(','); return i < 0 ? { n: s.slice(0, 80), c: '' } : { n: s.slice(0, i).trim().slice(0, 80), c: s.slice(i + 1).trim().slice(0, 80) }; }).filter((p) => p.n);
+  const guardar = () => { // solo si cambió respecto de la lista actual; así, mientras no se edite, la lista sigue al día con la pizarra
+    if (!edita) return;
+    const nueva = { cli: leer('dd-cli'), con: leer('dd-con') };
+    if (JSON.stringify(nueva) === JSON.stringify(partLista(en))) return;
+    en.part = partLimpio(nueva); en.sv();
+  };
+  document.getElementById('dd-pdf').onclick = () => { guardar(); d.close(); setTimeout(() => imprimirDoc(t), 200); };
+  document.getElementById('dd-word').onclick = () => { guardar(); descargarWordDoc(t); d.close(); };
+  if (window.lucide) lucide.createIcons();
+  if (!d.open) d.showModal();
 }

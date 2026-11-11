@@ -28,10 +28,14 @@ Dónde viven: `sesiones/{id}.revisiones` (lista) y `compartidos/{token}.revision
 
 Documentos para imprimir o guardar como PDF (`imprimirDoc`): se arman en un contenedor oculto (`#doc`) y, al imprimir, solo se ve ese documento (clase `imp-doc` en `<body>`). No cambian el PDF técnico existente, que sigue en 8 páginas.
 
-- **Informe ejecutivo** (3–4 páginas): portada, resumen con nivel, puntaje, índice y obligaciones que cumplen, resultado por dimensión, alertas críticas, hoja de ruta (hasta 5 iniciativas por etapa), evolución si hay revisiones, alcance y límites, próximos pasos.
-- **Acta de la reunión**: participantes (desde la pizarra), resultado, comentarios y acuerdos generales, cada respuesta elegida con sus comentarios (autor y fecha) y adjuntos, compromisos de la Etapa 1 y líneas de firma.
+- **Informe ejecutivo** (4–5 páginas): portada, resumen con nivel, puntaje, índice y obligaciones que cumplen, **notas de fuentes, participantes, escala y marco normativo (formato acordado el 11-11-2026)**, resultado por dimensión, alertas críticas, hoja de ruta (hasta 5 iniciativas por etapa), evolución si hay revisiones, alcance y límites, próximos pasos y **servicios que AlignData puede entregar** (sale del catálogo de `servicio.js`, sin precios; no ofrece el paquete que el cliente ya tiene activo ni los de menor nivel).
+- **Acta de la reunión**: participantes, resultado, comentarios y acuerdos generales, cada respuesta elegida con sus comentarios (autor y fecha) y adjuntos, compromisos de la Etapa 1 y líneas de firma.
 
-Los puede generar el consultor y el cliente (con lo publicado). Todo lo que escriben las personas se escapa antes de mostrarse.
+**PDF y Word.** El menú lateral (Entregables) abre un diálogo (`docDlg`) con «Descargar PDF» (el cuadro de impresión del navegador, `imprimirDoc`) y «Descargar Word» (`word.js`: arma un `.docx` real, sin librerías, a partir del mismo HTML que se imprime, así que ambos dicen lo mismo). Los dos documentos de Word se abrieron y exportaron a PDF con Microsoft Word al probarlos.
+
+**Participantes.** Se derivan de la pizarra, de quien prepara el documento y del contacto de la ficha; un nombre contenido en otro se considera la misma persona («Patricio» y «Patricio Oliva Ramírez») y, si alguna vez firmó como consultor, queda como consultor. El consultor puede corregir la lista en el diálogo («Nombre, cargo», una persona por línea): se guarda en `sesiones/{id}.participantes` y manda sobre la derivada. No se publica en `compartidos` (las reglas no lo permiten), así que quien ve el enlace del cliente ve la lista derivada.
+
+Hoy los descarga el consultor desde el menú lateral (la vista del cliente no tiene ese menú); si se agregara en el enlace del cliente, el diálogo ya funciona en modo de solo lectura (no edita participantes). Todo lo que escriben las personas se escapa antes de mostrarse.
 
 ## Qué falta validar (AlignData)
 

@@ -978,7 +978,7 @@ seccion('23. Menú lateral del consultor');
   ok(/<script src="sesiones\.js"><\/script>[\s\S]*<script src="lateral\.js"><\/script>\s*<script src="tour\.js"><\/script>\s*<\/body>/.test(ih), 'lateral.js se carga al final, después de la lógica que usa');
   ok(/if\(window\.sbActualizar\)setTimeout\(window\.sbActualizar,0\);/.test(aj), 'cada cambio de pantalla actualiza el menú');
   // cada opción llama a una función que existe
-  const llamadas = ['dash', 'nueva', 'edt', 'tix', 'rq', 'sr', 'ss', 'pzDlg', 'vivoDlg', 'metDlg', 'cmp', 'imprimirDoc', 'pdf', 'salir'];
+  const llamadas = ['dash', 'nueva', 'edt', 'tix', 'rq', 'sr', 'ss', 'pzDlg', 'vivoDlg', 'metDlg', 'cmp', 'docDlg', 'pdf', 'salir'];
   ok(llamadas.every((f) => new RegExp('(function ' + f + '[(]|window[.]' + f + ' =)').test(todo)), 'todas las funciones que llama el menú existen (' + llamadas.join(', ') + ')');
   ok(llamadas.every((f) => lj.includes(f + '(') || (f === 'salir' && lj.includes('window.salir'))), 'el menú usa cada una de esas funciones: no tiene lógica propia');
   // quién lo ve
@@ -1910,6 +1910,62 @@ seccion('35. Códigos correlativos de Gobierno y traducción de lo guardado con 
   ok(['REG-03', 'REG-07', 'TER-06'].every((k) => new RegExp("'" + k + "': \\d").test(EFj)), 'la hoja de ruta tiene el esfuerzo de los códigos nuevos');
   const mx = aj.slice(aj.indexOf('const CL=['), aj.indexOf('];', aj.indexOf('const CL=[')));
   ok(/"qs":\["REG-02","REG-03"\]/.test(mx) && /"TER-06"/.test(mx) && /"qs":\["REG-01","REG-07"\]/.test(mx) && !/"qs":\["REG-04","LEG-02"\]/.test(mx), 'la matriz de obligaciones usa los códigos nuevos de Registro e incluye TER-06');
+}
+
+seccion('36. Informe ejecutivo y acta: PDF y Word, participantes y formato del informe');
+{
+  const raiz36 = path.resolve(path.dirname(file), '..');
+  const l36 = (f) => fs.readFileSync(path.join(raiz36, 'public', f), 'utf8');
+  const ih36 = l36('index.html'), rj36 = l36('ruta.js'), wj36 = l36('word.js'), lj36 = l36('lateral.js'), aj36 = l36('app.js'), nj36 = l36('nube.js'), npj36 = l36('nube-prueba.js');
+  const dia = (a, m, d) => new Date(a, m - 1, d, 12).getTime();
+  const corre = (js) => vm.runInContext(js, sandbox);
+  vm.runInContext("modo='auditor'", sandbox);
+
+  // participantes: la misma persona no sale dos veces (ni con distinto rol) y la ficha aporta al contacto del cliente
+  corre("window.PZ = { entries: [{ autor: 'Karen Otárola', rol: 'cliente' }, { autor: 'Patricio', rol: 'cliente' }, { autor: 'Patricio Oliva Ramírez', rol: 'consultor' }, { autor: 'Carlos Jerez', rol: 'consultor' }, { autor: 'Carlos Jerez Barrientos', rol: 'consultor' }] }; en.rs(); en.sp({ nombre: 'Empresa X', contacto: 'Valeria Ferrada' });");
+  const pd = JSON.parse(corre('JSON.stringify(partDerivar(en))'));
+  ok(pd.cli.map((p) => p.n).join('|') === 'Karen Otárola|Valeria Ferrada', 'participantes del cliente: los de la pizarra más el contacto de la ficha, sin repetir');
+  ok(pd.con.map((p) => p.n).join('|') === 'Patricio Oliva Ramírez|Carlos Jerez Barrientos', '«Patricio» y «Carlos Jerez» se unen con su nombre completo y quedan como consultores (no como cliente)');
+
+  // la lista editada por el consultor manda sobre la derivada; una lista vacía o inválida se ignora
+  corre("en.part = { cli: [{ n: 'Karen Otárola', c: 'Contadora Auditora' }], con: [{ n: 'Ale Yevilaf', c: '' }] }");
+  ok(corre("partLista(en).con[0].n") === 'Ale Yevilaf' && corre("partLista(en).cli[0].c") === 'Contadora Auditora', 'la lista de participantes editada se usa en lugar de la derivada');
+  corre("en.part = { cli: [], con: [] }");
+  ok(corre("partLista(en).cli.length") === 2, 'una lista editada vacía vuelve a la derivada de la pizarra');
+  ok(corre("partLimpio({ cli: [{ n: 'x'.repeat(200) }], con: [] }).cli[0].n.length") === 80 && corre("partLimpio('x')") === null, 'los participantes se acotan a 80 letras y se descarta lo que no tiene la forma esperada');
+
+  // formato del informe: fuentes, participantes, escala, marco normativo y servicios
+  corre("window.PZ = { entries: [{ autor: 'Karen Otárola', rol: 'cliente', qid: 'general', texto: 'x', creadoEn: 1 }] }; en.rs(); en.sp({ nombre: 'Empresa X', sector: 'legal', 'tamaño': '1-10' }); for (const q of Q) en.a[q.id] = 1;");
+  corre(`en.fechas = { ini: ${dia(2026, 10, 29)}, fin: ${dia(2026, 11, 9)} }; en.part = { cli: [{ n: 'Karen Otárola', c: '' }, { n: 'Valeria Ferrada', c: '' }], con: [{ n: 'Patricio Oliva', c: '' }, { n: 'Ricardo Carmona', c: '' }, { n: 'Carlos Jerez', c: '' }] };`);
+  const hi = corre('docInforme(en)');
+  const txt = hi.replace(/<[^>]+>/g, '');
+  ok(/Fuentes: cuestionario D360° respondido entre el 29 de octubre y el 9 de noviembre de 2026, comentarios registrados en la pizarra de la reunión y acta del \d+ de \w+ de 2026\./.test(txt), 'Fuentes: fechas del cuestionario, pizarra y fecha del acta');
+  ok(txt.includes('Participantes: Karen Otárola y Valeria Ferrada (Empresa X); Patricio Oliva, Ricardo Carmona y Carlos Jerez (AlignData).'), 'Participantes: por empresa y por AlignData, con «y» antes del último');
+  ok(/Escala: cada respuesta se califica de 0 a 3[^.]*índice de 0 a 4[^.]*puntaje global por 25[^.]*nivel 3 \(Gestionado, de 61% a 80%\)\./.test(txt), 'Escala: respuestas de 0 a 3, índice de 0 a 4 y meta en el nivel 3 (61% a 80%), como en la metodología');
+  ok(txt.includes('Marco normativo: Ley N° 19.628, modificada por la Ley N° 21.719, y Decreto N° 662 de 2026, que reglamenta los modelos de prevención de infracciones.'), 'Marco normativo: Ley 19.628 modificada por la 21.719 y DS 662');
+  ok(hi.indexOf('Fuentes:') > hi.indexOf('<h2>Resumen</h2>') && hi.indexOf('Fuentes:') < hi.indexOf('<h2>Resultado por dimensión</h2>'), 'las notas van entre el resumen y los resultados');
+  ok(txt.includes('En forma adicional se sugiere repetir el diagnóstico a los 3, 6 y 12 meses') && !/pestaña Método/.test(txt), 'Próximos pasos sugiere repetir el diagnóstico «en forma adicional» y el alcance no remite a la pestaña Método');
+  ok(/<h2>Servicios que puede entregar AlignData para asegurar el cumplimiento y optimizar tiempos<\/h2>/.test(hi) && hi.indexOf('<h2>Servicios que') > hi.indexOf('<h2>Próximos pasos</h2>') && hi.indexOf('<h2>Servicios que') < hi.indexOf('<footer'), 'el informe cierra con los servicios que AlignData puede entregar, después de los próximos pasos');
+  ok(/D360° Evalúa/.test(hi) && /D360° Acompaña/.test(hi) && /D360° Implementa/.test(hi) && !/<h3>D360° Inicia /.test(hi) && !/Combo/.test(hi), 'los servicios salen del catálogo de paquetes: Evalúa, Acompaña e Implementa (no el Inicia que se está entregando ni el combo)');
+  corre("en.srv = { paquete: 'acompana', estado: 'activa' }");
+  const hs = corre('docInforme(en)');
+  ok(!/<h3>D360° Evalúa /.test(hs) && !/<h3>D360° Acompaña /.test(hs) && /<h3>D360° Implementa /.test(hs), 'si el cliente ya tiene un paquete activo, solo se ofrecen los de nivel superior');
+  corre("en.srv = { paquete: 'implementa', estado: 'activa' }");
+  ok(!/<h2>Servicios que/.test(corre('docInforme(en)')), 'si ya tiene el paquete más alto, no se ofrece ninguno y no queda un título vacío');
+  corre("en.srv = null");
+  const ha = corre('docActa(en)');
+  ok(/<h2>Participantes<\/h2>[\s\S]*Karen Otárola — Cliente[\s\S]*Patricio Oliva — Consultor AlignData/.test(ha), 'el acta usa la misma lista de participantes');
+  ok(!/\$\{|undefined|NaN|\[object/.test(hi + ha), 'el informe y el acta no dejan restos de plantilla');
+
+  // descarga: diálogo con PDF y Word, y el Word se arma con el mismo HTML que el PDF
+  ok(/<dialog class="dlg dlg-doc" id="dlg-doc"/.test(ih36) && /<div id="doc-slot"><\/div>/.test(ih36), 'la página tiene el diálogo de descarga de documentos');
+  ok(/<script src="ley\.js"><\/script>\s*<script src="word\.js"><\/script>\s*<script src="lateral\.js">/.test(ih36), 'word.js se carga antes del menú lateral');
+  ok(/id="dd-pdf"/.test(rj36) && /id="dd-word"/.test(rj36) && /Descargar PDF/.test(rj36) && /Descargar Word/.test(rj36) && /window\.descargarWord\(t === 'acta' \? docActa\(en\) : docInforme\(en\)/.test(rj36), 'el diálogo ofrece PDF y Word del informe y del acta');
+  ok(/docDlg\('informe'\)/.test(lj36) && /docDlg\('acta'\)/.test(lj36) && !/imprimirDoc\(/.test(lj36), 'el menú abre el diálogo de descarga en vez de imprimir directo');
+  ok(/window\.docxBlob = /.test(wj36) && /window\.descargarWord = /.test(wj36) && /0x04034b50/.test(wj36) && /word\/document\.xml/.test(wj36) && /word\/numbering\.xml/.test(wj36) && /word\/header1\.xml/.test(wj36) && /word\/footer1\.xml/.test(wj36), 'word.js arma un .docx real (ZIP con documento, estilos, numeración, encabezado y pie)');
+  ok(!/\bimport\b|require\(|https?:\/\//.test(wj36.replace(/https?:\/\/(schemas\.openxmlformats\.org|purl\.org|www\.w3\.org)[^"'\s<]*/g, '')), 'word.js no depende de librerías ni de servidores externos (solo nombra los espacios de nombres XML de Word)');
+  ok(/participantes: en\.part \|\| null/.test(nj36) && /participantes: en\.part \|\| null/.test(npj36) && /this\.part=typeof partLimpio==='function'\?partLimpio\(d\.participantes\):null/.test(aj36), 'los participantes se guardan con la sesión (nube y modo de prueba) y se leen al abrirla');
+  corre("window.PZ = { entries: [] }; en.rs();");
 }
 
 console.log('\n' + (fallos ? '✗ ' + fallos + ' problema(s)' : '✓ Todas las verificaciones pasaron'));
