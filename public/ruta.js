@@ -270,6 +270,56 @@ function docActa(e) {
   const olas1 = r.olas[0].items.slice(0, 8);
   return `<article class="dc dc-acta">${docCab('Acta de la reunión', e)}<h2>Participantes</h2>${gente.length ? `<ul class="dc-l">${gente.map((g) => `<li>${esc(g.n)} — ${g.rol === 'consultor' ? 'Consultor AlignData' : 'Cliente'}${g.cargo ? ', ' + esc(g.cargo) : ''}</li>`).join('')}</ul>` : '<p>No se registraron participantes en la pizarra.</p>'}<h2>Resultado del diagnóstico</h2><p>${completa ? `Nivel ${mt.n} (${esc(mt.nm)}), puntaje ${sc.g}%, índice ${fnum(idx04(sc.g))} de 4,0, riesgo ${esc(mt.ri)}.` : `El cuestionario está en curso (${pgA.d} de ${pgA.t} preguntas respondidas): el puntaje y el nivel global se calculan al terminarlo.`} ${fl.length ? `${fl.length} alerta${fl.length === 1 ? '' : 's'} crítica${fl.length === 1 ? '' : 's'}: ${fl.map((f) => esc(f.id)).join(', ')}.` : 'Sin alertas críticas.'}</p>${gen && gen.length ? `<h2>Comentarios y acuerdos generales</h2><ul class="dc-c">${gen.map(com).join('')}</ul>` : ''}<h2>Respuestas y comentarios por pregunta</h2>${resp || '<p>Aún no hay respuestas.</p>'}${otros.length ? `<h2>Comentarios sobre otras preguntas</h2><ul class="dc-l">${otros.join('')}</ul>` : ''}${olas1.length ? `<h2>Compromisos propuestos (Etapa 1)</h2><ol class="dc-l">${olas1.map((i) => `<li><strong>${esc(i.q.id)}</strong> ${i.q.q} <em>— Meta: ${esc(rtPaso(i).meta)}</em></li>`).join('')}</ol>` : ''}<div class="dc-fir"><div><span></span>Consultor AlignData</div><div><span></span>Representante de la empresa</div></div><footer class="dc-p">Acta generada por el D360° el ${fch()}. Resume lo declarado en la reunión; no es una auditoría ni una opinión legal.</footer></article>`;
 }
+// ── imágenes del informe técnico en Word: el medidor de la portada y el radar de las dimensiones, dibujados como en la pantalla de resultados ──
+const lienzo = (w, h) => { const c = document.createElement('canvas'); c.width = w * 2; c.height = h * 2; const x = c.getContext('2d'); x.scale(2, 2); return [c, x]; };
+const rectR = (x, a, b, w, h, r) => { x.beginPath(); x.moveTo(a + r, b); x.arcTo(a + w, b, a + w, b + h, r); x.arcTo(a + w, b + h, a, b + h, r); x.arcTo(a, b + h, a, b, r); x.arcTo(a, b, a + w, b, r); x.closePath(); };
+const fuenteImg = (px, w) => `${w || 400} ${px}px "Plus Jakarta Sans","Segoe UI",Arial,sans-serif`;
+function imgHero(e) { // portada: puntaje global en un medidor, nivel, escala de niveles e índice
+  try {
+    const sc = e.sc(), mt = e.ml(sc.g), fl = e.fl(), p = e.p || {}, W = 733, H = 300, [c, x] = lienzo(W, H);
+    const col = [10, 30, 50, 70, 90].map((s) => e.ml(s).c), hc = mt.c, f = fuenteImg;
+    const g = x.createLinearGradient(0, 0, W * 0.35, H); g.addColorStop(0, '#1A2036'); g.addColorStop(0.5, '#141B30'); g.addColorStop(1, '#16213A');
+    rectR(x, 0, 0, W, H, 22); x.fillStyle = g; x.fill();
+    x.save(); rectR(x, 0, 0, W, H, 22); x.clip(); const rg = x.createRadialGradient(90, H + 40, 0, 90, H + 40, 260); rg.addColorStop(0, hc + '40'); rg.addColorStop(1, hc + '00'); x.fillStyle = rg; x.fillRect(0, 0, W, H); x.fillStyle = hc; x.fillRect(0, 0, W, 4); x.restore();
+    x.textAlign = 'center'; x.textBaseline = 'middle';
+    x.fillStyle = '#B7C0D4'; x.font = f(13); x.fillText(`${p.nombre || 'Su empresa'}${SEC_N && SEC_N[p.sector] ? ' · ' + SEC_N[p.sector] : ''}`, W / 2, 28);
+    const cx = W / 2, cy = 112, r = 56, a0 = Math.PI * 0.75, tot = Math.PI * 1.5;
+    x.lineWidth = 9; x.lineCap = 'round'; x.strokeStyle = 'rgba(255,255,255,.16)'; x.beginPath(); x.arc(cx, cy, r, a0, a0 + tot); x.stroke();
+    if (sc.g > 0) { x.strokeStyle = hc; x.beginPath(); x.arc(cx, cy, r, a0, a0 + tot * sc.g / 100); x.stroke(); }
+    x.fillStyle = '#FFFFFF'; x.font = f(42, 800); x.fillText(String(sc.g), cx - 6, cy + 2); x.font = f(15, 600); x.fillStyle = '#B7C0D4'; x.fillText('%', cx + 28, cy + 12);
+    const txt = `Nivel ${mt.n} — ${mt.nm}`; x.font = f(14, 700); const tw = x.measureText(txt).width + 44;
+    rectR(x, cx - tw / 2, 192, tw, 30, 15); x.fillStyle = hc + '2E'; x.fill(); x.lineWidth = 1; x.strokeStyle = hc + '88'; x.stroke(); x.fillStyle = hc; x.fillText(txt, cx, 207);
+    const bw = 300, sw = (bw - 12) / 5;
+    for (let i = 0; i < 5; i++) { const on = i <= mt.n; rectR(x, cx - bw / 2 + i * (sw + 3), on && i === mt.n ? 232 : 234, sw, on && i === mt.n ? 8 : 6, 3); x.fillStyle = on ? col[i] : 'rgba(255,255,255,.16)'; x.fill(); }
+    x.font = f(11); x.fillStyle = '#93A0BA'; x.textAlign = 'left'; x.fillText('Inexistente', cx - bw / 2, 252); x.textAlign = 'right'; x.fillText('Optimizado', cx + bw / 2, 252); x.textAlign = 'center';
+    x.font = f(12); x.fillStyle = '#C5CCDD'; x.fillText(`Índice ${fnum(idx04(sc.g))} de 4,0 · riesgo ${mt.ri} · meta: nivel 3 (Gestionado)`, cx, 272);
+    x.fillText(fl.length ? `${fl.length} bandera(s) roja(s)` : 'Sin banderas rojas', cx, 290);
+    return { src: c.toDataURL('image/png'), w: W, h: H, alt: `Puntaje global ${sc.g}%, nivel ${mt.n}: ${mt.nm}` };
+  } catch (err) { return null; }
+}
+function imgRadar(e) { // radar de las dimensiones frente al objetivo de 80%
+  try {
+    const sc = e.sc(), W = 640, H = 470, [c, x] = lienzo(W, H), n = D.length, cx = W / 2, cy = 215, R = 150, f = fuenteImg;
+    const ang = (i) => -Math.PI / 2 + (i * 2 * Math.PI) / n, pt = (i, v) => [cx + Math.cos(ang(i)) * R * v / 100, cy + Math.sin(ang(i)) * R * v / 100];
+    x.fillStyle = '#FFFFFF'; x.fillRect(0, 0, W, H);
+    const poli = (v) => { x.beginPath(); D.forEach((_, i) => { const [a, b] = pt(i, v); if (i) x.lineTo(a, b); else x.moveTo(a, b); }); x.closePath(); };
+    x.lineWidth = 1; x.strokeStyle = '#D9E1DF'; [25, 50, 75, 100].forEach((v) => { poli(v); x.stroke(); });
+    D.forEach((_, i) => { const [a, b] = pt(i, 100); x.beginPath(); x.moveTo(cx, cy); x.lineTo(a, b); x.stroke(); });
+    x.fillStyle = '#556560'; x.font = f(10); x.textAlign = 'left'; x.textBaseline = 'middle'; x.fillText('50%', cx + 4, cy - R * 0.5); x.fillText('100%', cx + 4, cy - R);
+    x.setLineDash([5, 4]); x.lineWidth = 1.5; x.strokeStyle = '#556560'; poli(80); x.stroke(); x.setLineDash([]);
+    const vals = D.map((d) => sc.d[d.id] || 0), mk = '#00806A';
+    x.beginPath(); vals.forEach((v, i) => { const [a, b] = pt(i, v); if (i) x.lineTo(a, b); else x.moveTo(a, b); }); x.closePath(); x.fillStyle = mk + '26'; x.fill(); x.lineWidth = 2; x.strokeStyle = mk; x.stroke();
+    vals.forEach((v, i) => { const [a, b] = pt(i, v); x.beginPath(); x.arc(a, b, 4.5, 0, 7); x.fillStyle = mk; x.fill(); x.lineWidth = 2; x.strokeStyle = '#FFFFFF'; x.stroke(); });
+    const wr = (s) => { const o = ['']; s.split(' ').forEach((t) => { const l = o[o.length - 1]; if (l && (l + ' ' + t).length > 14) o.push(t); else o[o.length - 1] = l ? l + ' ' + t : t; }); return o; };
+    x.fillStyle = '#3A4A47'; x.font = f(12, 600); x.textBaseline = 'middle';
+    D.forEach((d, i) => { const a = ang(i), lx = cx + Math.cos(a) * (R + 22), ly = cy + Math.sin(a) * (R + 22), ls = wr(d.n); x.textAlign = Math.abs(Math.cos(a)) < 0.2 ? 'center' : Math.cos(a) > 0 ? 'left' : 'right'; ls.forEach((t, k) => x.fillText(t, lx, ly + (k - (ls.length - 1) / 2) * 15 + (Math.sin(a) > 0.5 ? 8 : Math.sin(a) < -0.5 ? -8 : 0))); });
+    x.textAlign = 'left'; x.font = f(12);
+    rectR(x, cx - 130, 440, 26, 12, 2); x.fillStyle = mk + '40'; x.fill(); x.lineWidth = 2; x.strokeStyle = mk; x.stroke(); x.fillStyle = '#3A4A47'; x.fillText('Su organización', cx - 98, 447);
+    x.setLineDash([5, 4]); x.lineWidth = 1.5; x.strokeStyle = '#556560'; x.strokeRect(cx + 40, 441, 26, 10); x.setLineDash([]); x.fillStyle = '#3A4A47'; x.fillText('Objetivo (80%)', cx + 72, 447);
+    return { src: c.toDataURL('image/png'), w: W, h: H, alt: 'Radar de las ocho dimensiones frente al objetivo de 80%' };
+  } catch (err) { return null; }
+}
+const imgHtml = (i, ancho) => (i ? `<p class="dc-img"><img src="${i.src}" alt="${esc(i.alt)}" data-ancho="${ancho || i.w}" data-alto="${Math.round(i.h * (ancho || i.w) / i.w)}"></p>` : '');
 // Informe técnico (Informe D360°): el detalle completo del diagnóstico. Sin la pizarra (los comentarios van solo en el acta) y con la respuesta elegida
 // para cada pregunta, agrupada por dimensión (acuerdo del 11-11-2026).
 function docTecnico(e) {
@@ -285,7 +335,20 @@ function docTecnico(e) {
   const alertas = fl.length ? `<h2>Alertas críticas</h2><p>Respuestas que representan un riesgo significativo ante la Ley 21.719 y conviene atender primero.</p><ul class="dc-l">${fl.map((f) => `<li><strong>${esc(f.id)}</strong> · ${f.q} <em>(${esc(D.find((x) => x.id === f.dm).n)}, ${esc(f.ar)})</em></li>`).join('')}</ul>` : '';
   const detalle = D.map((d) => { const qs = e.ga().filter((q) => q.dm === d.id); if (!qs.length) return ''; return `<h3>${esc(d.n)} <span>${sc.d[d.id]}%</span></h3><table class="dc-t"><tbody>${qs.map((q) => { const o = q.op.find((x) => x.v === e.a[q.id]) || {}; return `<tr><th scope="row">${esc(q.id)}</th><td>${q.q}${e.a[q.id] !== undefined ? `<div class="dc-r">Respuesta: <strong>${e.a[q.id]} · ${esc(o.l || '')}</strong></div>` : '<div class="dc-r">Sin respuesta registrada</div>'}</td></tr>`; }).join('')}</tbody></table>`; }).join('');
   const resumen = `<p><strong>Nivel ${mt.n} (${esc(mt.nm)})</strong> · puntaje <strong>${sc.g}%</strong> · índice <strong>${fnum(idx04(sc.g))} de 4,0</strong> · riesgo ${esc(mt.ri)}. La meta de referencia es el nivel 3 (Gestionado). ${fl.length ? `${fl.length} alerta${fl.length === 1 ? '' : 's'} crítica${fl.length === 1 ? '' : 's'}.` : 'Sin alertas críticas.'}</p>${sec}`;
-  return `<article class="dc dc-tec">${docCab('Informe D360° — Diagnóstico de cumplimiento', e)}<p>Ley 21.719 de Protección de Datos Personales.</p><h2>Perfil por dimensión</h2><p>Puntaje de 0 a 100% en cada una de las ${D.length} dimensiones, frente al objetivo de 80%.</p>${dims}${resumen}<h2>Brechas de cumplimiento</h2>${brechas}<h2>Plan de acción priorizado</h2>${plan}<h2>Semáforo Ley 21.719</h2>${semaforo}${alertas}<h2>Detalle de respuestas por dimensión</h2><p>Respuesta elegida para cada pregunta del cuestionario, agrupadas por dimensión.</p>${detalle}<footer class="dc-p"><strong>Alcance.</strong> Autoevaluación referencial basada en las respuestas entregadas el ${fd}. No constituye asesoría legal ni certificación de cumplimiento. Marco normativo: Ley 21.719 (texto oficial de la Biblioteca del Congreso Nacional). AlignData · D360° Privacy Assessment · contacto@aligndata.cl · aligndata.cl</footer></article>`;
+  return `<article class="dc dc-tec">${docCab('Informe D360° — Diagnóstico de cumplimiento', e)}<p>Ley 21.719 de Protección de Datos Personales.</p>${imgHtml(imgHero(e))}<h2>Perfil por dimensión</h2><p>Puntaje de 0 a 100% en cada una de las ${D.length} dimensiones, frente al objetivo de 80%.</p>${imgHtml(imgRadar(e), 470)}${dims}${resumen}<h2>Brechas de cumplimiento</h2>${brechas}<h2>Plan de acción priorizado</h2>${plan}<h2>Semáforo Ley 21.719</h2>${semaforo}${alertas}<h2>Detalle de respuestas por dimensión</h2><p>Respuesta elegida para cada pregunta del cuestionario, agrupadas por dimensión.</p>${detalle}<footer class="dc-p"><strong>Alcance.</strong> Autoevaluación referencial basada en las respuestas entregadas el ${fd}. No constituye asesoría legal ni certificación de cumplimiento. Marco normativo: Ley 21.719 (texto oficial de la Biblioteca del Congreso Nacional). AlignData · D360° Privacy Assessment · contacto@aligndata.cl · aligndata.cl</footer></article>`;
+}
+// Detalle de la respuesta elegida en cada pregunta, por dimensión: va en el PDF del informe técnico (impresión de la pantalla de resultados)
+function respDimHtml(e) {
+  const sc = e.sc();
+  return D.map((d) => {
+    const qs = e.ga().filter((q) => q.dm === d.id); if (!qs.length) return '';
+    return `<div class="rdd"><div class="rdd-h"><span>${esc(d.n)}</span><b>${sc.d[d.id]}%</b></div><ul class="rdd-l">${qs.map((q) => { const o = q.op.find((x) => x.v === e.a[q.id]) || {}; return `<li><span class="rdd-c">${esc(q.id)}</span><div class="rdd-q">${q.q}<small>${e.a[q.id] !== undefined ? `Respuesta: <strong>${e.a[q.id]} · ${esc(o.l || '')}</strong>` : 'Sin respuesta registrada'}</small></div></li>`; }).join('')}</ul></div>`;
+  }).join('');
+}
+// PDF del informe técnico: la pantalla de resultados con su diseño (medidor, radar y tarjetas), sin la pizarra y con el detalle de respuestas
+function imprimirTecnico() {
+  if (!document.getElementById('s3').classList.contains('active')) sr();
+  setTimeout(() => pdf(), 700);
 }
 function imprimirDoc(t) {
   const d = document.getElementById('doc'); if (!d) return;
@@ -327,7 +390,7 @@ ${acta || tec ? '' : `<div class="dd-part"><h3>Fechas previstas</h3><p class="dd
     if (JSON.stringify(nueva) === JSON.stringify(etpLimpio(en.etp))) return;
     en.etp = nueva; en.sv();
   };
-  document.getElementById('dd-pdf').onclick = () => { guardar(); guardarFechas(); d.close(); setTimeout(() => imprimirDoc(t), 200); };
+  document.getElementById('dd-pdf').onclick = () => { guardar(); guardarFechas(); d.close(); setTimeout(() => (tec ? imprimirTecnico() : imprimirDoc(t)), 200); };
   document.getElementById('dd-word').onclick = () => { guardar(); guardarFechas(); descargarWordDoc(t); d.close(); };
   if (window.lucide) lucide.createIcons();
   if (!d.open) d.showModal();

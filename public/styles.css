@@ -949,7 +949,10 @@ dialog.dlg-met{max-width:880px;max-height:calc(100dvh - 32px)}
 dialog.dlg-met[open]{display:flex}
 .dlg-met .dlg-in{width:100%;max-height:calc(100dvh - 32px);overflow:auto}
 .dlg-met .rs{box-shadow:none;padding:0;border:0;background:none}
-@media print{#t7,#t8,#t9,#bmet{display:none!important}}
+@media print{#t6,#t7,#t8,#t9,#bmet{display:none!important}} /* la pizarra no sale en el PDF del informe técnico: sus comentarios van solo en el acta */
+/* detalle de respuestas por dimensión (informe técnico): solo se ve al imprimir */
+.rdd{margin-top:16px}.rdd-h{display:flex;justify-content:space-between;align-items:baseline;gap:12px;font-weight:800;border-bottom:2px solid var(--brand-ink);padding-bottom:4px;margin-bottom:2px;break-after:avoid}.rdd-h b{color:var(--muted);font-weight:700}
+.rdd-l{list-style:none;margin:0;padding:0}.rdd-l li{display:grid;grid-template-columns:62px 1fr;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);break-inside:avoid;font-size:.88rem;line-height:1.4}.rdd-c{font-weight:800}.rdd-q small{display:block;margin-top:2px;color:var(--text-2);font-size:.86rem}
 
 /* ── documentos adjuntos en la pizarra ── */
 .pz-ad{list-style:none;margin:8px 0 0;padding:0;display:grid;grid-template-columns:minmax(0,1fr);gap:6px}

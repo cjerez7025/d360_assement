@@ -18,6 +18,7 @@
       const g = n.tagName.toLowerCase();
       if (g === 'br') { out.push({ br: true }); return; }
       if (n.classList.contains('dc-bar')) return; // la barra de color se dibuja aparte, en la tabla
+      if (g === 'img') { const m = /^data:image\/png;base64,(.+)$/.exec(n.getAttribute('src') || ''); if (m) out.push({ img: IMGS.push({ b64: m[1], w: +n.getAttribute('data-ancho') || 400, h: +n.getAttribute('data-alto') || 300, alt: n.getAttribute('alt') || '' }) - 1 }); return; }
       const s = { ...st };
       if (g === 'strong' || g === 'b') s.b = true;
       if (g === 'em' || g === 'i') s.i = true;
@@ -26,7 +27,9 @@
     });
     return out;
   }
-  const run = (p) => p.br ? '<w:r><w:br/></w:r>'
+  const IMGS = []; // imágenes del documento en curso: se guardan como archivos del paquete
+  const dibujo = (i) => { const im = IMGS[i], cx = Math.round(im.w * 9525), cy = Math.round(im.h * 9525); return `<w:r><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0"><wp:extent cx="${cx}" cy="${cy}"/><wp:docPr id="${i + 1}" name="Imagen ${i + 1}" descr="${xe(im.alt)}"/><a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic><pic:nvPicPr><pic:cNvPr id="${i + 1}" name="imagen${i + 1}.png"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="rIdImg${i + 1}"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r>`; };
+  const run = (p) => p.img !== undefined ? dibujo(p.img) : p.br ? '<w:r><w:br/></w:r>'
     : `<w:r><w:rPr>${p.b ? '<w:b/>' : p.b === false ? '<w:b w:val="0"/>' : ''}${p.i ? '<w:i/>' : ''}${p.c ? `<w:color w:val="${p.c}"/>` : ''}${p.sp ? `<w:spacing w:val="${p.sp}"/>` : ''}${p.sz ? `<w:sz w:val="${p.sz}"/><w:szCs w:val="${p.sz}"/>` : ''}</w:rPr><w:t xml:space="preserve">${xe(p.caps ? p.t.toUpperCase() : p.t)}</w:t></w:r>`;
   function limpiar(ps) { // sin espacios al principio ni al final del párrafo
     ps = ps.slice();
@@ -50,7 +53,7 @@
   const BLOQUES = ['p', 'h1', 'h2', 'h3', 'ul', 'ol', 'table', 'div', 'header', 'footer', 'dl', 'article', 'section'];
   function bloques(cont, ctx) {
     let x = '', buf = [];
-    const vaciar = () => { if (buf.some((p) => p.br || (p.t && p.t.trim()))) x += par(buf, { sp: ctx.cell ? SP.celda : SP.texto, jc: ctx.jc }); buf = []; };
+    const vaciar = () => { if (buf.some((p) => p.br || p.img !== undefined || (p.t && p.t.trim()))) x += par(buf, { sp: ctx.cell ? SP.celda : SP.texto, jc: ctx.jc }); buf = []; };
     cont.childNodes.forEach((n) => {
       if (n.nodeType === 3) { const t = n.textContent.replace(/\s+/g, ' '); if (t.trim() || buf.length) buf.push({ ...ctx.st, t }); return; }
       if (n.nodeType !== 1) return;
@@ -70,6 +73,7 @@
     if (g === 'h2') return par(piezas([...n.childNodes], {}, []), { style: 'Heading1' });
     if (g === 'h3') return par(piezas([...n.childNodes], { h3: true }, []), { style: 'Heading2' });
     if (g === 'p') {
+      if (n.classList.contains('dc-img')) return par(piezas([...n.childNodes], {}, []), { jc: 'center', sp: 'w:before="80" w:after="120" w:line="240" w:lineRule="auto"' });
       const nota = n.classList.contains('dc-s');
       return par(piezas([...n.childNodes], nota ? { c: C.muted, sz: 19 } : st, []), { sp: ctx.cell ? SP.celda : SP.texto, jc: ctx.jc, keepNext: (nota && !/^Y \d+ más/.test(n.textContent.trim())) || (!!n.previousElementSibling && n.previousElementSibling.tagName.toLowerCase() === 'h2') });
     }
@@ -230,7 +234,7 @@
   }
 
   // ── piezas fijas del paquete .docx ──
-  const NS = 'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"';
+  const NS = 'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"';
   const XML = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
   const estilos = () => `${XML}<w:styles ${NS}><w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="${FUENTE}" w:hAnsi="${FUENTE}" w:eastAsia="${FUENTE}" w:cs="${FUENTE}"/><w:color w:val="${C.ink}"/><w:sz w:val="22"/><w:szCs w:val="22"/><w:lang w:val="es-CL" w:eastAsia="es-CL" w:bidi="ar-SA"/></w:rPr></w:rPrDefault><w:pPrDefault><w:pPr><w:spacing w:after="80" w:line="348" w:lineRule="auto"/></w:pPr></w:pPrDefault></w:docDefaults>
 <w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/><w:qFormat/></w:style>
@@ -279,19 +283,20 @@
     const ficha = {};
     art.querySelectorAll('.dc-meta > div').forEach((d) => { ficha[((d.querySelector('dt') || {}).textContent || '').trim()] = ((d.querySelector('dd') || {}).textContent || '').trim(); });
     const titulo = [((art.querySelector('h1') || {}).textContent || 'Documento').trim(), ficha.Empresa, ficha.Fecha].filter(Boolean).join(' · ');
+    IMGS.length = 0;
     const ctx = { n: 1, nums: [], st: {}, cell: false };
     const cuerpo = bloques(art, ctx);
     const sect = `<w:sectPr><w:footerReference w:type="default" r:id="rId5"/><w:pgSz w:w="12240" w:h="15840"/><w:pgMar w:top="700" w:right="624" w:bottom="1000" w:left="624" w:header="400" w:footer="440" w:gutter="0"/></w:sectPr>`;
     const archivos = [
-      ['[Content_Types].xml', `${XML}<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/><Override PartName="/word/numbering.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.numbering+xml"/><Override PartName="/word/footer1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml"/><Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/></Types>`],
+      ['[Content_Types].xml', `${XML}<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="png" ContentType="image/png"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/><Override PartName="/word/numbering.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.numbering+xml"/><Override PartName="/word/footer1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml"/><Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/></Types>`],
       ['_rels/.rels', `${XML}<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/></Relationships>`],
       ['docProps/core.xml', `${XML}<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><dc:title>${xe(titulo)}</dc:title><dc:creator>AlignData · D360°</dc:creator><dcterms:created xsi:type="dcterms:W3CDTF">${new Date().toISOString().replace(/\.\d+Z$/, 'Z')}</dcterms:created></cp:coreProperties>`],
-      ['word/_rels/document.xml.rels', `${XML}<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/numbering" Target="numbering.xml"/><Relationship Id="rId5" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer" Target="footer1.xml"/></Relationships>`],
+      ['word/_rels/document.xml.rels', `${XML}<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/numbering" Target="numbering.xml"/><Relationship Id="rId5" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer" Target="footer1.xml"/>${IMGS.map((_, i) => `<Relationship Id="rIdImg${i + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/imagen${i + 1}.png"/>`).join('')}</Relationships>`],
       ['word/document.xml', `${XML}<w:document ${NS}><w:body>${cuerpo}${sect}</w:body></w:document>`],
       ['word/styles.xml', estilos()],
       ['word/numbering.xml', numeracion(ctx.nums)],
       ['word/footer1.xml', pie()]
-    ].map(([n, x]) => ({ n, d: enc.encode(x) }));
+    ].map(([n, x]) => ({ n, d: enc.encode(x) })).concat(IMGS.map((im, i) => ({ n: `word/media/imagen${i + 1}.png`, d: Uint8Array.from(atob(im.b64), (c) => c.charCodeAt(0)) })));
     return zip(archivos, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
   };
   window.descargarWord = function (html, archivo) {

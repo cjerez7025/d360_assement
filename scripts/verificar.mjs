@@ -617,7 +617,7 @@ seccion('16. Metodología y ponderación sectorial: la explicación coincide con
   ok(/\$\{secNota\(en\)\}/.test(codigo), 'la nota del ajuste está en el encabezado de los resultados');
   ok(/\['t7','calculator','Método',''\]/.test(codigo) && /id="t7"/.test(codigo), 'la pestaña «Método» está en los resultados');
   ok(/id="dlg-met"/.test(ih) && !/id="bmet"/.test(ih) && /function metDlg\(\)/.test(codigo) && /id: 'met'[^\n]*off: \(\) => pantalla\(\) !== 's3'/.test(fs.readFileSync(path.join(path.dirname(file), '..', 'public/lateral.js'), 'utf8')), 'el puntaje y su cálculo se ven solo al final: «Cómo se calcula» ya no está en la pantalla de preguntas y el menú lo habilita solo en los resultados');
-  ok(/@media print\{#t7,#t8,#t9,#bmet\{display:none!important\}\}/.test(cs), 'la metodología no sale en el PDF (no cambia su paginación)');
+  ok(/@media print\{#t6,#t7,#t8,#t9,#bmet\{display:none!important\}\}/.test(cs), 'la metodología y la pizarra no salen en el PDF del informe técnico (los comentarios van solo en el acta)');
 }
 
 seccion('17. Documentos adjuntos (PDF, Word, Excel…) y pegado');
@@ -2004,6 +2004,17 @@ seccion('36. Informe ejecutivo y acta: PDF y Word, participantes y formato del i
   corre("delete en.a['GOB-01']");
   ok(corre('docTecnico(en)').includes('Sin respuesta registrada'), 'una pregunta sin respuesta se indica en el detalle');
   ok(/docDlg\('tecnico'\)/.test(lj36) && /t === 'tecnico' \? 'Informe D360 - '/.test(rj36) && /ESTADO = /.test(wj36), 'el informe técnico se descarga como «Informe D360 - …» en PDF y en Word, con el estado de cada obligación en color');
+
+  // el PDF del informe técnico conserva el diseño de la pantalla de resultados (medidor, radar y tarjetas), sin la pizarra y con el detalle de respuestas
+  ok(/function imprimirTecnico\(\) \{[\s\S]*?pdf\(\)/.test(rj36) && /tec \? imprimirTecnico\(\) : imprimirDoc\(t\)/.test(rj36), 'el PDF del informe técnico es la impresión de la pantalla de resultados (pdf()), no el documento simple');
+  ok(/id="t12"/.test(aj36) && /respDimHtml\(en\)/.test(aj36) && aj36.indexOf('id="t12"') < aj36.indexOf('id="t6"'), 'la pantalla de resultados trae el detalle de respuestas (solo visible al imprimir), antes de la pizarra');
+  // el Word del informe técnico lleva el medidor y el radar como imágenes (decisión del 11-11-2026)
+  ok(/function imgHero\(/.test(rj36) && /function imgRadar\(/.test(rj36) && /\$\{imgHtml\(imgHero\(e\)\)\}/.test(rj36) && /\$\{imgHtml\(imgRadar\(e\), 470\)\}/.test(rj36), 'el informe técnico en Word lleva el medidor de la portada y el radar de las dimensiones');
+  ok(/image\/png/.test(wj36) && /word\/media\/imagen/.test(wj36) && /<w:drawing><wp:inline/.test(wj36) && /rIdImg/.test(wj36), 'word.js incrusta las imágenes PNG como parte del .docx (tipo de contenido, relación y archivo)');
+  ok(corre('docTecnico(en)').includes('Detalle de respuestas por dimensión') && !/NaN|undefined/.test(corre('docTecnico(en)')), 'si no hay dónde dibujar (sin lienzo), el informe técnico se arma igual, sin imágenes');
+  corre("window.PZ = { entries: [] }; en.rs(); en.sp({ nombre: 'Empresa X', sector: 'legal', 'tamaño': '1-10' }); for (const q of Q) en.a[q.id] = 2;");
+  const rd = corre('respDimHtml(en)');
+  ok((rd.match(/class="rdd-h"/g) || []).length === D.length && (rd.match(/Respuesta: <strong>2 · /g) || []).length === corre('en.ga().length'), 'el detalle de respuestas del PDF tiene las ocho dimensiones y la respuesta de cada pregunta');
   corre("window.PZ = { entries: [] }; en.rs();");
 }
 
