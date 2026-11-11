@@ -229,12 +229,21 @@ function docMetodo(e) {
   return `<h2>Metodología D360°: ocho dimensiones, una escala de 0 a 4</h2><div class="dc-mt">${dim.map((d) => `<div class="dc-m8"><h4>${esc(d.n)}</h4><p>${esc(MET_D[d.id] || d.s)}</p></div>`).join('')}</div><div class="dc-esc">${niv.map((n, i) => `<span class="s${i}"><b>${i}</b> ${esc(n)}</span>`).join('')}</div>`;
 }
 // servicios que AlignData puede ofrecer a continuación: salen del catálogo de paquetes (servicio.js); no se ofrece el que el cliente ya tiene
+// Servicios que se ofrecen en el informe ejecutivo (acuerdo del 11-11-2026): D360° Evalúa y el Portal ARCOP. Evalúa sale del catálogo de paquetes
+// (servicio.js); el Portal no tiene paquete propio (hoy va dentro de D360° Implementa), así que su texto sale de ese paquete y de la dimensión
+// Derechos del titular. Texto provisorio: lo valida Ricardo Carmona.
+const SRV_PORTAL = {
+  n: 'Portal ARCOP', tag: 'Derechos del titular en producción',
+  incl: ['Portal para recibir y responder las solicitudes de las personas: acceso, rectificación, supresión, oposición, portabilidad y bloqueo', 'Plazos, seguimiento y evidencia de cada respuesta', 'Panel del delegado de datos en producción']
+};
 function docServicios(e) {
-  if (typeof SRV_P === 'undefined' || typeof SRV_SOLICITABLES === 'undefined') return '';
+  if (typeof SRV_P === 'undefined' || typeof SRV_ACT === 'undefined') return '';
   const tiene = e.srv && SRV_ACT.includes(e.srv.estado) ? SRV_P[e.srv.paquete] : null;
-  const ofrece = SRV_SOLICITABLES.filter((k) => SRV_P[k] && (!tiene || SRV_P[k].nivel > tiene.nivel));
-  if (!ofrece.length) return '';
-  return `<h2>Servicios que puede entregar AlignData para asegurar el cumplimiento y optimizar tiempos</h2><p>Para cerrar las brechas de este diagnóstico y ganar tiempo antes de la entrada en vigor, AlignData ofrece los siguientes servicios, que se pueden contratar en forma progresiva:</p>${ofrece.map((k) => `<div class="dc-o"><h3>${esc(SRV_P[k].n)} <span>${esc(SRV_P[k].tag)}</span></h3><ul class="dc-l">${SRV_P[k].incl.map((i) => `<li>${esc(i)}</li>`).join('')}</ul></div>`).join('')}`;
+  const lista = [];
+  if (SRV_P.evalua && (!tiene || SRV_P.evalua.nivel > tiene.nivel)) lista.push(SRV_P.evalua);
+  if (!tiene || tiene.nivel < (SRV_P.implementa || { nivel: 4 }).nivel) lista.push(SRV_PORTAL); // el Portal ya viene en D360° Implementa
+  if (!lista.length) return '';
+  return `<h2>Servicios que puede entregar AlignData para asegurar el cumplimiento y optimizar tiempos</h2><p>Para cerrar las brechas de este diagnóstico y ganar tiempo antes de la entrada en vigor, AlignData ofrece los siguientes servicios:</p>${lista.map((k) => `<div class="dc-o"><h3>${esc(k.n)} <span>${esc(k.tag)}</span></h3><ul class="dc-l">${k.incl.map((i) => `<li>${esc(i)}</li>`).join('')}</ul></div>`).join('')}`;
 }
 function docInforme(e) {
   const sc = e.sc(), mt = e.ml(sc.g), cl = e.cl2(), fl = e.fl(), r = ruta(e), pts = evoPuntos(e);

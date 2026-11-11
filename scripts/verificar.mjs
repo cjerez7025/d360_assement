@@ -1946,12 +1946,13 @@ seccion('36. Informe ejecutivo y acta: PDF y Word, participantes y formato del i
   ok(hi.indexOf('Fuentes:') > hi.indexOf('<h2>Resumen</h2>') && hi.indexOf('Fuentes:') < hi.indexOf('<h2>Resultado por dimensión</h2>'), 'las notas van entre el resumen y los resultados');
   ok(txt.includes('En forma adicional se sugiere repetir el diagnóstico a los 3, 6 y 12 meses') && !/pestaña Método/.test(txt), 'Próximos pasos sugiere repetir el diagnóstico «en forma adicional» y el alcance no remite a la pestaña Método');
   ok(/<h2>Servicios que puede entregar AlignData para asegurar el cumplimiento y optimizar tiempos<\/h2>/.test(hi) && hi.indexOf('<h2>Servicios que') > hi.indexOf('<h2>Próximos pasos</h2>') && hi.indexOf('<h2>Servicios que') < hi.indexOf('<footer'), 'el informe cierra con los servicios que AlignData puede entregar, después de los próximos pasos');
-  ok(/D360° Evalúa/.test(hi) && /D360° Acompaña/.test(hi) && /D360° Implementa/.test(hi) && !/<h3>D360° Inicia /.test(hi) && !/Combo/.test(hi), 'los servicios salen del catálogo de paquetes: Evalúa, Acompaña e Implementa (no el Inicia que se está entregando ni el combo)');
-  corre("en.srv = { paquete: 'acompana', estado: 'activa' }");
+  ok(/<h3>D360° Evalúa /.test(hi) && /<h3>Portal ARCOP /.test(hi) && !/D360° Acompaña/.test(hi) && !/D360° Implementa/.test(hi) && !/<h3>D360° Inicia /.test(hi) && !/Combo/.test(hi), 'los servicios que se ofrecen son D360° Evalúa (del catálogo de paquetes) y el Portal ARCOP (acuerdo del 11-11-2026)');
+  ok(hi.indexOf('<h3>D360° Evalúa ') < hi.indexOf('<h3>Portal ARCOP '), 'primero Evalúa y después el Portal');
+  corre("en.srv = { paquete: 'evalua', estado: 'activa' }");
   const hs = corre('docInforme(en)');
-  ok(!/<h3>D360° Evalúa /.test(hs) && !/<h3>D360° Acompaña /.test(hs) && /<h3>D360° Implementa /.test(hs), 'si el cliente ya tiene un paquete activo, solo se ofrecen los de nivel superior');
+  ok(!/<h3>D360° Evalúa /.test(hs) && /<h3>Portal ARCOP /.test(hs), 'si el cliente ya tiene Evalúa activo, solo se ofrece el Portal');
   corre("en.srv = { paquete: 'implementa', estado: 'activa' }");
-  ok(!/<h2>Servicios que/.test(corre('docInforme(en)')), 'si ya tiene el paquete más alto, no se ofrece ninguno y no queda un título vacío');
+  ok(!/<h2>Servicios que/.test(corre('docInforme(en)')), 'si ya tiene Implementa (que incluye el Portal), no se ofrece nada y no queda un título vacío');
   corre("en.srv = null");
   const ha = corre('docActa(en)');
   ok(/<h2>Participantes<\/h2>[\s\S]*Karen Otárola — Cliente[\s\S]*Patricio Oliva — Consultor AlignData/.test(ha), 'el acta usa la misma lista de participantes');
