@@ -1041,7 +1041,7 @@ dialog.dlg-met[open]{display:flex}
   .dc-acta .dc-t th{white-space:nowrap;width:46pt}
   .dc-bar{display:inline-block;width:70pt;height:6pt;background:#EAF0EE;border-radius:3pt;vertical-align:middle;margin-right:4pt}.dc-bar i{display:block;height:100%;border-radius:3pt}
   .dc-l,.dc-c{margin:4pt 0;padding-left:16pt}.dc-l li,.dc-c li{margin:2pt 0}.dc-c{font-size:9.5pt;color:#3A4A47}
-  .dc-o{break-inside:avoid}.dc-o ol{margin:3pt 0;padding-left:16pt}.dc-s{color:#556560;font-size:9.5pt}.dc-n{font-size:9.5pt;color:#3A4A47;margin:3pt 0}.dc-o ul{margin:3pt 0;padding-left:16pt}.dc-r{margin-top:2pt;color:#3A4A47}
+  .dc-o{break-inside:avoid}.dc-o ol{margin:3pt 0;padding-left:16pt}.dc-s{color:#556560;font-size:9.5pt}.dc-n{margin:4pt 0}.dc-o ul{margin:3pt 0;padding-left:16pt}.dc-r{margin-top:2pt;color:#3A4A47}
   .dc-fir{display:grid;grid-template-columns:1fr 1fr;gap:30pt;margin-top:46pt;break-inside:avoid}.dc-fir div{border-top:.75pt solid #13201E;padding-top:4pt;text-align:center;font-size:9.5pt}.dc-fir span{display:none}
   .dc-p{margin-top:18pt;padding-top:6pt;border-top:.5pt solid #D9E1DF;font-size:8.5pt;color:#556560}
   .evo-svg{display:none}
