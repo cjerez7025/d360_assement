@@ -1967,6 +1967,28 @@ seccion('36. Informe ejecutivo y acta: PDF y Word, participantes y formato del i
   ok(/<i style="width:\$\{s\}%;background:\$\{l\.c\}">/.test(rj36) && /conBarra/.test(wj36), 'las barras de puntaje del PDF pasan al Word con su largo y color');
   ok(!/\bimport\b|require\(|https?:\/\//.test(wj36.replace(/https?:\/\/(schemas\.openxmlformats\.org|purl\.org|www\.w3\.org)[^"'\s<]*/g, '')), 'word.js no depende de librerías ni de servidores externos (solo nombra los espacios de nombres XML de Word)');
   ok(/participantes: en\.part \|\| null/.test(nj36) && /participantes: en\.part \|\| null/.test(npj36) && /this\.part=typeof partLimpio==='function'\?partLimpio\(d\.participantes\):null/.test(aj36), 'los participantes se guardan con la sesión (nube y modo de prueba) y se leen al abrirla');
+
+  // gráficos del informe: «Cinco etapas hasta el cierre» y «Metodología D360°» (como en el ejemplo del equipo)
+  corre("window.PZ = { entries: [] }; en.rs(); en.sp({ nombre: 'Empresa X', sector: 'legal', 'tamaño': '1-10' }); for (const q of Q) en.a[q.id] = 1; en.part = null; en.etp = null; en.srv = null;");
+  const g1 = corre('docInforme(en)');
+  ok(/<h2>Cinco etapas hasta el cierre<\/h2><div class="dc-et">/.test(g1) && (g1.match(/<div class="dc-e[ "]/g) || []).length === 5, 'el informe muestra las cinco etapas hasta el cierre');
+  ok(['Kick-off', 'Talleres de assessment', 'Análisis y revisión legal', 'Entregables', 'Presentación a la gerencia'].every((t) => g1.includes('<h4>' + t + '</h4>')), 'las etapas se llaman Kick-off, Talleres de assessment, Análisis y revisión legal, Entregables y Presentación a la gerencia');
+  ok((g1.match(/class="dc-e dc-ok"/g) || []).length === 3 && !/<small>/.test(g1.slice(g1.indexOf('dc-et'), g1.indexOf('Metodología'))), 'con el cuestionario completo, las tres primeras etapas salen hechas y sin fechas si no se cargaron');
+  corre("en.etp = etpLimpio({ e: '2026-11-12', p: '2026-11-19' })");
+  const g2 = corre('docInforme(en)');
+  ok(g2.includes('<small>Jueves 12 de Nov</small>') && g2.includes('<small>Jueves 19 de Nov</small>'), 'las fechas previstas salen en Entregables y Presentación a la gerencia («Jueves 12 de Nov»)');
+  ok(corre("etpFecha('2026-02-30')") === '' && corre("etpLimpio({ e: 'x', p: '2026-13-01' })") === null && corre("etpLimpio('x')") === null, 'las fechas inválidas se descartan');
+  corre("en.etp = null; en.a['GOB-01'] = undefined; delete en.a['GOB-01'];");
+  ok(!/class="dc-e dc-ok"/.test(corre('docInforme(en)')), 'con el cuestionario incompleto, ninguna etapa sale como hecha');
+  corre("for (const q of Q) en.a[q.id] = 1;");
+  ok(/<h2>Metodología D360°: ocho dimensiones, una escala de 0 a 4<\/h2><div class="dc-mt">/.test(g1) && (g1.match(/class="dc-m8"/g) || []).length === 8, 'el informe explica la metodología con las ocho dimensiones');
+  ok(['Gobierno y liderazgo', 'Gestión de terceros', 'Seguridad tecnológica', 'Ciclo de vida del dato', 'Gestión de riesgos', 'Derechos del titular', 'Cumplimiento normativo', 'Cultura y formación'].every((d) => g1.includes('<h4>' + d + '</h4>')), 'las dimensiones llevan los mismos nombres que las tablas del informe');
+  ok(/<span class="s0"><b>0<\/b> Inexistente<\/span><span class="s1"><b>1<\/b> Reactivo<\/span><span class="s2"><b>2<\/b> Parcial<\/span><span class="s3"><b>3<\/b> Gestionado<\/span><span class="s4"><b>4<\/b> Optimizado<\/span>/.test(g1), 'la escala de 0 a 4 usa los mismos niveles que el puntaje (Inexistente, Reactivo, Parcial, Gestionado, Optimizado)');
+  ok(g1.indexOf('Cinco etapas') > g1.indexOf('Marco normativo') && g1.indexOf('Metodología D360°') > g1.indexOf('Cinco etapas') && g1.indexOf('<h2>Resultado por dimensión</h2>') > g1.indexOf('Metodología D360°'), 'los gráficos van después de las notas y antes del resultado por dimensión, como en el ejemplo');
+  ok(!/<div class="dc-et"/.test(corre('docActa(en)')), 'el acta no lleva los gráficos del informe');
+  ok(/etapas: en\.etp \|\| null/.test(nj36) && /etapas: en\.etp \|\| null/.test(npj36) && /this\.etp=typeof etpLimpio==='function'\?etpLimpio\(d\.etapas\):null/.test(aj36), 'las fechas previstas se guardan con la sesión y se leen al abrirla');
+  ok(/id="dd-ent"/.test(rj36) && /id="dd-pre"/.test(rj36) && /guardarFechas\(\)/.test(rj36), 'el diálogo de descarga permite cargar las dos fechas previstas');
+  ok(/function tarjetas\(/.test(wj36) && /function escala\(/.test(wj36) && /92D050/.test(wj36) && /'dc-et'/.test(wj36) && /'dc-esc'/.test(wj36), 'word.js dibuja las tarjetas de etapas y dimensiones y la escala de niveles con color');
   corre("window.PZ = { entries: [] }; en.rs();");
 }
 

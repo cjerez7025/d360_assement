@@ -194,6 +194,40 @@ function docNotas(e) {
   const gente = [L.cli.length ? `${nom(L.cli)} (${emp})` : '', L.con.length ? `${nom(L.con)} (AlignData)` : ''].filter(Boolean).join('; ');
   return `<p class="dc-n"><strong>Fuentes:</strong> ${esc(fuentes)}.</p>${gente ? `<p class="dc-n"><strong>Participantes:</strong> ${esc(gente)}.</p>` : ''}<p class="dc-n"><strong>Escala:</strong> cada respuesta se califica de 0 a 3 según lo declarado; el índice de 0 a 4 resulta de dividir el puntaje global por 25, y la meta de referencia es el nivel 3 (Gestionado, de 61% a 80%).</p><p class="dc-n"><strong>Marco normativo:</strong> Ley N° 19.628, modificada por la Ley N° 21.719, y Decreto N° 662 de 2026, que reglamenta los modelos de prevención de infracciones.</p>`;
 }
+// ── gráficos del informe (formato acordado el 11-11-2026): «Cinco etapas hasta el cierre» y «Metodología D360°» ──
+const ETAPAS_P = [
+  ['Kick-off', 'Acordamos participantes, fechas y documentos.'],
+  ['Talleres de assessment', 'Dos sesiones por grupos de dimensiones, con quienes conocen cada tema.'],
+  ['Análisis y revisión legal', 'Puntuación por dimensión y revisión de los hallazgos normativos.'],
+  ['Entregables', 'Dashboard, informe ejecutivo y plan a 3, 6 y 12 meses.'],
+  ['Presentación a la gerencia', 'Resultados y plan de adecuación.']
+];
+const DIAS_L = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'], MESES_C = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+const etpFecha = (s) => { // «2026-11-12» → «Jueves 12 de Nov»
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(s || '')); if (!m) return '';
+  const d = new Date(+m[1], +m[2] - 1, +m[3]);
+  return d.getMonth() !== +m[2] - 1 ? '' : DIAS_L[d.getDay()] + ' ' + d.getDate() + ' de ' + MESES_C[d.getMonth()];
+};
+function etpLimpio(x) { // fechas previstas de las dos últimas etapas: { e: entrega, p: presentación }
+  if (!x || typeof x !== 'object') return null;
+  const f = (v) => (/^\d{4}-\d{2}-\d{2}$/.test(String(v || '')) && etpFecha(v) ? String(v) : '');
+  const r = { e: f(x.e), p: f(x.p) };
+  return r.e || r.p ? r : null;
+}
+// las tres primeras etapas se dan por hechas cuando el cuestionario está completo; las dos últimas, según los hitos del servicio
+function docEtapas(e) {
+  const pg = e.pg(), completa = pg.t > 0 && pg.d === pg.t, h = (e.srv && e.srv.hitos) || {}, et = e.etp || {};
+  const ok = [completa, completa, completa, !!(h.dashboard || h.informe), !!(h.informe || h.cierre)];
+  const fe = ['', '', '', etpFecha(et.e), etpFecha(et.p)];
+  return `<h2>Cinco etapas hasta el cierre</h2><div class="dc-et">${ETAPAS_P.map((p, i) => `<div class="dc-e${ok[i] ? ' dc-ok' : ''}"><b>${i + 1}</b><h4>${esc(p[0])}</h4><p>${esc(p[1])}</p>${fe[i] ? `<small>${esc(fe[i])}</small>` : ''}</div>`).join('')}</div>`;
+}
+const MET_D = { gobernanza: 'Responsables, políticas y apoyo de la gerencia', terceros: 'Proveedores y encargados que tratan datos', seguridad: 'Protección de sistemas y accesos', registro: 'Qué datos tratan, para qué y por cuánto tiempo', riesgo: 'Cómo identifican y priorizan los riesgos', arcop: 'Cómo atienden las solicitudes de las personas', cumplimiento: 'Documentos, avisos y consentimientos', cultura: 'Conocimiento y hábitos del equipo' };
+const MET_ORD = ['gobernanza', 'terceros', 'seguridad', 'registro', 'riesgo', 'arcop', 'cumplimiento', 'cultura'];
+function docMetodo(e) {
+  const dim = MET_ORD.map((id) => D.find((d) => d.id === id)).filter(Boolean);
+  const niv = [10, 30, 50, 70, 90].map((s) => e.ml(s).nm); // los mismos nombres de nivel que las tablas del informe
+  return `<h2>Metodología D360°: ocho dimensiones, una escala de 0 a 4</h2><div class="dc-mt">${dim.map((d) => `<div class="dc-m8"><h4>${esc(d.n)}</h4><p>${esc(MET_D[d.id] || d.s)}</p></div>`).join('')}</div><div class="dc-esc">${niv.map((n, i) => `<span class="s${i}"><b>${i}</b> ${esc(n)}</span>`).join('')}</div>`;
+}
 // servicios que AlignData puede ofrecer a continuación: salen del catálogo de paquetes (servicio.js); no se ofrece el que el cliente ya tiene
 function docServicios(e) {
   if (typeof SRV_P === 'undefined' || typeof SRV_SOLICITABLES === 'undefined') return '';
@@ -212,7 +246,7 @@ function docInforme(e) {
   const olas = r.olas.filter((o) => o.items.length).map((o) => `<div class="dc-o"><h3>Etapa ${o.n} · ${esc(o.t)} <span>${esc(o.p)}</span></h3><p class="dc-s">${o.items.length} ${o.items.length === 1 ? 'iniciativa' : 'iniciativas'} · +${fnum(o.gain)} pts · puntaje estimado al terminar: ~${o.hasta}%</p><ol>${o.items.slice(0, 5).map((i) => `<li><strong>${esc(i.q.id)}</strong> ${i.q.q} <em>— Meta: ${esc(rtPaso(i).meta)}. Esfuerzo ${EF_N[i.ef].toLowerCase()} (${EF_T[i.ef]}), +${fnum(i.gain)} pts.</em></li>`).join('')}</ol>${o.items.length > 5 ? `<p class="dc-s">Y ${o.items.length - 5} más en el detalle de la hoja de ruta.</p>` : ''}</div>`).join('');
   const evo = pts.length > 1 ? `<h2>Evolución</h2>${evoTabla(pts, false).replace('class="met-t evo-t"', 'class="dc-t"')}` : '';
   const sec = SEC[(e.p || {}).sector] || (TAM[(e.p || {})['tamaño']] || {}).lv > 0 ? `<p>El puntaje incluye ${[SEC[(e.p || {}).sector] ? 'la ponderación por exposición sectorial' : '', (TAM[(e.p || {})['tamaño']] || {}).lv > 0 ? 'el ajuste por tamaño' : ''].filter(Boolean).join(' y ')}; sin ajustes sería ${sc.gb}%.</p>` : '';
-  return `<article class="dc">${docCab('Informe ejecutivo', e)}<h2>Resumen</h2><p>${resumen}</p>${docNotas(e)}<h2>Resultado por dimensión</h2>${dims}${alertas}<h2>Hoja de ruta</h2>${r.items.length ? `<p>${r.items.length} brechas ordenadas por beneficio y esfuerzo. Si se completan todas, el puntaje pasaría de ${r.g}% a ${Math.min(100, Math.round(r.actual + r.total))}%.</p>${olas}` : '<p>No hay brechas pendientes.</p>'}${evo}<h2>Alcance y límites</h2><p>Es un diagnóstico de preparación frente a la Ley 21.719 basado en lo que se declaró en la reunión: no es una auditoría ni una opinión legal. Los pesos, los ajustes por rubro y tamaño, el esfuerzo de cada iniciativa y los plazos de las etapas son criterios de AlignData sujetos a revisión.</p>${sec}<h2>Próximos pasos</h2><ol class="dc-l"><li>Validar la hoja de ruta con la gerencia y asignar un responsable a cada iniciativa de la Etapa 1.</li><li>Atender primero las alertas críticas${fl.length ? '' : ' (no hay alertas críticas en esta evaluación)'}.</li><li>En forma adicional se sugiere repetir el diagnóstico a los 3, 6 y 12 meses para medir el avance contra la meta (nivel 3).</li></ol>${docServicios(e)}<footer class="dc-p">AlignData · aligndata.cl · Documento generado por el D360° el ${fch()}</footer></article>`;
+  return `<article class="dc">${docCab('Informe ejecutivo', e)}<h2>Resumen</h2><p>${resumen}</p>${docNotas(e)}${docEtapas(e)}${docMetodo(e)}<h2>Resultado por dimensión</h2>${dims}${alertas}<h2>Hoja de ruta</h2>${r.items.length ? `<p>${r.items.length} brechas ordenadas por beneficio y esfuerzo. Si se completan todas, el puntaje pasaría de ${r.g}% a ${Math.min(100, Math.round(r.actual + r.total))}%.</p>${olas}` : '<p>No hay brechas pendientes.</p>'}${evo}<h2>Alcance y límites</h2><p>Es un diagnóstico de preparación frente a la Ley 21.719 basado en lo que se declaró en la reunión: no es una auditoría ni una opinión legal. Los pesos, los ajustes por rubro y tamaño, el esfuerzo de cada iniciativa y los plazos de las etapas son criterios de AlignData sujetos a revisión.</p>${sec}<h2>Próximos pasos</h2><ol class="dc-l"><li>Validar la hoja de ruta con la gerencia y asignar un responsable a cada iniciativa de la Etapa 1.</li><li>Atender primero las alertas críticas${fl.length ? '' : ' (no hay alertas críticas en esta evaluación)'}.</li><li>En forma adicional se sugiere repetir el diagnóstico a los 3, 6 y 12 meses para medir el avance contra la meta (nivel 3).</li></ol>${docServicios(e)}<footer class="dc-p">AlignData · aligndata.cl · Documento generado por el D360° el ${fch()}</footer></article>`;
 }
 function docActa(e) {
   const pgA = e.pg(), completa = pgA.t > 0 && pgA.d === pgA.t;
@@ -250,6 +284,7 @@ function docDlg(t) {
   const area = (id, l) => `<textarea id="${id}" rows="${Math.max(3, l.length + 1)}" spellcheck="false" ${edita ? '' : 'readonly'}>${esc(l.map((p) => p.n + (p.c ? ', ' + p.c : '')).join('\n'))}</textarea>`;
   sl.innerHTML = `<p class="dd-p">${acta ? 'Resume la reunión: respuestas, comentarios de la pizarra y compromisos propuestos, con espacio para las firmas.' : 'Resumen de resultados, alertas críticas, hoja de ruta y servicios que AlignData puede entregar.'}</p>
 <div class="dd-part"><h3>Participantes</h3><p class="dd-n">${edita ? 'Aparecen en el informe y en el acta. Uno por línea: «Nombre, cargo». Revíselos antes de descargar.' : 'Personas que participaron en la reunión.'}</p><label for="dd-cli">Por ${esc(emp)}</label>${area('dd-cli', L.cli)}<label for="dd-con">Por AlignData</label>${area('dd-con', L.con)}</div>
+${acta ? '' : `<div class="dd-part"><h3>Fechas previstas</h3><p class="dd-n">${edita ? 'Salen en las etapas «Entregables» y «Presentación a la gerencia». Déjelas vacías para no mostrar fecha.' : 'Fechas previstas de las dos últimas etapas.'}</p><div class="dd-f"><div><label for="dd-ent">Entrega del informe</label><input type="date" id="dd-ent" value="${esc((en.etp || {}).e || '')}" ${edita ? '' : 'readonly'}></div><div><label for="dd-pre">Presentación a la gerencia</label><input type="date" id="dd-pre" value="${esc((en.etp || {}).p || '')}" ${edita ? '' : 'readonly'}></div></div></div>`}
 <div class="dd-bt"><button type="button" class="be" id="dd-pdf"><i data-lucide="file-down"></i> Descargar PDF</button><button type="button" class="be dd-w" id="dd-word"><i data-lucide="file-text"></i> Descargar Word</button></div>
 <p class="dd-n">El PDF se guarda desde el cuadro de impresión: elija «Guardar como PDF» como destino.</p>`;
   const leer = (id) => document.getElementById(id).value.split('\n').map((s) => s.trim()).filter(Boolean).slice(0, 15).map((s) => { const i = s.indexOf(','); return i < 0 ? { n: s.slice(0, 80), c: '' } : { n: s.slice(0, i).trim().slice(0, 80), c: s.slice(i + 1).trim().slice(0, 80) }; }).filter((p) => p.n);
@@ -259,8 +294,15 @@ function docDlg(t) {
     if (JSON.stringify(nueva) === JSON.stringify(partLista(en))) return;
     en.part = partLimpio(nueva); en.sv();
   };
-  document.getElementById('dd-pdf').onclick = () => { guardar(); d.close(); setTimeout(() => imprimirDoc(t), 200); };
-  document.getElementById('dd-word').onclick = () => { guardar(); descargarWordDoc(t); d.close(); };
+  const guardarFechas = () => {
+    const ent = document.getElementById('dd-ent'), pre = document.getElementById('dd-pre');
+    if (!edita || !ent || !pre) return;
+    const nueva = etpLimpio({ e: ent.value, p: pre.value });
+    if (JSON.stringify(nueva) === JSON.stringify(etpLimpio(en.etp))) return;
+    en.etp = nueva; en.sv();
+  };
+  document.getElementById('dd-pdf').onclick = () => { guardar(); guardarFechas(); d.close(); setTimeout(() => imprimirDoc(t), 200); };
+  document.getElementById('dd-word').onclick = () => { guardar(); guardarFechas(); descargarWordDoc(t); d.close(); };
   if (window.lucide) lucide.createIcons();
   if (!d.open) d.showModal();
 }

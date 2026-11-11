@@ -77,6 +77,8 @@
     if (g === 'table') return tabla(n, ctx);
     if (g === 'div') {
       if (n.classList.contains('dc-fir')) return firmas(n);
+      if (n.classList.contains('dc-et') || n.classList.contains('dc-mt')) return tarjetas(n, n.classList.contains('dc-et') ? 5 : 4);
+      if (n.classList.contains('dc-esc')) return escala(n);
       if (n.classList.contains('dc-r')) return bloques(n, { ...ctx, st: { ...st, c: C.coment } });
       return bloques(n, ctx);
     }
@@ -99,7 +101,7 @@
   // ── tablas y celdas ──
   const borde = (lado, sz = 4) => `<w:${lado} w:val="single" w:sz="${sz}" w:space="0" w:color="${C.line}"/>`;
   const celda = (contenido, ancho, o = {}) => `<w:tc><w:tcPr><w:tcW w:w="${ancho}" w:type="dxa"/>${o.span ? `<w:gridSpan w:val="${o.span}"/>` : ''}${o.bordes ? `<w:tcBorders>${o.bordes}</w:tcBorders>` : ''}${o.fill ? `<w:shd w:val="clear" w:color="auto" w:fill="${o.fill}"/>` : ''}<w:tcMar><w:top w:w="${o.mt ?? 60}" w:type="dxa"/><w:left w:w="${o.ml ?? 100}" w:type="dxa"/><w:bottom w:w="${o.mb ?? 60}" w:type="dxa"/><w:right w:w="${o.mr ?? 100}" w:type="dxa"/></w:tcMar>${o.va ? `<w:vAlign w:val="${o.va}"/>` : ''}</w:tcPr>${contenido || '<w:p/>'}</w:tc>`;
-  const tbl = (cols, filas, ancho = W) => `<w:tbl><w:tblPr><w:tblW w:w="${ancho}" w:type="dxa"/><w:tblInd w:w="0" w:type="dxa"/><w:tblLayout w:type="fixed"/></w:tblPr><w:tblGrid>${cols.map((c) => `<w:gridCol w:w="${c}"/>`).join('')}</w:tblGrid>${filas}</w:tbl>`;
+  const tbl = (cols, filas, ancho = W, ind = 0) => `<w:tbl><w:tblPr><w:tblW w:w="${ancho}" w:type="dxa"/><w:tblInd w:w="${ind}" w:type="dxa"/><w:tblLayout w:type="fixed"/></w:tblPr><w:tblGrid>${cols.map((c) => `<w:gridCol w:w="${c}"/>`).join('')}</w:tblGrid>${filas}</w:tbl>`;
 
   // brand + título + ficha (empresa, rubro, tamaño, fecha, preparado por): cuatro columnas con una línea arriba y otra abajo
   function cabecera(h) {
@@ -171,6 +173,44 @@
     // tabla de dimensiones: todas las filas «con la siguiente», para que no se parta entre dos páginas
     const xml = (conBarra ? x.map((r, i) => (i < x.length - 1 ? r.replace(/<w:p><w:pPr>/g, '<w:p><w:pPr><w:keepNext/>') : r)) : x).join('');
     return tbl(w, xml) + par([], { sp: 'w:before="0" w:after="40" w:line="60" w:lineRule="exact"' });
+  }
+
+  // ── tarjetas (etapas y dimensiones) y escala de niveles: tablas con color, separadas por columnas vacías ──
+  const todos = (col, sz = 6) => ['top', 'left', 'bottom', 'right'].map((l) => `<w:${l} w:val="single" w:sz="${sz}" w:space="0" w:color="${col}"/>`).join('');
+  const vacia = (ancho) => `<w:tc><w:tcPr><w:tcW w:w="${ancho}" w:type="dxa"/></w:tcPr>${MINI}</w:tc>`;
+  const tarjeta = (c, ancho) => {
+    if (!c) return vacia(ancho);
+    const ok = c.classList.contains('dc-ok'), m8 = c.classList.contains('dc-m8');
+    const sp = 'w:before="0" w:after="40" w:line="264" w:lineRule="auto"', ps = [];
+    c.childNodes.forEach((h) => {
+      if (h.nodeType !== 1) return;
+      const g = h.tagName.toLowerCase(), t = h.textContent.replace(/\s+/g, ' ').trim();
+      if (!t) return;
+      if (g === 'b') ps.push(par([{ t, b: true, c: C.teal, sz: 18 }], { sp, keepNext: true }));
+      else if (g === 'h4') ps.push(par([{ t, b: true, sz: m8 ? 20 : 22 }], { sp, keepNext: true }));
+      else if (g === 'small') ps.push(par([{ t, b: true, c: '9A5B00', sz: 18 }], { sp: 'w:before="60" w:after="0" w:line="264" w:lineRule="auto"' }));
+      else ps.push(par([{ t, c: '4A5A6A', sz: 17 }], { sp }));
+    });
+    return celda(ps.join(''), ancho, { bordes: todos(ok ? '2B6E6A' : m8 ? 'D5DEEA' : '8FB1CC'), fill: ok ? '92D050' : 'F8FAFD', mt: 110, mb: 110, ml: 140, mr: 120 });
+  };
+  function tarjetas(n, ncol) {
+    const cards = [...n.children], gap = 140, cw = Math.floor((W - gap * (ncol - 1)) / ncol);
+    const cols = []; for (let i = 0; i < ncol; i++) { cols.push(cw); if (i < ncol - 1) cols.push(gap); }
+    cols[cols.length - 1] += W - cols.reduce((a, b) => a + b, 0) - 140; // el borde de la primera tarjeta queda al ras del margen
+    const filas = []; for (let i = 0; i < cards.length; i += ncol) filas.push(cards.slice(i, i + ncol));
+    const xml = filas.map((f, ri) => `<w:tr><w:trPr><w:cantSplit/></w:trPr>${Array.from({ length: ncol }, (_, ci) => tarjeta(f[ci], cols[ci * 2]) + (ci < ncol - 1 ? vacia(gap) : '')).join('')}</w:tr>${ri < filas.length - 1 ? `<w:tr><w:trPr><w:trHeight w:val="140" w:hRule="exact"/></w:trPr>${celda(MINI, W - 140, { span: cols.length, mt: 0, mb: 0, ml: 0, mr: 0 })}</w:tr>` : ''}`).join('');
+    return tbl(cols, xml, W - 140, 140) + par([], { sp: 'w:before="0" w:after="60" w:line="60" w:lineRule="exact"' });
+  }
+  const NIVEL_FONDO = ['E3E8F3', 'CDEAE7', '8FD8D2', '3DB8B8', '0B6E75'];
+  function escala(n) {
+    const it = [...n.children], gap = 120, ncol = it.length || 5, cw = Math.floor((W - gap * (ncol - 1)) / ncol);
+    const cols = []; for (let i = 0; i < ncol; i++) { cols.push(cw); if (i < ncol - 1) cols.push(gap); }
+    cols[cols.length - 1] += W - cols.reduce((a, b) => a + b, 0) - 160;
+    const cel = it.map((s, i) => {
+      const num = ((s.querySelector('b') || {}).textContent || String(i)).trim(), nombre = s.textContent.replace(num, '').replace(/\s+/g, ' ').trim(), c = i >= 3 ? 'FFFFFF' : C.ink;
+      return celda(par([{ t: num, b: true, sz: 26, c }, { t: '  ' + nombre, sz: 21, c }], { sp: 'w:before="0" w:after="0" w:line="276" w:lineRule="auto"' }), cols[i * 2], { fill: NIVEL_FONDO[i] || NIVEL_FONDO[4], mt: 150, mb: 150, ml: 160, mr: 100, va: 'center' }) + (i < ncol - 1 ? vacia(gap) : '');
+    }).join('');
+    return par([], { sp: 'w:before="0" w:after="60" w:line="60" w:lineRule="exact"' }) + tbl(cols, `<w:tr><w:trPr><w:cantSplit/></w:trPr>${cel}</w:tr>`, W - 160, 160) + par([], { sp: 'w:before="0" w:after="60" w:line="60" w:lineRule="exact"' });
   }
 
   // ── firmas del acta ──
